@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Test</title></head>
+<body>
+<div id="log" style="white-space:pre;font-family:monospace;padding:20px;font-size:14px;"></div>
+<script>
+function log(msg){document.getElementById('log').textContent += msg + '\n'; console.log(msg);}
+window.onerror = function(msg,url,line){log('ERROR: ' + msg + ' at ' + url + ':' + line); return false;};
+log('Step 0: test.html loaded');
+</script>
+<script src="three.min.js"></script>
+<script>
+log('Step 1: three.min.js loaded, THREE exists: ' + (typeof THREE !== 'undefined'));
+if(typeof THREE !== 'undefined') log('  THREE.REVISION: ' + THREE.REVISION);
+</script>
+<script src="data.js"></script>
+<script>
+log('Step 2: data.js loaded, window.DATA exists: ' + (typeof window.DATA !== 'undefined'));
+if(window.DATA) log('  DATA keys: ' + Object.keys(window.DATA).join(', '));
+</script>
+<script src="systems.js"></script>
+<script>
+log('Step 3: systems.js loaded, window.SYS exists: ' + (typeof window.SYS !== 'undefined'));
+if(window.SYS) log('  SYS keys: ' + Object.keys(window.SYS).join(', '));
+</script>
+<script src="game.js"></script>
+<script>
+log('Step 4: game.js loaded, _gameLoaded: ' + window._gameLoaded);
+</script>
+</body>
+</html>

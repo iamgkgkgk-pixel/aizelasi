@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
+<title>艾泽拉斯幸存者 — Azeroth Survivors</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ==================== 加载界面 ==================== -->
+<div id="loading-screen" class="screen active">
+  <div style="font-size:60px;margin-bottom:20px;animation:float 2s ease-in-out infinite">⚔️</div>
+  <div style="font-size:24px;color:#ffd700;font-weight:bold;margin-bottom:10px">艾泽拉斯幸存者</div>
+  <div style="font-size:12px;color:#8b7daa;letter-spacing:6px;margin-bottom:30px">AZEROTH SURVIVORS</div>
+  <div id="loading-bar-wrap" style="width:200px;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden">
+    <div id="loading-bar-fill" style="width:0%;height:100%;background:linear-gradient(90deg,#ffd700,#ff8c00);border-radius:3px;transition:width .3s"></div>
+  </div>
+  <div id="loading-text" style="font-size:11px;color:#666;margin-top:10px">正在加载游戏资源...</div>
+  <div id="loading-error" style="display:none;color:#ff4444;font-size:13px;margin-top:20px;text-align:center;max-width:300px"></div>
+</div>
+
+<!-- ==================== 主城界面 ==================== -->
+<div id="main-menu" class="screen">
+  <div class="mm-bg"></div>
+  <div class="mm-header">
+    <div class="mm-player-info">
+      <div class="mm-avatar" id="mm-avatar">⚔️</div>
+      <div class="mm-player-detail">
+        <div class="mm-name" id="mm-name">英雄</div>
+        <div class="mm-level">Lv.<span id="mm-level">1</span></div>
+      </div>
+    </div>
+    <div class="mm-currency">
+      <div class="currency-item"><span class="ci-icon">💎</span><span id="cur-diamond">500</span></div>
+      <div class="currency-item"><span class="ci-icon">💰</span><span id="cur-gold">2000</span></div>
+      <div class="currency-item stamina-bar" onclick="openPanel('shop');switchShopTab(document.querySelector('.shop-tab[data-tab=stamina]'),'stamina')"><span class="ci-icon">⚡</span><span id="cur-stamina">120</span><span class="stamina-max">/<span id="max-stamina">120</span></span><span class="stamina-buy-hint">+</span></div>
+    </div>
+  </div>
+  <div class="mm-title">
+    <div class="mm-title-main">艾泽拉斯幸存者</div>
+    <div class="mm-title-sub">AZEROTH SURVIVORS</div>
+    <div class="mm-season-tag">赛季1：巫妖王的回响 <span class="season-timer" id="season-timer">剩余25天</span></div>
+  </div>
+  <div class="mm-center-area">
+    <div class="mm-hero-preview" id="mm-hero-preview">
+      <div class="mm-hero-model" id="mm-hero-model">⚔️</div>
+      <div class="mm-hero-name-tag" id="mm-hero-tag">战士</div>
+      <div class="mm-hero-power" id="mm-hero-power">⚔️ 战力 0</div>
+    </div>
+  </div>
+  <!-- 底部导航 -->
+  <div class="mm-nav">
+    <div class="nav-btn" onclick="openPanel('sign-in')"><div class="nav-icon">📅</div><div class="nav-label">签到</div><div class="nav-dot" id="dot-signin"></div></div>
+    <div class="nav-btn" onclick="openPanel('heroes')"><div class="nav-icon">🦸</div><div class="nav-label">英雄</div></div>
+    <div class="nav-btn" onclick="openPanel('forge')"><div class="nav-icon">🔨</div><div class="nav-label">锻造</div><div class="nav-dot" id="dot-forge"></div></div>
+    <div class="nav-btn nav-btn-main" onclick="openPanel('chapter-select')"><div class="nav-icon">⚔️</div><div class="nav-label">出战</div></div>
+    <div class="nav-btn" onclick="openPanel('talent')"><div class="nav-icon">🌟</div><div class="nav-label">天赋</div></div>
+    <div class="nav-btn" onclick="openPanel('arena')"><div class="nav-icon">🏟️</div><div class="nav-label">竞技场</div></div>
+    <div class="nav-btn" onclick="openPanel('shop')"><div class="nav-icon">💎</div><div class="nav-label">商城</div></div>
+  </div>
+  <!-- 右侧快捷入口 -->
+  <div class="mm-side-btns">
+    <div class="side-btn" onclick="openPanel('battlepass')"><span>🎫</span>通行证</div>
+    <div class="side-btn" onclick="openPanel('achievements')"><span>🏆</span>成就</div>
+    <div class="side-btn" onclick="openPanel('daily-quest')"><span>📋</span>任务</div>
+    <div class="side-btn" onclick="openPanel('lucky-draw')"><span>🎰</span>抽奖</div>
+    <div class="side-btn" onclick="openPanel('enhance')"><span>🔨</span>强化</div>
+    <div class="side-btn" onclick="openPanel('guild')"><span>👥</span>公会</div>
+  </div>
+  <!-- 公告横幅 -->
+  <div class="mm-banner" id="mm-banner">
+    <div class="banner-text">🔥 限时活动：首充仅需¥6，获得萨满英雄+680💎！剩余 <span id="banner-timer">71:42:18</span></div>
+  </div>
+  <!-- 未读红点提示 -->
+  <div class="mm-chest-float" id="chest-float" onclick="openPanel('chest-open')">
+    <div class="chest-icon">📦</div>
+    <div class="chest-label">宝箱就绪!</div>
+  </div>
+</div>
+
+<!-- ==================== 签到面板 ==================== -->
+<div id="sign-in" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('sign-in')">✕</div><div class="panel-title">📅 七日英雄集结签到</div></div>
+  <div class="panel-body">
+    <div class="signin-week" id="signin-week"></div>
+    <div class="signin-extra">连续7日额外奖励：传说武器「灰烬使者」碎片×5</div>
+    <div class="signin-note">⚠️ 可补签1次（观看广告）— 仅限补签1天</div>
+    <div class="signin-btn-wrap">
+      <button class="btn-gold" id="btn-signin" onclick="doSignIn()">签到领取</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 英雄面板 ==================== -->
+<div id="heroes" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('heroes')">✕</div><div class="panel-title">🦸 英雄殿堂</div></div>
+  <div class="panel-body">
+    <div class="hero-grid" id="hero-grid"></div>
+    <div class="hero-detail" id="hero-detail"></div>
+  </div>
+</div>
+
+<!-- ==================== 天赋面板 ==================== -->
+<div id="talent" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('talent')">✕</div><div class="panel-title">🌟 天赋树 — 永久被动强化</div></div>
+  <div class="panel-body" id="talent-body"></div>
+</div>
+
+<!-- ==================== 装备强化面板 ==================== -->
+<div id="enhance" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('enhance')">✕</div><div class="panel-title">🔨 装备强化</div></div>
+  <div class="panel-body" id="enhance-body"></div>
+</div>
+
+<!-- ==================== 副本选择 ==================== -->
+<div id="chapter-select" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('chapter-select')">✕</div><div class="panel-title">📖 副本选择</div></div>
+  <div class="panel-body">
+    <div class="chapter-list" id="chapter-list"></div>
+    <div class="chapter-detail" id="chapter-detail"></div>
+    <div class="chapter-cost">消耗体力：<span class="cost-val">⚡10</span></div>
+    <button class="btn-gold btn-fight" id="btn-fight" onclick="startChapterBattle()">⚔️ 出战！</button>
+    <div class="first-win-tag" id="first-win-tag">🎯 今日首胜 ×3倍奖励！</div>
+  </div>
+</div>
+
+<!-- ==================== 锻造面板 ==================== -->
+<div id="forge" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('forge')">✕</div><div class="panel-title">🔨 装备锻造</div></div>
+  <div class="panel-body">
+    <div class="forge-slots" id="forge-slots"></div>
+    <div class="forge-queue" id="forge-queue"></div>
+    <div class="forge-tip">⏰ 锻造需要时间，锻造完成后回来领取！<br>🎬 观看短片可加速2小时</div>
+  </div>
+</div>
+
+<!-- ==================== 竞技场 ==================== -->
+<div id="arena" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('arena')">✕</div><div class="panel-title">🏟️ 竞技场</div></div>
+  <div class="panel-body">
+    <div class="arena-rank-info" id="arena-rank-info"></div>
+    <div class="arena-opponents" id="arena-opponents"></div>
+    <div class="arena-charges">剩余挑战次数：<span id="arena-charges">5</span>/5 <span class="arena-ad-btn" onclick="watchAdArena()">🎬 +1次</span></div>
+  </div>
+</div>
+
+<!-- ==================== 公会 ==================== -->
+<div id="guild" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('guild')">✕</div><div class="panel-title">👥 公会</div></div>
+  <div class="panel-body" id="guild-body"></div>
+</div>
+
+<!-- ==================== 商城 ==================== -->
+<div id="shop" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('shop')">✕</div><div class="panel-title">💎 商城</div></div>
+  <div class="panel-body">
+    <div class="shop-tabs">
+      <div class="shop-tab active" data-tab="featured" onclick="switchShopTab(this,'featured')">精选</div>
+      <div class="shop-tab" data-tab="monthly" onclick="switchShopTab(this,'monthly')">月卡</div>
+      <div class="shop-tab" data-tab="diamond" onclick="switchShopTab(this,'diamond')">钻石</div>
+      <div class="shop-tab" data-tab="stamina" onclick="switchShopTab(this,'stamina')">⚡体力</div>
+      <div class="shop-tab" data-tab="gift" onclick="switchShopTab(this,'gift')">限时礼包</div>
+    </div>
+    <div class="shop-content" id="shop-content"></div>
+  </div>
+</div>
+
+<!-- ==================== Battle Pass ==================== -->
+<div id="battlepass" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('battlepass')">✕</div><div class="panel-title">🎫 赛季通行证 S1 — 巫妖王的回响</div></div>
+  <div class="panel-body">
+    <div class="bp-progress-wrap">
+      <div class="bp-level">Lv.<span id="bp-level">1</span></div>
+      <div class="bp-bar-wrap"><div class="bp-bar" id="bp-bar" style="width:0%"></div></div>
+      <div class="bp-xp" id="bp-xp">0/100</div>
+    </div>
+    <div class="bp-tracks" id="bp-tracks"></div>
+    <div class="bp-buy-wrap" id="bp-buy-wrap">
+      <button class="btn-gold" onclick="buyBattlePass()">🔓 解锁付费轨道 ¥68</button>
+      <div class="bp-buy-note">未领取的付费奖励：<span id="bp-unclaimed" class="bp-unclaimed-val">0</span> 个</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 成就 ==================== -->
+<div id="achievements" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('achievements')">✕</div><div class="panel-title">🏆 成就</div></div>
+  <div class="panel-body"><div class="achieve-list" id="achieve-list"></div></div>
+</div>
+
+<!-- ==================== 每日任务 ==================== -->
+<div id="daily-quest" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('daily-quest')">✕</div><div class="panel-title">📋 每日任务</div></div>
+  <div class="panel-body"><div class="quest-list" id="quest-list"></div><div class="quest-chest-bar" id="quest-chest-bar"></div></div>
+</div>
+
+<!-- ==================== 抽奖转盘 ==================== -->
+<div id="lucky-draw" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('lucky-draw')">✕</div><div class="panel-title">🎰 幸运转盘</div></div>
+  <div class="panel-body">
+    <div class="draw-wheel" id="draw-wheel"></div>
+    <div class="draw-chances">今日剩余：<span id="draw-chances">3</span>次 <span class="draw-note">(首次免费，后续🎬)</span></div>
+    <button class="btn-gold" onclick="doLuckyDraw()">🎰 转一次！</button>
+  </div>
+</div>
+
+<!-- ==================== 宝箱开启 ==================== -->
+<div id="chest-open" class="panel">
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('chest-open')">✕</div><div class="panel-title">📦 宝箱</div></div>
+  <div class="panel-body">
+    <div class="chest-list" id="chest-list"></div>
+  </div>
+</div>
+
+<!-- ==================== 解锁路线图弹窗 ==================== -->
+<div id="roadmap-popup" class="popup">
+  <div class="popup-content">
+    <div class="popup-close" onclick="closePopup('roadmap-popup')">✕</div>
+    <div class="roadmap-title">🗺️ 冒险路线图</div>
+    <div class="roadmap-track" id="roadmap-track"></div>
+  </div>
+</div>
+
+<!-- ==================== 通用弹窗 ==================== -->
+<div id="popup-reward" class="popup">
+  <div class="popup-content popup-reward-content">
+    <div class="popup-title" id="popup-reward-title">🎉 获得奖励！</div>
+    <div class="popup-items" id="popup-reward-items"></div>
+    <button class="btn-gold" onclick="closePopup('popup-reward')">确定</button>
+  </div>
+</div>
+
+<!-- ==================== 首充弹窗 ==================== -->
+<div id="popup-first-charge" class="popup">
+  <div class="popup-content popup-fc">
+    <div class="popup-close" onclick="closePopup('popup-first-charge')">✕</div>
+    <div class="fc-title">⭐ 首充限定大礼包 ⭐</div>
+    <div class="fc-price">仅需 ¥6</div>
+    <div class="fc-items">
+      <div class="fc-item">💎 680钻石 <span class="fc-orig">价值¥68</span></div>
+      <div class="fc-item">⚔️ 萨满英雄·直接解锁</div>
+      <div class="fc-item">🏅 VIP1称号+金色边框</div>
+      <div class="fc-item">📦 自选紫色装备×1</div>
+      <div class="fc-item">🎫 7天广告免除卡</div>
+    </div>
+    <div class="fc-timer">⏰ 限时：新手期72小时内有效</div>
+    <button class="btn-gold fc-buy" onclick="doFirstCharge()">💳 ¥6 立即购买</button>
+    <div class="fc-social">已有 89,432 名勇士选择了这份力量</div>
+  </div>
+</div>
+
+<!-- ==================== 次日预告弹窗 ==================== -->
+<div id="popup-tomorrow" class="popup">
+  <div class="popup-content popup-tomorrow-content">
+    <div class="popup-close" onclick="closePopup('popup-tomorrow')">✕</div>
+    <div class="tm-title">🔥 明日限定预告 🔥</div>
+    <div class="tm-silhouette" id="tm-silhouette">?</div>
+    <div class="tm-text" id="tm-text">传说中的猎人即将现身艾泽拉斯...</div>
+    <div class="tm-note">仅限明日登录的勇士可免费获得！</div>
+    <div class="tm-count">已有 <span id="tm-count">12,847</span> 名勇士预约</div>
+    <button class="btn-gold" onclick="closePopup('popup-tomorrow')">📢 知道了</button>
+  </div>
+</div>
+
+<!-- ==================== 游戏战斗界面 ==================== -->
+<div id="game-screen" class="screen">
+  <!-- 游戏HUD -->
+  <div id="game-hud">
+    <div class="hud-top">
+      <div class="hud-hero-info">
+        <div class="hud-hero-wrap">
+          <div class="hud-hero-icon" id="hud-icon">⚔️</div>
+          <div class="hud-level" id="hud-level">1</div>
+        </div>
+        <div class="hud-bars">
+          <div class="bar-container bar-hp"><div class="bar-fill" id="hp-bar" style="width:100%"></div><div class="bar-text" id="hp-text">100/100</div></div>
+          <div class="bar-container bar-xp"><div class="bar-fill" id="xp-bar" style="width:0%"></div><div class="bar-text" id="xp-text">0/10</div></div>
+        </div>
+      </div>
+      <div class="hud-stats">
+        <div class="stat-item"><div class="stat-value" id="kill-count">0</div><div class="stat-label">击杀</div></div>
+        <div class="stat-item"><div class="stat-value" id="gold-count">0</div><div class="stat-label">金币</div></div>
+        <div class="stat-item"><div class="stat-value" id="time-count">00:00</div><div class="stat-label">时间</div></div>
+      </div>
+    </div>
+    <div class="hud-wave">第 <span class="wave-num" id="wave-num">1</span> 波</div>
+    <div class="hud-chapter-name" id="hud-chapter-name">第1章 · 艾尔文森林</div>
+    <div class="boss-hp-bar" id="boss-hp-bar"><div class="boss-hp-name" id="boss-name">💀 霍格</div><div class="boss-hp-container"><div class="boss-hp-fill" id="boss-hp-fill"></div></div></div>
+    <div class="hud-skills" id="hud-skills"></div>
+    <div class="hud-pause" onclick="togglePause()">⏸</div>
+  </div>
+
+  <!-- 屏幕边缘危险预警 -->
+  <div id="edge-warn-top" class="edge-warning edge-warning-top"></div>
+  <div id="edge-warn-bottom" class="edge-warning edge-warning-bottom"></div>
+  <div id="edge-warn-left" class="edge-warning edge-warning-left"></div>
+  <div id="edge-warn-right" class="edge-warning edge-warning-right"></div>
+
+  <!-- 动态事件横幅 -->
+  <div id="event-banner" class="event-banner" style="display:none"></div>
+
+  <!-- 宝箱开启浮层 -->
+  <div id="loot-popup" style="display:none"></div>
+
+  <!-- 虚拟摇杆 -->
+  <div id="joystick-zone">
+    <div id="joystick-base">
+      <div id="joystick-stick"></div>
+    </div>
+  </div>
+
+  <!-- 技能选择 -->
+  <div id="skill-panel">
+    <div class="skill-panel-title">⬆️ 升级！</div>
+    <div class="skill-panel-subtitle">选择一个技能强化</div>
+    <div class="skill-choices" id="skill-choices"></div>
+    <div class="skill-refresh" id="skill-refresh" onclick="refreshSkills()">🎬 命运重铸 — 重新抽取+额外1选项</div>
+  </div>
+
+  <!-- BOSS警告 -->
+  <div id="boss-warning"><div class="boss-warning-text">⚠️ BOSS 来袭 ⚠️</div><div class="boss-name-text" id="boss-warning-name"></div></div>
+  <!-- 波次公告 -->
+  <div id="wave-announce"><div class="wave-announce-text" id="wave-announce-text"></div></div>
+
+  <!-- 死亡结算 -->
+  <div id="result-screen">
+    <div class="result-title" id="result-title"></div>
+    <div class="result-boss-hint" id="result-boss-hint"></div>
+    <div class="result-stats" id="result-stats"></div>
+    <div class="result-rewards" id="result-rewards"></div>
+    <div class="result-btns">
+      <div class="btn-double" onclick="watchAdDouble()">🎬 英雄的额外战利品 — 双倍奖励</div>
+      <div class="btn-revive" id="btn-revive" onclick="watchAdRevive()">🎬 英雄不灭！满血再战</div>
+      <button class="btn-gold btn-restart" onclick="backToMenu()">返回主城</button>
+    </div>
+    <div class="result-quote" id="result-quote"></div>
+  </div>
+
+  <!-- 暂停面板 -->
+  <div id="pause-panel">
+    <div class="pause-title">⏸ 暂停</div>
+    <button class="btn-gold" onclick="togglePause()">继续战斗</button>
+    <button class="btn-sub" onclick="backToMenu()">退出副本</button>
+  </div>
+</div>
+
+<!-- Three.js: 本地加载，无需网络 -->
+<script>
+// 全局错误处理
+var __errLog=[];
+window.onerror=function(msg,url,line,col,error){
+  console.error('Global error:',msg,url,line);
+  __errLog.push(msg+' @line:'+line);
+  var le=document.getElementById('loading-error');
+  if(le){le.style.display='block';le.textContent='加载出错: '+msg}
+  // 在游戏界面上也显示错误
+  var ed=document.getElementById('err-display');
+  if(!ed){ed=document.createElement('div');ed.id='err-display';ed.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(255,0,0,.9);color:#fff;font:11px monospace;padding:8px;max-height:30vh;overflow-y:auto';document.body.appendChild(ed)}
+  ed.innerHTML=__errLog.map(function(e){return e}).join('<br>');
+  return false;
+};
+</script>
+<script src="three.min.js"></script>
+<script src="data.js"></script>
+<script src="systems.js"></script>
+<script src="game.js"></script>
+<script>
+// 超时检测: 如果5秒内游戏还没加载好, 提供fallback
+var _loadTimer=setTimeout(function(){
+  if(!window._gameLoaded){
+    console.warn('Game load timeout...');
+    var le=document.getElementById('loading-error');
+    if(le){le.style.display='block';le.innerHTML='游戏加载超时，请刷新页面重试'}
+    // 即使加载失败，也让主城面板可以操作
+    if(!window.openPanel){
+      window.openPanel=function(id){document.getElementById(id).classList.add('active')};
+      window.closePanel=function(id){document.getElementById(id).classList.remove('active')};
+      window.closePopup=function(id){document.getElementById(id).classList.remove('active')};
+      window.doSignIn=function(){};
+      window.doFirstCharge=function(){};
+      window.buyBattlePass=function(){};
+      window.doLuckyDraw=function(){};
+      window.switchShopTab=function(){};
+      window.watchAdArena=function(){};
+      window.startChapterBattle=function(){alert('游戏引擎加载失败，请刷新页面重试')};
+      // 隐藏加载界面，显示主城
+      document.getElementById('loading-screen').classList.remove('active');
+      document.getElementById('main-menu').classList.add('active');
+    }
+  }
+},5000);
+</script>
+</body>
+</html>

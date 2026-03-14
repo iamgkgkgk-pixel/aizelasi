@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
+<title>Battle Debug Test</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#0f0;font-family:monospace;font-size:12px;overflow-y:auto}
+#dbg{padding:10px;white-space:pre-wrap;line-height:1.5}
+.err{color:#f44}.warn{color:#fa0}.ok{color:#4f4}
+#canvas-wrap{position:fixed;top:0;left:0;width:100%;height:50vh;z-index:-1}
+</style>
+</head>
+<body>
+<div id="dbg"></div>
+<div id="canvas-wrap"></div>
+<script src="three.min.js"></script>
+<script src="data.js"></script>
+<script>
+const dbg=document.getElementById('dbg');
+function L(msg,cls='ok'){dbg.innerHTML+=`<span class="${cls}">${msg}\n</span>`;dbg.scrollTop=dbg.scrollHeight;}
+
+try{
+const {ALL_HEROES,CHAPTERS,SKILL_DB}=window.DATA;
+L('✓ DATA loaded');
+L('  ALL_HEROES: '+Object.keys(ALL_HEROES).join(', '));
+L('  CHAPTERS: '+Object.keys(CHAPTERS).join(', '));
+
+// 创建基础Three.js环境
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x1a2a1a);
+scene.fog=new THREE.Fog(0x1a2a1a,30,55);
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,100);
+camera.position.set(0,22,16);camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+renderer.setSize(innerWidth,innerHeight/2);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.getElementById('canvas-wrap').appendChild(renderer.domElement);
+L('✓ Renderer created ('+renderer.domElement.width+'x'+renderer.domElement.height+')');
+
+const amb=new THREE.AmbientLight(0x404060,0.6);scene.add(amb);
+const dirLight=new THREE.DirectionalLight(0xffeedd,1.0);dirLight.position.set(10,20,10);dirLight.castShadow=true;
+dirLight.shadow.mapSize.set(1024,1024);scene.add(dirLight);scene.add(dirLight.target);
+const ptLight=new THREE.PointLight(0xff8844,0.3,30);ptLight.position.set(0,5,0);scene.add(ptLight);
+L('✓ Lights added');
+
+// 工具函数 (从game.js复制)
+const _m=(c,o={})=>new THREE.MeshStandardMaterial({color:c,metalness:o.m||0,roughness:o.r||.7,...o});
+const _b=(c,o={})=>new THREE.MeshBasicMaterial({color:c,...o});
+function _body(g,s,bc,sc,o={}){
+  const t=new THREE.Mesh(new THREE.BoxGeometry(s*.5,s*.55,s*.3),_m(bc,{m:.2}));t.position.y=s*1;t.castShadow=true;g.add(t);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(s*.22,10,10),_m(sc||0xffcc99));h.position.y=s*1.5;h.castShadow=true;g.add(h);
+  const eM=_b(o.ec||0x222222);
+  const e1=new THREE.Mesh(new THREE.SphereGeometry(s*.04,6,6),eM);e1.position.set(-s*.08,s*1.53,s*.18);g.add(e1);
+  const e2=e1.clone();e2.position.x=s*.08;g.add(e2);
+  const lM=_m(o.lc||bc,{m:.1});
+  const l1=new THREE.Mesh(new THREE.BoxGeometry(s*.15,s*.45,s*.15),lM);l1.position.set(-s*.12,s*.35,0);l1.castShadow=true;g.add(l1);
+  const l2=l1.clone();l2.position.x=s*.12;g.add(l2);
+  const aM=_m(o.ac||bc,{m:.1});
+  const a1=new THREE.Mesh(new THREE.BoxGeometry(s*.12,s*.45,s*.12),aM);a1.position.set(-s*.35,s*.95,0);a1.castShadow=true;g.add(a1);
+  const a2=a1.clone();a2.position.x=s*.35;g.add(a2);
+}
+function _hp(g,s){
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(s*1,.08),_b(0x333333,{side:THREE.DoubleSide}));bg.position.y=s*1.6;g.add(bg);
+  const f=new THREE.Mesh(new THREE.PlaneGeometry(s*1,.08),_b(0xff0000,{side:THREE.DoubleSide}));f.position.y=s*1.6;g.add(f);
+  g.userData.hpBar=f;g.userData.hpW=s*1;
+}
+L('✓ Utility functions defined');
+
+// 地面
+function createGround(chId){
+  const ch=CHAPTERS[chId||'ch1'];
+  scene.background=new THREE.Color(ch.bgColor);scene.fog=new THREE.Fog(ch.bgColor,30,55);
+  const colors={ch1:0x2d5a27,ch2:0x5a4a27,ch3:0x1a4a1a,ch4:0x4a2a1a,ch5:0x2a2a3a,ch6:0x3a1a0a,ch7:0x2a3a4a,endless:0x1a1a2a};
+  const g=new THREE.PlaneGeometry(80,80,20,20);const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,Math.random()*.15);g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:colors[chId]||0x2d5a27,roughness:.9}));mesh.rotation.x=-Math.PI/2;mesh.receiveShadow=true;scene.add(mesh);
+  L('  Ground mesh added');
+}
+
+// 测试创建地面
+try{
+  createGround('ch1');
+  L('✓ Ground created for ch1');
+}catch(e){
+  L('✗ Ground creation failed: '+e.message,'err');
+}
+
+// 英雄构建器
+const HB={
+warrior(g){
+  _body(g,1,0x8b1a1a,0xffcc99,{lc:0x555555});
+  const sM=_m(0xaaaaaa,{m:.6,r:.3});
+  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(.2,.15,.25),sM),{position:new THREE.Vector3(-.4,1.25,0)}));
+  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(.2,.15,.25),sM),{position:new THREE.Vector3(.4,1.25,0)}));
+}
+};
+
+// 测试创建英雄
+L('\n--- Testing Hero Creation ---');
+Object.keys(ALL_HEROES).forEach(heroKey=>{
+  try{
+    const c=ALL_HEROES[heroKey];
+    const g=new THREE.Group();
+    // 简单地创建 hero (不使用HB)
+    const bd=new THREE.Mesh(new THREE.CapsuleGeometry(.35,.6,8,12),_m(c.color,{m:.3,r:.6}));bd.position.y=1;bd.castShadow=true;g.add(bd);
+    const hd=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),_m(0xffcc99));hd.position.y=1.75;hd.castShadow=true;g.add(hd);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(.6,.75,32),_b(c.color,{side:THREE.DoubleSide,transparent:true,opacity:.35}));ring.rotation.x=-Math.PI/2;ring.position.y=.03;g.add(ring);
+    const glow=new THREE.Mesh(new THREE.SphereGeometry(.5,12,12),_b(c.color,{transparent:true,opacity:.06}));glow.position.y=1;glow.scale.setScalar(1.8);g.add(glow);
+    L('  ✓ Hero fallback "'+heroKey+'": children='+g.children.length);
+  }catch(e){
+    L('  ✗ Hero fallback "'+heroKey+'" FAILED: '+e.message,'err');
+  }
+});
+
+// 测试怪物spawn
+L('\n--- Testing Enemy Meshes ---');
+const testChapter=CHAPTERS.ch1;
+if(testChapter&&testChapter.enemyTypes){
+  testChapter.enemyTypes.forEach(t=>{
+    try{
+      const g=new THREE.Group();
+      // 使用fallback创建
+      const b=new THREE.Mesh(new THREE.CapsuleGeometry(t.sz*.4,t.sz*.5,6,8),_m(t.color,{r:.7}));b.position.y=t.sz*.8;b.castShadow=true;g.add(b);
+      _hp(g,t.sz);
+      L('  ✓ Enemy "'+t.name+'" (fallback): children='+g.children.length);
+    }catch(e){
+      L('  ✗ Enemy "'+t.name+'" FAILED: '+e.message,'err');
+    }
+  });
+}
+
+// 渲染测试
+try{
+  renderer.render(scene,camera);
+  L('\n✓ Render successful!');
+  // 检查WebGL是否有错误
+  const gl=renderer.getContext();
+  const err=gl.getError();
+  L('  WebGL error code: '+err+(err===0?' (NO_ERROR)':' (HAS ERROR!)'),'ok');
+}catch(e){
+  L('\n✗ Render FAILED: '+e.message,'err');
+}
+
+// 检查WebGL context状态
+const gl=renderer.getContext();
+L('\n--- WebGL Context Info ---');
+L('  isContextLost: '+gl.isContextLost());
+L('  drawingBufferWidth: '+gl.drawingBufferWidth);
+L('  drawingBufferHeight: '+gl.drawingBufferHeight);
+L('  MAX_TEXTURE_SIZE: '+gl.getParameter(gl.MAX_TEXTURE_SIZE));
+
+// 添加一个旋转的立方体来验证渲染正常
+const testCube=new THREE.Mesh(new THREE.BoxGeometry(2,2,2),new THREE.MeshStandardMaterial({color:0xff0000}));
+testCube.position.set(0,1,0);testCube.castShadow=true;scene.add(testCube);
+
+L('\n✓ Test cube added at (0,1,0)');
+L('  Total scene children: '+scene.children.length);
+
+// 动画循环
+let frames=0;
+function animate(){
+  requestAnimationFrame(animate);
+  testCube.rotation.y+=0.01;
+  renderer.render(scene,camera);
+  frames++;
+  if(frames===1)L('✓ First animation frame rendered');
+  if(frames===60)L('✓ 60 frames rendered successfully');
+}
+animate();
+
+L('\n=== Test Complete ===','ok');
+
+}catch(e){
+  L('FATAL ERROR: '+e.message+'\n'+e.stack,'err');
+}
+</script>
+</body>
+</html>

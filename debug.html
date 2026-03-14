@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>3D Debug</title>
+<style>body{margin:0;background:#000;color:#fff;font-family:monospace;overflow:hidden}
+#log{position:fixed;top:0;left:0;z-index:999;background:rgba(0,0,0,.8);padding:10px;max-height:100vh;overflow-y:auto;font-size:12px;width:100%}
+.err{color:#ff4444}.ok{color:#44ff44}.warn{color:#ffaa00}
+</style>
+</head>
+<body>
+<div id="log"></div>
+<script src="three.min.js"></script>
+<script src="data.js"></script>
+<script>
+const log=document.getElementById('log');
+function L(msg,cls=''){log.innerHTML+=`<div class="${cls}">${msg}</div>`;console.log(msg);}
+
+try{
+  L('1. THREE loaded: '+(typeof THREE),'ok');
+  L('2. DATA loaded: '+(typeof window.DATA),'ok');
+  
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x1a2a1a);
+  const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,100);
+  camera.position.set(0,22,16);camera.lookAt(0,0,0);
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.shadowMap.enabled=true;
+  document.body.appendChild(renderer.domElement);
+  L('3. Renderer created','ok');
+  
+  // 灯光
+  const amb=new THREE.AmbientLight(0x404060,0.6);scene.add(amb);
+  const dirLight=new THREE.DirectionalLight(0xffeedd,1.0);dirLight.position.set(10,20,10);scene.add(dirLight);
+  L('4. Lights added','ok');
+  
+  // 地面
+  const g=new THREE.PlaneGeometry(80,80);
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x2d5a27,roughness:.9}));
+  mesh.rotation.x=-Math.PI/2;mesh.receiveShadow=true;scene.add(mesh);
+  L('5. Ground added','ok');
+  
+  // 工具函数
+  const _m=(c,o={})=>new THREE.MeshStandardMaterial({color:c,metalness:o.m||0,roughness:o.r||.7,...o});
+  const _b=(c,o={})=>new THREE.MeshBasicMaterial({color:c,...o});
+  
+  // 测试：创建简单胶囊体
+  const capsule=new THREE.Mesh(new THREE.CapsuleGeometry(.35,.6,8,12),_m(0xff0000,{m:.3,r:.6}));
+  capsule.position.set(-3,1,0);capsule.castShadow=true;scene.add(capsule);
+  L('6. Simple capsule added','ok');
+  
+  // 测试：用HB风格创建warrior
+  function testWarrior(){
+    const g2=new THREE.Group();
+    function _body(g,s,bc,sc,o={}){
+      const t=new THREE.Mesh(new THREE.BoxGeometry(s*.5,s*.55,s*.3),_m(bc,{m:.2}));t.position.y=s*1;t.castShadow=true;g.add(t);
+      const h=new THREE.Mesh(new THREE.SphereGeometry(s*.22,10,10),_m(sc||0xffcc99));h.position.y=s*1.5;h.castShadow=true;g.add(h);
+      const eM=_b(o.ec||0x222222);
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(s*.04,6,6),eM);e1.position.set(-s*.08,s*1.53,s*.18);g.add(e1);
+      const e2=e1.clone();e2.position.x=s*.08;g.add(e2);
+    }
+    _body(g2,1,0x8b1a1a,0xffcc99,{lc:0x555555});
+    g2.position.set(0,0,0);
+    scene.add(g2);
+    L('7. Warrior model created and added','ok');
+    return g2;
+  }
+  const warrior=testWarrior();
+  
+  // 测试所有ALL_HEROES
+  const {ALL_HEROES}=window.DATA;
+  L('8. ALL_HEROES keys: '+Object.keys(ALL_HEROES).join(', '),'ok');
+  
+  // 渲染
+  renderer.render(scene,camera);
+  L('9. First render done','ok');
+  
+  // 检查scene children
+  L('10. Scene children count: '+scene.children.length,'ok');
+  scene.children.forEach((c,i)=>{
+    L(`  child[${i}]: ${c.type} pos=(${c.position.x.toFixed(1)},${c.position.y.toFixed(1)},${c.position.z.toFixed(1)})`);
+  });
+  
+  // 动画循环
+  function animate(){
+    requestAnimationFrame(animate);
+    warrior.rotation.y+=0.01;
+    renderer.render(scene,camera);
+  }
+  animate();
+  L('11. Animation loop started','ok');
+  
+}catch(e){
+  L('ERROR: '+e.message,'err');
+  L('Stack: '+e.stack,'err');
+}
+</script>
+</body>
+</html>

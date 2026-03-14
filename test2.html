@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>WebGL Test</title></head>
+<body>
+<div id="log" style="white-space:pre;font-family:monospace;padding:20px;font-size:14px;background:#111;color:#0f0;"></div>
+<script>
+function log(msg){document.getElementById('log').textContent += msg + '\n';}
+try{
+  var c=document.createElement('canvas');
+  var gl=c.getContext('webgl2');
+  if(gl){log('WebGL2: OK');log('Renderer: '+gl.getParameter(gl.RENDERER));}
+  else{
+    gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+    if(gl){log('WebGL1: OK');log('Renderer: '+gl.getParameter(gl.RENDERER));}
+    else log('WebGL: NOT AVAILABLE');
+  }
+}catch(e){log('WebGL error: '+e.message);}
+</script>
+<script src="three.min.js"></script>
+<script>
+try{
+  log('\nTHREE loaded: ' + (typeof THREE !== 'undefined'));
+  if(typeof THREE!=='undefined'){
+    log('THREE.REVISION: '+THREE.REVISION);
+    var r=new THREE.WebGLRenderer();
+    log('WebGLRenderer: OK, size='+r.domElement.width+'x'+r.domElement.height);
+    r.dispose();
+  }
+}catch(e){log('THREE error: '+e.message+'\n'+e.stack);}
+</script>
+<script src="data.js"></script>
+<script>
+log('\nwindow.DATA: '+(window.DATA?'OK ('+Object.keys(window.DATA).length+' keys)':'MISSING'));
+</script>
+<script src="systems.js"></script>
+<script>
+log('window.SYS: '+(window.SYS?'OK ('+Object.keys(window.SYS).length+' keys)':'MISSING'));
+</script>
+</body>
+</html>
