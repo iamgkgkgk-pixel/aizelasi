@@ -11,6 +11,11 @@ window._gameLoaded=true;
 if(window._loadTimer)clearTimeout(window._loadTimer);
 
 // ==================== 加载进度 ====================
+const _loadTips=['💡 不同英雄拥有独特的标志技能和技能偏好','⚔️ 战士的旋风斩能在身周持续割草','🔥 法师偏好火系技能，容易组成燃烧流',
+  '❄️ 死骑的凛冬将至可以冻结大范围敌人','🛡️ 天赋树可以永久强化你的英雄属性','⭐ 收集碎片可以为英雄升星，大幅提升属性',
+  '🏹 猎人的多重射击会自动追踪周围所有敌人','💜 牧师的暗言术可以标记敌人并回复生命'];
+let _tipIdx=0;
+setInterval(()=>{const el=document.getElementById('loading-tip');if(el){_tipIdx=(_tipIdx+1)%_loadTips.length;el.style.opacity='0';setTimeout(()=>{el.textContent=_loadTips[_tipIdx];el.style.opacity='1'},300)}},3500);
 function setLoadProgress(pct,text){
   const bar=document.getElementById('loading-bar-fill');
   const txt=document.getElementById('loading-text');
@@ -3848,7 +3853,13 @@ function showResult(victory){
 }
 
 // ==================== 游戏控制 ====================
-window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;document.getElementById('pause-panel').classList.toggle('active',gamePaused)};
+window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;
+  document.getElementById('pause-panel').classList.toggle('active',gamePaused);
+  if(gamePaused){
+    const pk=document.getElementById('pause-kills');if(pk)pk.textContent=S.kills;
+    const pw=document.getElementById('pause-wave');if(pw)pw.textContent=S.wave;
+    const pt=document.getElementById('pause-time');if(pt){const m=Math.floor(gameTime/60);const s=Math.floor(gameTime%60);pt.textContent=m+':'+String(s).padStart(2,'0')}
+  }};
 window.watchAdRevive=function(){if(S.revived)return;S.revived=true;S.hp=S.maxHp;gameActive=true;document.getElementById('result-screen').classList.remove('active')};
 window.watchAdDouble=function(){PD.gold+=S.gold+S.kills*2;PD.totalFrags=(PD.totalFrags||0)+2;SYS.showRewardPopup([{icon:'💰',text:`额外${S.gold+S.kills*2}金币 + 2通用碎片`}]);save()};
 window.backToMenu=function(){
@@ -4047,6 +4058,9 @@ window._arenaFight=function(power){SYS.arenaFight(PD,power)};
 window._joinGuild=function(){const name=prompt('输入公会名称：','艾泽拉斯勇士团');if(name)SYS.joinGuild(PD,name)};
 window._joinRandomGuild=function(){SYS.joinGuild(PD,'银月骑士团')};
 window._guildDonate=function(){SYS.guildDonate(PD)};
+window._guildRaid=function(){SYS.guildRaid(PD)};
+window._guildRank=function(){SYS.guildRank(PD)};
+window._guildBuff=function(){SYS.guildBuff(PD)};
 window._claimAchieve=function(id){SYS.claimAchievement(PD,id)};
 window._claimQuest=function(idx){SYS.claimQuest(PD,idx)};
 // 新增养成系统事件
@@ -4523,9 +4537,40 @@ setLoadProgress(90,'准备主城界面...');
 // 初始化主城
 try{
   SYS.refreshMainMenu(PD);
+  // 生成主城浮动粒子
+  const _pCon=document.getElementById('mm-particles');
+  if(_pCon){for(let i=0;i<15;i++){const p=document.createElement('div');p.className='mm-particle';
+    p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=(-Math.random()*15)+'s';
+    p.style.width=p.style.height=(2+Math.random()*3)+'px';p.style.opacity=.1+Math.random()*.3;_pCon.appendChild(p)}}
 }catch(e){
   console.error('Main menu init error:',e);
 }
+
+// ==================== 新手引导系统 ====================
+(function initGuide(){
+  if(PD.totalGames>0||PD.guideCompleted)return; // 非新玩家跳过
+  const guides=[
+    {target:'nav-btn-main-anchor',text:'<b>欢迎来到艾泽拉斯！</b><br>点击「出战」开始你的第一场冒险吧！',pos:'top'},
+    {target:'heroes-nav',text:'在<b>英雄殿堂</b>切换不同英雄，每个英雄都有独特的标志技能和偏好',pos:'top'},
+  ];
+  let step=0;
+  function showGuide(){
+    if(step>=guides.length){PD.guideCompleted=true;save();return}
+    // 简单延迟显示
+    setTimeout(()=>{
+      const existing=document.querySelector('.guide-tooltip');if(existing)existing.remove();
+      const g=guides[step];
+      const tip=document.createElement('div');tip.className='guide-tooltip'+(g.pos==='top'?' guide-top':'');
+      tip.innerHTML=`<div class="guide-text">${g.text}</div><div class="guide-btn"><button class="guide-skip" onclick="this.closest('.guide-tooltip').remove()">跳过</button><button class="guide-ok" onclick="this.closest('.guide-tooltip').remove()">知道了</button></div>`;
+      tip.style.left='50%';tip.style.transform='translateX(-50%)';tip.style.bottom='120px';
+      document.getElementById('main-menu').appendChild(tip);
+      // 3秒后点击任意位置关闭
+      const handler=()=>{if(tip.parentNode){tip.remove();step++;showGuide()}document.removeEventListener('click',handler)};
+      setTimeout(()=>document.addEventListener('click',handler),500);
+    },1500);
+  }
+  showGuide();
+})();
 
 // 体力恢复定时器
 setInterval(()=>{if(PD.stamina<PD.maxStamina){PD.stamina++;save();const el=document.getElementById('cur-stamina');if(el)el.textContent=PD.stamina}},300000);
@@ -4533,14 +4578,23 @@ setInterval(()=>{if(PD.stamina<PD.maxStamina){PD.stamina++;save();const el=docum
 // 窗口大小变化
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(bloomComposer)bloomComposer.resize(innerWidth,innerHeight)});
 
-// 完成加载 → 显示主城
-setLoadProgress(100,'加载完成！');
+// 完成加载 → 平滑过渡到主城
+setLoadProgress(100,'欢迎回到艾泽拉斯！');
 setTimeout(()=>{
-  document.getElementById('loading-screen').classList.remove('active');
-  document.getElementById('main-menu').classList.add('active');
-  // 启动渲染循环
-  loop();
-  loopStarted=true;
-  console.log('Game loaded successfully!');
+  const loadScreen=document.getElementById('loading-screen');
+  const mainMenu=document.getElementById('main-menu');
+  // 淡出Loading
+  loadScreen.classList.add('fade-out');
+  setTimeout(()=>{
+    loadScreen.classList.remove('active');
+    loadScreen.classList.remove('fade-out');
+    mainMenu.classList.add('active');
+    mainMenu.classList.add('entrance');
+    setTimeout(()=>mainMenu.classList.remove('entrance'),800);
+    // 启动渲染循环
+    loop();
+    loopStarted=true;
+    console.log('Game loaded successfully!');
+  },600);
 },500);
 })();

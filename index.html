@@ -10,19 +10,21 @@
 
 <!-- ==================== 加载界面 ==================== -->
 <div id="loading-screen" class="screen active">
-  <div style="font-size:60px;margin-bottom:20px;animation:float 2s ease-in-out infinite">⚔️</div>
-  <div style="font-size:24px;color:#ffd700;font-weight:bold;margin-bottom:10px">艾泽拉斯幸存者</div>
-  <div style="font-size:12px;color:#8b7daa;letter-spacing:6px;margin-bottom:30px">AZEROTH SURVIVORS</div>
-  <div id="loading-bar-wrap" style="width:200px;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden">
-    <div id="loading-bar-fill" style="width:0%;height:100%;background:linear-gradient(90deg,#ffd700,#ff8c00);border-radius:3px;transition:width .3s"></div>
+  <div class="loading-logo">⚔️</div>
+  <div class="loading-title">艾泽拉斯幸存者</div>
+  <div class="loading-subtitle">AZEROTH SURVIVORS</div>
+  <div class="loading-bar-outer">
+    <div class="loading-bar-inner" id="loading-bar-fill" style="width:0%"></div>
   </div>
-  <div id="loading-text" style="font-size:11px;color:#666;margin-top:10px">正在加载游戏资源...</div>
+  <div id="loading-text" style="font-size:11px;color:rgba(139,125,170,.6);margin-top:12px">正在加载游戏资源...</div>
+  <div class="loading-tip" id="loading-tip">💡 提示：不同英雄拥有独特的标志技能和技能偏好</div>
   <div id="loading-error" style="display:none;color:#ff4444;font-size:13px;margin-top:20px;text-align:center;max-width:300px"></div>
 </div>
 
 <!-- ==================== 主城界面 ==================== -->
 <div id="main-menu" class="screen">
   <div class="mm-bg"></div>
+  <div class="mm-particles" id="mm-particles"></div>
   <div class="mm-header">
     <div class="mm-player-info">
       <div class="mm-avatar" id="mm-avatar">⚔️</div>
@@ -46,6 +48,7 @@
     <div class="mm-hero-preview" id="mm-hero-preview">
       <div class="mm-hero-model" id="mm-hero-model">⚔️</div>
       <div class="mm-hero-name-tag" id="mm-hero-tag">战士</div>
+      <div class="mm-hero-role" id="mm-hero-role">武器战 · 近战AOE</div>
       <div class="mm-hero-power" id="mm-hero-power">⚔️ 战力 0</div>
     </div>
   </div>
@@ -340,8 +343,13 @@
   <!-- 暂停面板 -->
   <div id="pause-panel">
     <div class="pause-title">⏸ 暂停</div>
-    <button class="btn-gold" onclick="togglePause()">继续战斗</button>
-    <button class="btn-sub" onclick="backToMenu()">退出副本</button>
+    <div class="pause-stats" id="pause-stats">
+      <div class="pause-stat"><div class="pause-stat-val" id="pause-kills">0</div><div class="pause-stat-label">击杀</div></div>
+      <div class="pause-stat"><div class="pause-stat-val" id="pause-wave">1</div><div class="pause-stat-label">波次</div></div>
+      <div class="pause-stat"><div class="pause-stat-val" id="pause-time">0:00</div><div class="pause-stat-label">时间</div></div>
+    </div>
+    <button class="btn-gold" onclick="togglePause()">▶️ 继续战斗</button>
+    <button class="btn-sub" onclick="backToMenu()">🚪 退出副本</button>
   </div>
 </div>
 

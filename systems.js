@@ -68,6 +68,9 @@ function refreshMainMenu(PD){
   _testImg.onerror=()=>{heroImgEl.style.backgroundImage='';heroImgEl.textContent=hero.icon};
   _testImg.src=heroImgPath;
   $('mm-hero-tag').textContent=hero.name;
+  // 显示英雄职业
+  const roleEl=$('mm-hero-role');
+  if(roleEl)roleEl.textContent=hero.origin+' · '+hero.role;
   // 显示总战力
   const pwrEl=$('mm-hero-power');
   if(pwrEl){
@@ -94,7 +97,7 @@ function checkDailyReset(PD){
   if(PD.lastDailyReset!==today){
     PD.lastDailyReset=today;
     PD.dailyProgress={games:0,kills:0,bossKills:0,arenaFights:0};
-    PD.arenaCharges=5;PD.drawChances=3;PD.dailyChestsClaimed=0;
+    PD.arenaCharges=5;PD.drawChances=3;PD.dailyChestsClaimed=0;PD.guildRaidDone=false;
     if(PD.lastFirstWinDate!==today)PD.firstWinToday=false;
     // 生成每日任务
     const shuffled=[...QUEST_TEMPLATES].sort(()=>Math.random()-.5);
@@ -329,24 +332,52 @@ function arenaFight(PD,power){
 function renderGuild(PD){
   const body=$('guild-body');
   if(!PD.guildJoined){
-    body.innerHTML=`<div class="guild-empty"><div class="guild-empty-icon">👥</div><div class="guild-empty-text">你还没有加入公会</div>
-      <button class="btn-gold" onclick="window._joinGuild()">创建公会</button>
-      <div style="margin-top:12px"><button class="btn-sub" onclick="window._joinRandomGuild()">加入推荐公会</button></div></div>`;
+    body.innerHTML=`<div class="guild-empty"><div class="guild-empty-icon">👥</div><div class="guild-empty-text">你还没有加入公会<br><span style="font-size:12px;color:#666">加入公会可以获得额外属性加成和专属副本</span></div>
+      <button class="btn-gold" onclick="window._joinGuild()">⚔️ 创建公会</button>
+      <div style="margin-top:12px"><button class="btn-sub" onclick="window._joinRandomGuild()">🔍 加入推荐公会</button></div></div>`;
   }else{
-    body.innerHTML=`<div class="guild-info"><div class="gi-name">⚔️ ${PD.guildName}</div><div class="gi-level">公会等级 Lv.1</div><div class="gi-members">成员 12/30 | 贡献 ${PD.guildContrib}</div></div>
+    const gLv=Math.min(10,Math.floor(PD.guildContrib/500)+1);
+    const gAtkBonus=gLv*2;const gHpBonus=gLv*10;
+    body.innerHTML=`<div class="guild-info">
+      <div class="gi-name">⚔️ ${PD.guildName}</div>
+      <div class="gi-level">公会等级 Lv.${gLv} <span style="font-size:10px;color:#44ff44">（全员攻击+${gAtkBonus} 生命+${gHpBonus}）</span></div>
+      <div class="gi-members">成员 12/30 | 贡献 ${PD.guildContrib}</div>
+      <div style="margin-top:8px;font-size:11px;color:#888">📊 公会排名: #${Math.max(1,50-PD.guildContrib)} / 服务器</div>
+      </div>
       <div class="guild-actions">
-        <div class="ga-btn" onclick="window._guildDonate()"><div class="ga-icon">💰</div><div class="ga-label">捐献(200💰)</div></div>
-        <div class="ga-btn"><div class="ga-icon">⚔️</div><div class="ga-label">公会副本</div></div>
-        <div class="ga-btn"><div class="ga-icon">📊</div><div class="ga-label">排行榜</div></div>
-        <div class="ga-btn"><div class="ga-icon">💬</div><div class="ga-label">公会聊天</div></div>
+        <div class="ga-btn" onclick="window._guildDonate()"><div class="ga-icon">💰</div><div class="ga-label">捐献(200💰)<br><span style="font-size:9px;color:#44ff44">+200贡献</span></div></div>
+        <div class="ga-btn" onclick="window._guildRaid()"><div class="ga-icon">⚔️</div><div class="ga-label">公会副本<br><span style="font-size:9px;color:#ffd700">${PD.guildRaidDone?'✅ 今日已挑战':'可挑战'}</span></div></div>
+        <div class="ga-btn" onclick="window._guildRank()"><div class="ga-icon">📊</div><div class="ga-label">排行榜<br><span style="font-size:9px;color:#aaa">查看排名</span></div></div>
+        <div class="ga-btn" onclick="window._guildBuff()"><div class="ga-icon">🛡️</div><div class="ga-label">公会BUFF<br><span style="font-size:9px;color:#44ddff">Lv.${gLv}加成中</span></div></div>
+      </div>
+      <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);margin-top:8px">
+        <div style="font-size:13px;font-weight:bold;color:#ffd700;margin-bottom:8px">📢 公会公告</div>
+        <div style="font-size:11px;color:#aaa;line-height:1.6">欢迎加入${PD.guildName}！每日捐献可提升公会等级获得属性加成。<br>公会副本每日可挑战1次，全员协力击败Boss获得丰厚奖励。</div>
       </div>`;
   }
 }
-function joinGuild(PD,name){PD.guildJoined=true;PD.guildName=name||'艾泽拉斯勇士团';saveToDisk(PD);renderGuild(PD)}
+function joinGuild(PD,name){PD.guildJoined=true;PD.guildName=name||'艾泽拉斯勇士团';PD.guildRaidDone=false;saveToDisk(PD);renderGuild(PD)}
 function guildDonate(PD){
   if(PD.gold<200){showRewardPopup([{icon:'💰',text:'金币不足'}]);return}
   PD.gold-=200;PD.guildContrib+=200;
-  showRewardPopup([{icon:'👥',text:'+200公会贡献'}]);saveToDisk(PD);renderGuild(PD);refreshMainMenu(PD);
+  showRewardPopup([{icon:'👥',text:'+200公会贡献'},{icon:'⬆️',text:`公会等级 Lv.${Math.min(10,Math.floor(PD.guildContrib/500)+1)}`}]);saveToDisk(PD);renderGuild(PD);refreshMainMenu(PD);
+}
+function guildRaid(PD){
+  if(PD.guildRaidDone){showRewardPopup([{icon:'⚔️',text:'今日已挑战过公会副本'}]);return}
+  PD.guildRaidDone=true;PD.guildContrib+=100;
+  const goldReward=300+Math.floor(Math.random()*200);const fragReward=2+Math.floor(Math.random()*3);
+  PD.gold+=goldReward;PD.totalFrags=(PD.totalFrags||0)+fragReward;
+  showRewardPopup([{icon:'⚔️',text:'公会副本通关！'},{icon:'💰',text:`${goldReward}金币`},{icon:'🧩',text:`${fragReward}碎片`}]);
+  saveToDisk(PD);renderGuild(PD);refreshMainMenu(PD);
+}
+function guildRank(PD){
+  const ranks=['🥇 暗夜精灵守卫团 · 贡献12800','🥈 铁炉堡矿工联盟 · 贡献9500','🥉 暴风城骑士团 · 贡献7200',
+    `4. ⚔️ ${PD.guildName} · 贡献${PD.guildContrib}`,'5. 奥格瑞玛先锋队 · 贡献4100'];
+  showRewardPopup(ranks.map(r=>({icon:'📊',text:r})));
+}
+function guildBuff(PD){
+  const gLv=Math.min(10,Math.floor(PD.guildContrib/500)+1);
+  showRewardPopup([{icon:'🛡️',text:`公会BUFF · Lv.${gLv}`},{icon:'⚔️',text:`全员攻击+${gLv*2}`},{icon:'❤️',text:`全员生命+${gLv*10}`}]);
 }
 
 // ==================== 商城 ====================
@@ -490,7 +521,13 @@ function claimQuest(PD,idx){
 // ==================== 抽奖 ====================
 function renderLuckyDraw(PD){
   const wheel=$('draw-wheel');
-  wheel.innerHTML=DRAW_PRIZES.map((p,i)=>`<span style="position:absolute;transform:rotate(${i*360/DRAW_PRIZES.length}deg) translateY(-80px);font-size:20px">${p.icon}</span>`).join('');
+  const n=DRAW_PRIZES.length;
+  wheel.innerHTML=DRAW_PRIZES.map((p,i)=>{
+    const ang=i*360/n-90;const r=90;
+    const x=130+r*Math.cos(ang*Math.PI/180)-30;
+    const y=130+r*Math.sin(ang*Math.PI/180)-18;
+    return `<div class="draw-prize-item" style="left:${x}px;top:${y}px"><span>${p.icon}</span><small>${p.text.replace(/[0-9]+/,'').trim()}</small></div>`;
+  }).join('');
   $('draw-chances').textContent=PD.drawChances;
 }
 function doLuckyDraw(PD){
@@ -797,7 +834,7 @@ function renderForgeWithEnhance(PD){
 window.SYS={
   loadSave,saveToDisk,createDefaultPD,showRewardPopup,refreshMainMenu,
   renderSignIn,doSignIn,renderHeroes,renderChapters,renderForge,renderForgeWithEnhance,
-  renderArena,arenaFight,renderGuild,joinGuild,guildDonate,
+  renderArena,arenaFight,renderGuild,joinGuild,guildDonate,guildRaid,guildRank,guildBuff,
   renderShop,switchShopTab,buyStamina,buyStaminaFull,renderBattlePass,renderAchievements,claimAchievement,
   renderDailyQuests,claimQuest,renderLuckyDraw,doLuckyDraw,renderChests,
   doFirstCharge,buyBattlePass,
