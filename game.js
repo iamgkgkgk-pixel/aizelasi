@@ -2,9 +2,11 @@
 (function(){
 const {ALL_HEROES,CHAPTERS,SKILL_DB,SKILL_COMBOS,RARITY_NAME,RARITY_COLOR,EQUIPMENT_DB,SIGNIN_REWARDS,NUM,
   HERO_LEVEL,HERO_STAR,STUCK_GUIDE,
+  BUFF_DB,BUFF_MIN_PER_PANEL,BUFF_MAX_PER_PANEL,
   calcXpNeed,calcSkillDmg,calcSkillCd,calcEnemyStats,calcBossStats,rollCrit,calcFinalDmg,isEliteSpawn,
   calcHeroXpNeed,calcHeroLevelBonus} = window.DATA;
 const SYS = window.SYS;
+const SFX = window.SFX || {}; // 音效引擎
 
 // 标记模块已加载
 window._gameLoaded=true;
@@ -1831,6 +1833,10 @@ function spawnEnemy(){
   const pool=types.slice(0,wi+1);const t=Math.random()<.3&&wi>0?pool[wi]:pool[Math.floor(Math.random()*pool.length)];
   // 使用新数值公式计算波次缩放
   const scaled=calcEnemyStats(t,S.wave,ch);
+  // 战力差距倍率：英雄越弱于推荐战力，怪物越强
+  const pgm=S.powerGapMult||1;
+  scaled.hp=Math.round(scaled.hp*pgm);
+  scaled.atk=+(scaled.atk*pgm).toFixed(1);
   const mesh=mkEnemyMesh(t);const a=Math.random()*Math.PI*2,d=18+Math.random()*5;
   const hp=heroMesh?heroMesh.position:new THREE.Vector3();
   mesh.position.set(hp.x+Math.cos(a)*d,0,hp.z+Math.sin(a)*d);scene.add(mesh);
@@ -1949,7 +1955,7 @@ function spawnBoss(cfg){
   aura.rotation.x=-Math.PI/2;aura.position.y=.05;g.add(aura);g.userData.aura=aura;
   const a=Math.random()*Math.PI*2;const hp=heroMesh?heroMesh.position:new THREE.Vector3();
   g.position.set(hp.x+Math.cos(a)*15,0,hp.z+Math.sin(a)*15);scene.add(g);
-  // 波次缩放：普通模式用线性+5%/波，无尽模式用calcBossStats指数缩放
+  // 波次缩放：普通模式用线性+12%/波，无尽模式用calcBossStats指数缩放
   const ch=S.chapter||CHAPTERS.ch1;
   let bossHp,bossAtk;
   if(ch.endlessScale){
@@ -1957,9 +1963,12 @@ function spawnBoss(cfg){
     const scaled=calcBossStats(cfg,bossCount);
     bossHp=scaled.hp;bossAtk=scaled.atk;
   }else{
-    const wm=1+(S.wave-1)*0.05;
+    const wm=1+(S.wave-1)*0.12; // ↑ 0.05→0.12 BOSS缩放更陡
     bossHp=Math.round(cfg.hp*wm);bossAtk=+(cfg.atk*wm).toFixed(1);
   }
+  // BOSS也应用战力差距倍率
+  const pgm=S.powerGapMult||1;
+  bossHp=Math.round(bossHp*pgm);bossAtk=+(bossAtk*pgm).toFixed(1);
   // 构建BOSS阶段数据
   const phases=cfg.phases||[{hpPct:1.0,skills:['charge'],atkMult:1.0,spdMult:1.0,interval:5}];
   const boss={mesh:g,type:{...cfg},
@@ -2253,6 +2262,11 @@ function dmgEnemy(e,d,opts={}){
   if(tb.execute>0&&e.hp<e.maxHp*0.30){finalD*=(1+tb.execute)}
   // 技能伤害加成
   if(tb.skillDmg>0&&opts.isSkill){finalD*=(1+tb.skillDmg)}
+  // ===== 局内BUFF: 技能伤害加成 =====
+  const _bfs=S.buffStats||{};
+  if(_bfs.skillDmg>0&&opts.isSkill){finalD*=(1+_bfs.skillDmg)}
+  // ===== 局内BUFF: 精英/BOSS伤害加成 =====
+  if(_bfs.eliteDmg>0&&(e.isElite||e.isBoss)){finalD*=(1+_bfs.eliteDmg)}
   // 护甲穿透: 无视敌人部分护甲(对BOSS有效)
   if(tb.armorPen>0&&e.armor>0){
     const ignoreArmor=e.armor*tb.armorPen;
@@ -2268,11 +2282,15 @@ function dmgEnemy(e,d,opts={}){
   if(S.equipEffects.storm&&opts.isSkill){finalD*=1.12}
   finalD=Math.max(1,Math.round(finalD));
   e.hp-=finalD;e.hitFlash=.12;showDmg(e.mesh.position,finalD,cr,opts.skillName||null);
+  // 音效：暴击用重音，普通命中用轻音（节流：每60ms最多一次）
+  if(SFX.hit){const _nt=Date.now();if(!dmgEnemy._lastSfx||_nt-dmgEnemy._lastSfx>60){dmgEnemy._lastSfx=_nt;if(cr&&SFX.crit)SFX.crit();else SFX.hit()}}
   // 伤害统计追踪
   trackDmg(finalD,opts.skillName||null,cr);
   // ===== 天赋吸血效果 =====
   // 生命汲取: 造成伤害的一部分转为治疗
   if(tb.leech>0){S.hp=Math.min(S.maxHp,S.hp+finalD*tb.leech)}
+  // ===== 局内BUFF: 吸血 =====
+  if(_bfs.leech>0){S.hp=Math.min(S.maxHp,S.hp+finalD*_bfs.leech)}
   // ===== 天赋暴击冲击波 =====
   // 灭世: 技能暴击时释放冲击波
   if(tb.critWave>0&&cr&&opts.isSkill&&e.mesh){
@@ -2295,6 +2313,10 @@ function dmgEnemy(e,d,opts={}){
 }
 function killEnemy(e){
   const ep=e.mesh.position.clone();const ec=e.type.color;
+  // 击杀音效
+  if(e.isBoss&&SFX.bossKill)SFX.bossKill();
+  else if(e.isElite&&SFX.eliteKill)SFX.eliteKill();
+  else if(SFX.kill)SFX.kill();
   // 基础爆炸粒子
   explosion(ep,ec,e.isBoss?30:e.isElite?18:10);
   // GPU粒子增强死亡效果
@@ -2307,7 +2329,7 @@ function killEnemy(e){
   else if(e.isElite){screenShake(.1,.15);screenFlash('#ffaa00',.1,100);lightBeam(ep,0xffaa00,1.2,.4)}
   else if(Math.random()<.3)screenShake(.03,.06);
   // XP掉落：固定少量球，避免经验膨胀
-  const xpDropCount=e.isBoss?3:e.isElite?2:1;
+  const xpDropCount=e.isBoss?5:e.isElite?3:2; // ↑ 更多XP球，升级更快更爽
   for(let i=0;i<xpDropCount;i++)spawnPickup(e.mesh.position,'xp');
   // 金币掉落：波次缩放
   const goldChance=e.isBoss?1.0:e.isElite?0.8:0.4;
@@ -2330,6 +2352,9 @@ function killEnemy(e){
   if(tb.killHeal>0){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*tb.killHeal)}
   // ===== 天赋: 击杀精英回血 =====
   if(tb.eliteHeal>0&&e.isElite){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*tb.eliteHeal)}
+  // ===== 局内BUFF: 击杀回血 =====
+  const _bfs2=S.buffStats||{};
+  if(_bfs2.killHeal>0){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*_bfs2.killHeal)}
   // 术士被动：诅咒目标死亡爆炸
   if(PD.selectedHero==='warlock'&&e.cursed){
     const splashDmg=e.maxHp*0.15;const splashR=2.5;
@@ -2499,6 +2524,7 @@ function tickRapidKill(dt){
 
 // ==================== 系统2：波次节奏增强 ====================
 function announceWaveEnhanced(n){
+  if(SFX.wave)SFX.wave();
   const gs=document.getElementById('game-screen');
   // 闪光条
   const flash=document.createElement('div');flash.className='wave-flash-line';gs.appendChild(flash);setTimeout(()=>flash.remove(),800);
@@ -2554,7 +2580,6 @@ function spawnLootChest(pos,tier){
   S.pickups.push({mesh:m,type:'chest',tier,life:20});
 }
 function openLootChest(tier){
-  gamePaused=true;
   const table=LOOT_TABLE[tier]||LOOT_TABLE.elite;
   // 加权随机选2-3个奖励
   const numRewards=tier==='boss'?3:2;
@@ -2574,18 +2599,70 @@ function openLootChest(tier){
     else if(r.type==='armorBuff'){S.armor+=r.amount;if(S.growthLog)S.growthLog.lootArmor+=r.amount}
     else if(r.type==='allBuff'){const atkGain=Math.round(S.attack*r.amount);const hpGain=Math.round(S.maxHp*r.amount);S.attack=Math.round(S.attack*(1+r.amount));S.maxHp=Math.round(S.maxHp*(1+r.amount));S.hp=Math.min(S.maxHp,S.hp);S.speed+=(r.amount*2);if(S.growthLog){S.growthLog.lootAtk+=atkGain;S.growthLog.lootHp+=hpGain;S.growthLog.lootSpd+=r.amount*2}}
   });
-  // 显示开箱UI
+  // ===== 精英：不暂停 — 自动领取+侧边悬浮通知 =====
+  if(tier!=='boss'){
+    showLootToast(rewards,tier);
+    if(SFX.loot)SFX.loot();
+    if(heroMesh)emitGpuBurst(heroMesh.position,0xff8800,12,3,2,.6,{gravity:4});
+    screenFlash('#ff8800',.08,80);
+    return;
+  }
+  // ===== BOSS：全屏弹窗（保留打断） =====
+  gamePaused=true;
+  if(SFX.loot)SFX.loot();
   const popup=document.getElementById('loot-popup');
   const itemsHtml=rewards.map(r=>`<div class="loot-item ${r.rarity||''}""><div class="loot-item-icon">${r.icon}</div><div class="loot-item-text">${r.text}</div></div>`).join('');
-  popup.innerHTML=`<div class="loot-chest-popup" onclick="closeLootPopup()"><div class="loot-chest-icon">${tier==='boss'?'👑':'📦'}</div><div class="loot-chest-title">${tier==='boss'?'BOSS 战利品':'精英战利品'}</div><div class="loot-items">${itemsHtml}</div><div class="btn-gold loot-btn" style="padding:10px 30px;font-size:14px">收下战利品</div></div>`;
+  popup.innerHTML=`<div class="loot-chest-popup" onclick="closeLootPopup()"><div class="loot-chest-icon">👑</div><div class="loot-chest-title">BOSS 战利品</div><div class="loot-items">${itemsHtml}</div><div class="btn-gold loot-btn" style="padding:10px 30px;font-size:14px">收下战利品</div></div>`;
   popup.style.display='block';
-  // GPU粒子庆祝
   if(heroMesh)emitGpuBurst(heroMesh.position,0xffd700,20,5,3,.8,{gravity:4});
   screenFlash('#ffd700',.15,150);
 }
 window.closeLootPopup=function(){
   document.getElementById('loot-popup').style.display='none';gamePaused=false;
 };
+// ===== 精英战利品侧边悬浮通知（不暂停游戏） =====
+let _lootToastQueue=[];
+let _lootToastActive=0;
+const LOOT_TOAST_MAX=3; // 最多同时显示3条
+function showLootToast(rewards,tier){
+  // 获取或创建通知容器
+  let container=document.getElementById('loot-toast-container');
+  if(!container){
+    container=document.createElement('div');container.id='loot-toast-container';container.className='loot-toast-container';
+    document.getElementById('game-screen').appendChild(container);
+  }
+  // 如果已有太多通知，合并显示
+  if(_lootToastActive>=LOOT_TOAST_MAX){
+    // 找到最后一条通知追加内容
+    const lastToast=container.lastElementChild;
+    if(lastToast){
+      const extra=document.createElement('div');extra.className='loot-toast-extra';
+      extra.textContent=`+${rewards.map(r=>r.text).join(' ')}`;
+      lastToast.querySelector('.loot-toast-body').appendChild(extra);
+    }
+    return;
+  }
+  const toast=document.createElement('div');toast.className='loot-toast';
+  // 奖励图标+文字
+  const itemsStr=rewards.map(r=>`<span class="loot-toast-reward"><span class="ltr-icon">${r.icon}</span>${r.text}</span>`).join('');
+  toast.innerHTML=`<div class="loot-toast-header"><span class="loot-toast-badge">📦</span><span class="loot-toast-label">精英掉落</span></div><div class="loot-toast-body">${itemsStr}</div><div class="loot-toast-timer"></div>`;
+  container.appendChild(toast);
+  _lootToastActive++;
+  // 入场动画后自动消失
+  requestAnimationFrame(()=>toast.classList.add('show'));
+  const duration=2500;
+  // 进度条动画
+  const timerBar=toast.querySelector('.loot-toast-timer');
+  if(timerBar)timerBar.style.transition=`width ${duration}ms linear`;
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{if(timerBar)timerBar.style.width='0%'})});
+  setTimeout(()=>{
+    toast.classList.add('hide');
+    setTimeout(()=>{
+      if(toast.parentNode)toast.parentNode.removeChild(toast);
+      _lootToastActive=Math.max(0,_lootToastActive-1);
+    },400);
+  },duration);
+}
 
 // ==================== 系统4：伤害统计追踪 ====================
 let dmgStats={total:0,maxHit:0,maxHitSkill:'',skillDmg:{},basicAtkDmg:0,critCount:0,totalHits:0};
@@ -2815,7 +2892,15 @@ function processSkills(dt){
   // 辅助函数：触发施法动画 + 重置技能CD
   function triggerCastAnim(){if(heroMesh&&heroMesh.userData.anim&&heroMesh.userData.anim.attackTimer<=0){
     heroMesh.userData.anim.state='cast';heroMesh.userData.anim.attackTimer=0.4}}
-  function resetCd(k,sk,l){skillTimers[k]=calcSkillCd(sk,l);triggerCastAnim()}
+  function resetCd(k,sk,l){
+    let cd=calcSkillCd(sk,l);
+    // 局内BUFF: 技能CD减少
+    const _bfCd=S.buffStats||{};
+    if(_bfCd.skillCd>0)cd*=(1-Math.min(0.4,_bfCd.skillCd)); // 最多减40%CD
+    skillTimers[k]=cd;triggerCastAnim();
+    // 播放技能音效
+    if(SFX.skill)SFX.skill(k);
+  }
   // 🔥 火球术 —— 带火焰拖尾的炽热弹幕
   if(hasSkill('fireball')){const k='fireball';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('fireball');const sk=skData('fireball');
@@ -3175,18 +3260,56 @@ function processSkills(dt){
       S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(p)<impactR)dmgEnemy(e,dmg,{isFireDmg:true,isSkill:true})})
     },1500)}}
   // ===== 10个英雄标志技能 (signature) — 开局自动获得·可升级 =====
-  // 🌀 战士·旋风斩 — 身周旋风持续割草
+  // 🌀 战士·旋风斩 — 旋转斧刃割草
   if(hasSkill('sig_whirlwind')){const k='sig_whirlwind';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_whirlwind');const sk=skData('sig_whirlwind');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const r=sk.radius+(l-1)*sk.radiusPerLv;
     const hits=sk.spinHits+(l-1)*sk.spinHitsPerLv;
-    for(let t=0;t<hits;t++){setTimeout(()=>{if(!gameActive)return;
-      aoeEffect(hp,r,0xcc3333,.25);screenShake(.02,.04);
-      S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r)dmgEnemy(e,dmg,{isSkill:true,skillName:'旋风斩'})})
-    },t*200)}}}
-  // 🔥 法师·烈焰风暴 — 区域持续火焰伤害
+    // --- 3D旋转斧刃视觉 ---
+    const bladeCount=2+Math.floor(l/2);const bladeGroup=new THREE.Group();bladeGroup.position.copy(hp);bladeGroup.position.y=0.8;
+    for(let b=0;b<bladeCount;b++){
+      const ang=(b/bladeCount)*Math.PI*2;
+      // 斧刃：扁平锥体
+      const bladeMat=new THREE.MeshStandardMaterial({color:0xcc4444,emissive:0xff2200,emissiveIntensity:1.2,metalness:0.8,roughness:0.2,transparent:true,opacity:0.9});
+      const blade=new THREE.Mesh(new THREE.ConeGeometry(0.12,r*0.6,3),bladeMat);
+      blade.rotation.z=Math.PI/2;blade.position.set(Math.cos(ang)*r*0.4,0,Math.sin(ang)*r*0.4);blade.rotation.y=ang;
+      bladeGroup.add(blade);
+      // 斧刃拖尾光弧
+      const trailMat=new THREE.MeshBasicMaterial({color:0xff4444,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+      const trail=new THREE.Mesh(new THREE.PlaneGeometry(r*0.5,0.15),trailMat);
+      trail.position.copy(blade.position);trail.rotation.y=ang+Math.PI/2;bladeGroup.add(trail);
+    }
+    // 中心旋涡气流环
+    const vortexMat=new THREE.MeshBasicMaterial({color:0xff6644,transparent:true,opacity:0.15,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const vortex=new THREE.Mesh(new THREE.RingGeometry(r*0.2,r*0.9,24),vortexMat);vortex.rotation.x=-Math.PI/2;bladeGroup.add(vortex);
+    scene.add(bladeGroup);
+    // 金属火花粒子
+    emitGpuBurst({x:hp.x,y:0.8,z:hp.z},0xff6633,8+l*2,3,3,0.2,{gravity:6});
+    screenShake(.04,.06);
+    // 旋转动画 + 伤害tick
+    const spinDur=hits*0.2;let spinT=0;
+    const spinFn=()=>{if(!gameActive){scene.remove(bladeGroup);return}
+      spinT+=0.016;bladeGroup.rotation.y+=0.4;
+      // 每次旋转过半圈判定伤害
+      const hitIdx=Math.floor(spinT/0.2);
+      if(hitIdx<hits&&spinT-hitIdx*0.2<0.02){
+        S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r){
+          dmgEnemy(e,dmg,{isSkill:true,skillName:'旋风斩'});
+          // 击中金属火花
+          emitGpuBurst(e.mesh.position,0xffaa44,2,2,1.5,0.1,{gravity:8})}});
+        screenShake(.02,.03);
+      }
+      // 拖尾缩小
+      bladeGroup.children.forEach(c=>{if(c.material&&c.material.opacity!==undefined)c.material.opacity*=0.995});
+      if(spinT>=spinDur){
+        // 结束：斧刃飞散
+        emitGpuBurst({x:hp.x,y:0.8,z:hp.z},0xcc3333,6,4,3,0.15,{gravity:5});
+        scene.remove(bladeGroup);return}
+      requestAnimationFrame(spinFn)};
+    requestAnimationFrame(spinFn);}}
+  // 🔥 法师·烈焰风暴 — 火焰柱阵列喷射
   if(hasSkill('sig_firestorm')){const k='sig_firestorm';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_firestorm');const sk=skData('sig_firestorm');
     resetCd(k,sk,l);
@@ -3194,23 +3317,97 @@ function processSkills(dt){
     const r=sk.radius+(l-1)*sk.radiusPerLv;
     const dur=sk.duration+(l-1)*sk.durationPerLv;
     const ticks=Math.floor(dur/sk.tickRate);
-    const t=nearest(hp,15);const p=t?t.mesh.position.clone():hp.clone();
-    aoeEffect(p,r,0xff6600,.6);
+    const t=nearest(hp,15);const center=t?t.mesh.position.clone():hp.clone();
+    // --- 火焰柱阵列视觉 ---
+    const pillarCount=4+l;const pillars=[];
+    for(let pi=0;pi<pillarCount;pi++){
+      const ang=(pi/pillarCount)*Math.PI*2+Math.random()*0.5;
+      const dist=Math.random()*r*0.7;
+      const px=center.x+Math.cos(ang)*dist,pz=center.z+Math.sin(ang)*dist;
+      // 火焰柱：着色器发光圆柱
+      const pillarH=1.5+Math.random()*2;
+      const pillarGeo=new THREE.CylinderGeometry(0.15+Math.random()*0.1,0.3+Math.random()*0.1,pillarH,6);
+      const pillarMat=new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending});
+      const pillar=new THREE.Mesh(pillarGeo,pillarMat);pillar.position.set(px,pillarH/2,pz);
+      // 内核亮芯
+      const coreMat=new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending});
+      const core=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.15,pillarH*0.8,4),coreMat);
+      pillar.add(core);
+      // 顶部火焰Sprite
+      const topSpr=new THREE.Sprite(new THREE.SpriteMaterial({color:0xff4400,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending}));
+      topSpr.position.y=pillarH/2;topSpr.scale.set(0.8,0.8,1);pillar.add(topSpr);
+      scene.add(pillar);pillars.push({mesh:pillar,baseH:pillarH,born:pi*0.08});
+    }
+    // 地面灼烧圈
+    const burnRing=new THREE.Mesh(new THREE.RingGeometry(0.3,r,20),
+      new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
+    burnRing.rotation.x=-Math.PI/2;burnRing.position.set(center.x,0.05,center.z);scene.add(burnRing);
+    addDynLight(center,0xff4400,3,8,dur);
+    screenFlash('#ff440022',.08,100);
+    // 持续tick伤害 + 火焰柱动画
+    let fireT=0;
+    const fireFn=()=>{if(!gameActive){pillars.forEach(p=>scene.remove(p.mesh));scene.remove(burnRing);return}
+      fireT+=0.016;
+      // 火焰柱脉动动画
+      pillars.forEach(p=>{
+        const age=fireT-p.born;if(age<0)return;
+        const pulse=1+Math.sin(age*8)*0.15;
+        p.mesh.scale.set(pulse,1+Math.sin(age*5)*0.1,pulse);
+        p.mesh.material.opacity=Math.max(0,0.7*(1-fireT/(dur+0.3)));
+        // 上升火星粒子
+        if(Math.random()<0.15)emitGpuP(p.mesh.position,Math.random()<0.5?0xff6600:0xffaa00,{vy:3+Math.random()*2,vx:(Math.random()-0.5)*1.5,vz:(Math.random()-0.5)*1.5,life:0.4,size:1.5,gravity:-2,shrink:true});
+      });
+      burnRing.material.opacity=Math.max(0,0.2*(1-fireT/dur));
+      if(fireT>=dur+0.3){pillars.forEach(p=>scene.remove(p.mesh));scene.remove(burnRing);return}
+      requestAnimationFrame(fireFn)};
+    requestAnimationFrame(fireFn);
+    // 伤害tick
     for(let i=0;i<ticks;i++)setTimeout(()=>{if(!gameActive)return;
-      emitGpuBurst({x:p.x,y:.5,z:p.z},0xff4400,3,2,2,.15,{gravity:4});
-      S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(p)<r)dmgEnemy(e,dmg,{isSkill:true,isFireDmg:true,skillName:'烈焰风暴'})})
+      S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(new THREE.Vector3(center.x,0,center.z))<r)dmgEnemy(e,dmg,{isSkill:true,isFireDmg:true,skillName:'烈焰风暴'})})
     },i*sk.tickRate*1000)}}
-  // 🏹 猎人·多重射击 — 一圈追踪箭矢
+  // 🏹 猎人·多重射击 — 能量弓弦+锥体箭矢齐射
   if(hasSkill('sig_multishot')){const k='sig_multishot';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_multishot');const sk=skData('sig_multishot');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const count=sk.arrowCount+(l-1)*sk.arrowCountPerLv;
     const targets=nearestN(hp,18,count);
-    if(targets.length>0){targets.forEach(t=>fireProjectile(hp,t.mesh.position,0x88ff44,dmg,.12,sk.projSpeed,{trail:'leaf',trailColor:0x66cc22,isSkill:true,skillName:'多重射击',homing:true}))}
-    else{for(let i=0;i<count;i++){const ang=(i/count)*Math.PI*2;const tp={x:hp.x+Math.cos(ang)*12,y:0,z:hp.z+Math.sin(ang)*12};
-      fireProjectile(hp,tp,0x88ff44,dmg,.12,sk.projSpeed,{trail:'leaf',trailColor:0x66cc22,isSkill:true,skillName:'多重射击'})}}}}
-  // 💜 牧师·暗言术 — 标记敌人持续暗影伤害+回血
+    // --- 能量弓弦蓄力视觉 ---
+    const bowGroup=new THREE.Group();bowGroup.position.copy(hp);bowGroup.position.y=1.2;
+    // 弓弦能量弧
+    const bowCurve=new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(-0.8,0.5,0),new THREE.Vector3(0,0,-0.6),new THREE.Vector3(0.8,0.5,0));
+    const bowTube=new THREE.Mesh(new THREE.TubeGeometry(bowCurve,12,0.03,4,false),
+      new THREE.MeshBasicMaterial({color:0x66ff66,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending}));
+    bowGroup.add(bowTube);
+    // 弦光
+    const stringMat=new THREE.MeshBasicMaterial({color:0xaaffaa,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending});
+    const stringGeo=new THREE.CylinderGeometry(0.01,0.01,1.2,4);
+    const bowStr=new THREE.Mesh(stringGeo,stringMat);bowStr.position.set(0,0.5,-0.1);bowStr.rotation.z=Math.PI/6;bowGroup.add(bowStr);
+    scene.add(bowGroup);
+    // 蓄力绿色粒子旋涡
+    emitGpuBurst({x:hp.x,y:1.2,z:hp.z},0x88ff44,6,2,1.5,0.15,{gravity:1});
+    // 短暂蓄力后释放箭矢
+    setTimeout(()=>{if(!gameActive){scene.remove(bowGroup);return}
+      scene.remove(bowGroup);
+      // 释放闪光
+      emitGpuBurst({x:hp.x,y:1.2,z:hp.z},0xccffaa,10,3,2,0.1,{gravity:3});
+      screenShake(.02,.04);
+      if(targets.length>0){
+        targets.forEach((t,i)=>{
+          setTimeout(()=>{if(!gameActive)return;
+            fireProjectile(hp,t.mesh.position,0x88ff44,dmg,.15,sk.projSpeed,{trail:'leaf',trailColor:0x66cc22,isSkill:true,skillName:'多重射击',homing:true,
+              onHit:function(){
+                // 箭矢钉地：地面绿色震波纹
+                emitGpuBurst(t.mesh.position,0x88ff44,3,2,1.5,0.08,{gravity:6});
+              }});
+          },i*40); // 连珠射击间隔
+        });
+      }else{
+        for(let i=0;i<count;i++){const ang=(i/count)*Math.PI*2;const tp={x:hp.x+Math.cos(ang)*12,y:0,z:hp.z+Math.sin(ang)*12};
+          fireProjectile(hp,tp,0x88ff44,dmg,.15,sk.projSpeed,{trail:'leaf',trailColor:0x66cc22,isSkill:true,skillName:'多重射击'})}}
+    },120);}}
+  // 💜 牧师·暗言术 — 暗影锁链+灵魂吸取
   if(hasSkill('sig_shadowword')){const k='sig_shadowword';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_shadowword');const sk=skData('sig_shadowword');
     resetCd(k,sk,l);
@@ -3219,13 +3416,61 @@ function processSkills(dt){
     const dur=sk.markDur+(l-1)*sk.markDurPerLv;
     const targets=nearestN(hp,12,markN);
     const ticks=Math.floor(dur/0.5);
-    targets.forEach(t=>{aoeEffect(t.mesh.position,1,0x9966cc,.3);
+    // --- 暗影锁链视觉 ---
+    const chainGroup=new THREE.Group();scene.add(chainGroup);
+    const chainMeshes=[];
+    targets.forEach((t,idx)=>{
+      // 暗影标记：头顶暗紫符文旋转
+      const runeMat=new THREE.MeshBasicMaterial({color:0xbb66ff,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+      const rune=new THREE.Mesh(new THREE.RingGeometry(0.2,0.4,6),runeMat);
+      rune.position.copy(t.mesh.position);rune.position.y=2.2;rune.rotation.x=-Math.PI/2;
+      chainGroup.add(rune);
+      // 锁链连接：从英雄到目标的暗影管
+      const from=hp.clone();from.y=1;const to=t.mesh.position.clone();to.y=1.2;
+      const mid=from.clone().add(to).multiplyScalar(0.5);mid.y+=1.5;
+      const curve=new THREE.QuadraticBezierCurve3(from,mid,to);
+      const tubeMat=new THREE.MeshBasicMaterial({color:0x9944cc,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending});
+      const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.04,4,false),tubeMat);
+      chainGroup.add(tube);
+      // 外层暗影光晕管
+      const outerMat=new THREE.MeshBasicMaterial({color:0x6622aa,transparent:true,opacity:0.12,blending:THREE.AdditiveBlending});
+      const outer=new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.15,4,false),outerMat);
+      chainGroup.add(outer);
+      chainMeshes.push({rune,tube,outer,target:t});
+      // 标记暗影粒子爆发
+      emitGpuBurst(t.mesh.position,0xbb88ff,4,1.5,1.5,0.1,{gravity:2});
+    });
+    // 中心暗影球
+    const orbMat=new THREE.MeshBasicMaterial({color:0x9966cc,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending});
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8),orbMat);
+    orb.position.copy(hp);orb.position.y=1.2;chainGroup.add(orb);
+    addDynLight(hp,0x9944cc,2,6,dur);
+    // 持续动画：符文旋转+灵魂粒子从敌人流向英雄
+    let swT=0;
+    const swFn=()=>{if(!gameActive){scene.remove(chainGroup);return}
+      swT+=0.016;
+      chainMeshes.forEach(cm=>{
+        cm.rune.rotation.z+=0.06;
+        cm.rune.material.opacity=Math.max(0,0.6*(1-swT/dur));
+        cm.tube.material.opacity=Math.max(0,0.4*(1-swT/dur));
+        cm.outer.material.opacity=Math.max(0,0.12*(1-swT/dur));
+        // 灵魂粒子从敌人流向英雄
+        if(Math.random()<0.2&&cm.target.hp>0){
+          const ep=cm.target.mesh.position;
+          emitGpuP({x:ep.x,y:1.5,z:ep.z},0xcc88ff,{
+            vx:(hp.x-ep.x)*1.5,vy:1,vz:(hp.z-ep.z)*1.5,life:0.5,size:2,gravity:0,shrink:true});}
+      });
+      orb.material.opacity=0.3+Math.sin(swT*6)*0.2;orb.scale.setScalar(1+Math.sin(swT*4)*0.1);
+      if(swT>=dur){scene.remove(chainGroup);return}
+      requestAnimationFrame(swFn)};
+    requestAnimationFrame(swFn);
+    // DOT伤害tick
+    targets.forEach(t=>{
       for(let i=0;i<ticks;i++)setTimeout(()=>{if(!gameActive||!t||t.hp<=0)return;
         dmgEnemy(t,dmg,{isSkill:true,isDot:true,skillName:'暗言术'});
         S.hp=Math.min(S.maxHp,S.hp+dmg*sk.healPct);
-        emitGpuBurst(t.mesh.position,0xbb88ff,2,1,1,.1,{gravity:3})
       },i*500)})}}
-  // 🌑 盗贼·影舞 — 瞬移暴击连击
+  // 🌑 盗贼·影舞 — 残影分身瞬移连击
   if(hasSkill('sig_shadowdance')){const k='sig_shadowdance';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_shadowdance');const sk=skData('sig_shadowdance');
     resetCd(k,sk,l);
@@ -3233,12 +3478,43 @@ function processSkills(dt){
     const strikes=sk.strikeCount+(l-1)*sk.strikeCountPerLv;
     const invDur=sk.invincDur+(l-1)*sk.invincDurPerLv;
     S.passiveStacks.invincible=(S.passiveStacks.invincible||0)+invDur;
+    // --- 残影分身视觉 ---
+    // 消失烟雾
+    emitGpuBurst({x:hp.x,y:0.8,z:hp.z},0x332244,8,2,2,0.15,{gravity:2});
     for(let i=0;i<strikes;i++){setTimeout(()=>{if(!gameActive)return;
-      const t=nearest(hp,12);if(t&&t.hp>0){
-        dmgEnemy(t,dmg,{isSkill:true,bonusCrit:1.0,bonusCritDmg:0.5,skillName:'影舞'});
-        explosion(t.mesh.position,0x7722cc,5);lightBeam(t.mesh.position,0x7722cc,.6,.15);
-        screenShake(.03,.05)}},i*150)}}}
-  // 🌊 萨满·图腾风暴 — 同时放三种图腾
+      const t=nearest(hp,12);if(!t||t.hp<=0)return;
+      const tp=t.mesh.position;
+      // 在目标位置生成残影（半透明暗紫色剪影）
+      const ghostMat=new THREE.MeshBasicMaterial({color:0x5522aa,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending});
+      const ghost=new THREE.Mesh(new THREE.BoxGeometry(0.4,1.4,0.2),ghostMat);
+      // 残影出现在目标背后
+      const dir=new THREE.Vector3().subVectors(tp,hp).normalize();
+      ghost.position.set(tp.x+dir.x*0.5,0.7,tp.z+dir.z*0.5);
+      ghost.lookAt(tp);scene.add(ghost);
+      // X形刀光斩痕
+      const slashMat=new THREE.MeshBasicMaterial({color:0xaa44ff,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+      const slash1=new THREE.Mesh(new THREE.PlaneGeometry(0.08,1.8),slashMat);
+      slash1.position.copy(tp);slash1.position.y=1;slash1.rotation.z=Math.PI/4;
+      const slash2=new THREE.Mesh(new THREE.PlaneGeometry(0.08,1.8),slashMat.clone());
+      slash2.position.copy(tp);slash2.position.y=1;slash2.rotation.z=-Math.PI/4;
+      scene.add(slash1);scene.add(slash2);
+      // 暗影粒子从斩击点飞散
+      emitGpuBurst(tp,0x7744cc,4,2.5,2,0.08,{gravity:4});
+      // 伤害
+      dmgEnemy(t,dmg,{isSkill:true,bonusCrit:1.0,bonusCritDmg:0.5,skillName:'影舞'});
+      screenShake(.03,.05);
+      // 残影和刀光渐隐
+      let fadeT=0;
+      const fadeFn=()=>{fadeT+=0.016;
+        const a=1-fadeT/0.3;
+        ghost.material.opacity=Math.max(0,0.5*a);ghost.position.y+=0.03;
+        slash1.material.opacity=Math.max(0,0.7*a);slash1.scale.x=1+fadeT*3;
+        slash2.material.opacity=Math.max(0,0.7*a);slash2.scale.x=1+fadeT*3;
+        if(fadeT>=0.3){scene.remove(ghost);scene.remove(slash1);scene.remove(slash2);return}
+        requestAnimationFrame(fadeFn)};
+      requestAnimationFrame(fadeFn);
+    },i*150)}}}
+  // 🌊 萨满·图腾风暴 — 3D图腾柱+元素漩涡
   if(hasSkill('sig_totemstorm')){const k='sig_totemstorm';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_totemstorm');const sk=skData('sig_totemstorm');
     resetCd(k,sk,l);
@@ -3246,72 +3522,370 @@ function processSkills(dt){
     const r=sk.totemRadius+(l-1)*sk.totemRadPerLv;
     const dur=sk.totemDur+(l-1)*sk.totemDurPerLv;
     const ticks=Math.floor(dur/0.5);
-    const colors=[0xff4400,0x44ff44,0x44aaff];
-    for(let c=0;c<3;c++){const ang=(c/3)*Math.PI*2;const tp={x:hp.x+Math.cos(ang)*2,y:0,z:hp.z+Math.sin(ang)*2};
-      aoeEffect(tp,r*.5,colors[c],.4);
+    const totemColors=[0xff4400,0x44ff44,0x44aaff];
+    const totemEmit=[0xff2200,0x22cc22,0x2288dd];
+    const totemNames=['🔥','💧','⚡'];
+    const totemGroup=new THREE.Group();scene.add(totemGroup);
+    const totems=[];
+    for(let c=0;c<3;c++){
+      const ang=(c/3)*Math.PI*2;
+      const tx=hp.x+Math.cos(ang)*2.5,tz=hp.z+Math.sin(ang)*2.5;
+      // 3D图腾柱：方柱+顶部元素球+底座
+      const pillarGeo=new THREE.BoxGeometry(0.35,1.6,0.35);
+      const pillarMat=new THREE.MeshStandardMaterial({color:0x8B4513,roughness:0.8,metalness:0.1});
+      const pillar=new THREE.Mesh(pillarGeo,pillarMat);pillar.position.set(tx,0.8,tz);pillar.castShadow=true;
+      totemGroup.add(pillar);
+      // 图腾面部雕纹（前面板）
+      const faceMat=new THREE.MeshBasicMaterial({color:totemColors[c],transparent:true,opacity:0.6,blending:THREE.AdditiveBlending});
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(0.25,0.5),faceMat);
+      face.position.z=0.18;face.position.y=0.2;pillar.add(face);
+      // 顶部元素球
+      const orbMat=new THREE.MeshStandardMaterial({color:totemColors[c],emissive:totemEmit[c],emissiveIntensity:1.5,transparent:true,opacity:0.8});
+      const orb=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,8),orbMat);
+      orb.position.y=1;pillar.add(orb);
+      // 元素光晕Sprite
+      const haloMat=new THREE.SpriteMaterial({color:totemColors[c],transparent:true,opacity:0.3,blending:THREE.AdditiveBlending});
+      const halo=new THREE.Sprite(haloMat);halo.scale.set(1.2,1.2,1);halo.position.y=1;pillar.add(halo);
+      // 底座圆环
+      const baseMat=new THREE.MeshBasicMaterial({color:totemColors[c],transparent:true,opacity:0.15,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+      const base=new THREE.Mesh(new THREE.RingGeometry(0.3,r*0.6,16),baseMat);
+      base.rotation.x=-Math.PI/2;base.position.set(tx,0.05,tz);totemGroup.add(base);
+      totems.push({pillar,orb,halo,base,x:tx,z:tz,type:c});
+      // 升起动画
+      pillar.scale.y=0;pillar.position.y=0;
+      addDynLight({x:tx,y:1.5,z:tz},totemColors[c],1.5,5,dur);
+    }
+    // 图腾升起+元素效果动画
+    let totT=0;
+    const totFn=()=>{if(!gameActive){scene.remove(totemGroup);return}
+      totT+=0.016;
+      totems.forEach(tm=>{
+        // 升起动画
+        const rise=Math.min(1,totT*3);
+        tm.pillar.scale.y=rise;tm.pillar.position.y=0.8*rise;
+        // 元素球脉动
+        const pulse=1+Math.sin(totT*5+tm.type*2)*0.2;
+        tm.orb.scale.setScalar(pulse);
+        tm.halo.material.opacity=0.2+Math.sin(totT*4+tm.type)*0.15;
+        tm.base.material.opacity=Math.max(0,0.15*(1-totT/dur));
+        // 元素粒子效果（各不相同）
+        if(Math.random()<0.1){
+          const pos={x:tm.x,y:1.8,z:tm.z};
+          if(tm.type===0)emitGpuP(pos,0xff6600,{vy:2+Math.random(),vx:(Math.random()-0.5)*2,vz:(Math.random()-0.5)*2,life:0.3,size:1.5,gravity:-1,shrink:true}); // 火星上升
+          else if(tm.type===1)emitGpuP(pos,0x88ffcc,{vy:-0.5,vx:(Math.random()-0.5),vz:(Math.random()-0.5),life:0.5,size:2,gravity:1,shrink:true}); // 水滴下落
+          else emitGpuP(pos,0x88ccff,{vy:1+Math.random()*2,vx:(Math.random()-0.5)*3,vz:(Math.random()-0.5)*3,life:0.2,size:1,gravity:0,shrink:true}); // 电花四射
+        }
+      });
+      if(totT>=dur){
+        // 图腾消散爆炸
+        totems.forEach(tm=>emitGpuBurst({x:tm.x,y:1,z:tm.z},totemColors[tm.type],5,2,2,0.2,{gravity:4}));
+        scene.remove(totemGroup);return}
+      requestAnimationFrame(totFn)};
+    requestAnimationFrame(totFn);
+    // 伤害tick
+    for(let c=0;c<3;c++){const ang=(c/3)*Math.PI*2;
+      const tp={x:hp.x+Math.cos(ang)*2.5,y:0,z:hp.z+Math.sin(ang)*2.5};
       for(let i=0;i<ticks;i++)setTimeout(()=>{if(!gameActive)return;
         if(c===0){S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(new THREE.Vector3(tp.x,0,tp.z))<r)dmgEnemy(e,dmg*.5,{isSkill:true,isFireDmg:true,skillName:'图腾风暴'})})}
         else if(c===1){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*0.008)}
         else{const targets=S.enemies.filter(e=>e.hp>0&&e.mesh.position.distanceTo(new THREE.Vector3(tp.x,0,tp.z))<r*1.2);
           if(targets.length>0){const et=targets[Math.floor(Math.random()*targets.length)];lightningBolt(tp,et.mesh.position,0x44aaff,.03,4);dmgEnemy(et,dmg*.6,{isSkill:true,skillName:'图腾风暴'})}}
       },i*500)}}}
-  // ❄️ 死骑·凛冬将至 — 冰霜冲击波冻结
+  // ❄️ 死骑·凛冬将至 — 冰刺裂地阵列
   if(hasSkill('sig_wintercoming')){const k='sig_wintercoming';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_wintercoming');const sk=skData('sig_wintercoming');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const r=sk.freezeRadius+(l-1)*sk.freezeRadPerLv;
     const fDur=sk.freezeDur+(l-1)*sk.freezeDurPerLv;
-    aoeEffect(hp,r,0x4488cc,.5);iceShatter(hp,r*.6,10+l*2);screenShake(.06,.1);
+    // --- 冰刺裂地视觉 ---
+    const iceGroup=new THREE.Group();scene.add(iceGroup);
+    const spikeCount=8+l*2;
+    // 地面冰裂纹（从中心向外的裂缝线条）
+    const crackMat=new THREE.MeshBasicMaterial({color:0x88ddff,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    for(let ci=0;ci<6;ci++){
+      const cAng=ci/6*Math.PI*2+Math.random()*0.3;
+      const crackLen=r*0.6+Math.random()*r*0.3;
+      const crack=new THREE.Mesh(new THREE.PlaneGeometry(0.06,crackLen),crackMat.clone());
+      crack.rotation.x=-Math.PI/2;crack.rotation.z=cAng;
+      crack.position.set(hp.x+Math.cos(cAng)*crackLen*0.5,0.06,hp.z+Math.sin(cAng)*crackLen*0.5);
+      iceGroup.add(crack);
+    }
+    // 中心冰霜冲击圆（向外扩散）
+    const waveMat=new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const wave=new THREE.Mesh(new THREE.RingGeometry(0.2,0.5,20),waveMat);
+    wave.rotation.x=-Math.PI/2;wave.position.set(hp.x,0.08,hp.z);iceGroup.add(wave);
+    // 冰刺依次从地面刺出（ConeGeometry尖锥）
+    const spikes=[];
+    for(let si=0;si<spikeCount;si++){
+      const sAng=si/spikeCount*Math.PI*2+Math.random()*0.4;
+      const sDist=1+Math.random()*(r-1);
+      const sH=0.8+Math.random()*1.5;
+      const spikeMat=new THREE.MeshStandardMaterial({
+        color:0xaaddff,emissive:0x4488cc,emissiveIntensity:0.8,
+        metalness:0.5,roughness:0.1,transparent:true,opacity:0.85});
+      const spike=new THREE.Mesh(new THREE.ConeGeometry(0.1+Math.random()*0.08,sH,5),spikeMat);
+      spike.position.set(hp.x+Math.cos(sAng)*sDist,0,hp.z+Math.sin(sAng)*sDist);
+      spike.scale.y=0; // 从地面升起
+      spike.rotation.x=(Math.random()-0.5)*0.3;spike.rotation.z=(Math.random()-0.5)*0.3;
+      iceGroup.add(spike);
+      spikes.push({mesh:spike,targetH:sH,delay:si*0.04,born:false});
+    }
+    screenShake(.08,.15);
+    addDynLight(hp,0x4488cc,3,10,1.5);
+    // 冰刺升起+扩散动画
+    let iceT=0;
+    const iceFn=()=>{if(!gameActive){scene.remove(iceGroup);return}
+      iceT+=0.016;
+      // 冲击波向外扩散
+      const waveR=iceT*r*2;
+      wave.scale.set(1+waveR,1+waveR,1);wave.material.opacity=Math.max(0,0.3*(1-iceT/0.5));
+      // 冰刺依次升起
+      spikes.forEach(sp=>{
+        const age=iceT-sp.delay;
+        if(age<0)return;
+        if(!sp.born){sp.born=true;
+          // 刺出时碎冰粒子
+          emitGpuBurst(sp.mesh.position,0x88ddff,2,1.5,1.5,0.05,{gravity:6});}
+        const riseT=Math.min(1,age*6); // 快速刺出
+        sp.mesh.scale.y=riseT;sp.mesh.position.y=sp.targetH*0.5*riseT;
+        // 消散
+        if(iceT>1.2){sp.mesh.material.opacity=Math.max(0,0.85*(1-(iceT-1.2)/0.8))}
+      });
+      // 裂纹消散
+      if(iceT>1.5)iceGroup.children.forEach(c=>{if(c.material)c.material.opacity*=0.97});
+      if(iceT>=2.2){scene.remove(iceGroup);return}
+      requestAnimationFrame(iceFn)};
+    requestAnimationFrame(iceFn);
+    // 伤害+冰冻
     S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r){dmgEnemy(e,dmg,{isSkill:true,skillName:'凛冬将至'});e.frozen=fDur}})}}
-  // ⭐ 德鲁伊·星辰坠落 — 随机陨石雨
+  // ⭐ 德鲁伊·星辰坠落 — 星轨光弧+流星拖尾
   if(hasSkill('sig_starfall')){const k='sig_starfall';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_starfall');const sk=skData('sig_starfall');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const meteorN=sk.meteorCount+(l-1)*sk.meteorCountPerLv;
     const impR=sk.impactR+(l-1)*sk.impactRPerLv;
-    for(let i=0;i<meteorN;i++){setTimeout(()=>{if(!gameActive)return;
-      const t=nearest(hp,15);const p=t?t.mesh.position.clone():{x:hp.x+(Math.random()-0.5)*10,y:0,z:hp.z+(Math.random()-0.5)*10};
-      aoeEffect(p,impR,0xffff44,.4);lightBeam(p,0xffdd44,1,.3);
-      emitGpuBurst({x:p.x,y:1,z:p.z},0xffff44,6,3,2,.3,{gravity:5});
-      S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(new THREE.Vector3(p.x,0,p.z))<impR)dmgEnemy(e,dmg,{isSkill:true,skillName:'星辰坠落'})})
-    },i*300)}}}
-  // 😈 术士·末日守卫 — 召唤恶魔持续攻击
+    // --- 天空星轨光弧 ---
+    const starGroup=new THREE.Group();scene.add(starGroup);
+    // 头顶旋转星轨环
+    const orbitMat=new THREE.MeshBasicMaterial({color:0xffdd66,transparent:true,opacity:0.25,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const orbit=new THREE.Mesh(new THREE.TorusGeometry(3,0.02,4,32),orbitMat);
+    orbit.position.set(hp.x,8,hp.z);orbit.rotation.x=Math.PI/3;starGroup.add(orbit);
+    const orbit2=new THREE.Mesh(new THREE.TorusGeometry(2.5,0.02,4,32),orbitMat.clone());
+    orbit2.position.set(hp.x,8,hp.z);orbit2.rotation.x=Math.PI/4;orbit2.rotation.y=Math.PI/3;starGroup.add(orbit2);
+    // 轨道上的小星星
+    for(let si=0;si<6;si++){
+      const starMat=new THREE.MeshBasicMaterial({color:0xffffaa,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending});
+      const star=new THREE.Mesh(new THREE.OctahedronGeometry(0.1,0),starMat);
+      const sa=si/6*Math.PI*2;
+      star.position.set(hp.x+Math.cos(sa)*3,8+Math.sin(sa)*0.5,hp.z+Math.sin(sa)*3);
+      starGroup.add(star);
+    }
+    addDynLight({x:hp.x,y:8,z:hp.z},0xffdd44,2,8,2);
+    // 陨石依次坠落
+    for(let i=0;i<meteorN;i++){setTimeout(()=>{if(!gameActive){scene.remove(starGroup);return}
+      const t=nearest(hp,15);
+      const px=t?t.mesh.position.x:hp.x+(Math.random()-0.5)*10;
+      const pz=t?t.mesh.position.z:hp.z+(Math.random()-0.5)*10;
+      // 流星3D体：发光八面体+拖尾
+      const meteorMat=new THREE.MeshStandardMaterial({color:0xffee66,emissive:0xffcc00,emissiveIntensity:2,transparent:true,opacity:0.9});
+      const meteor=new THREE.Mesh(new THREE.OctahedronGeometry(0.25,1),meteorMat);
+      const startX=px+(Math.random()-0.5)*3;const startZ=pz+(Math.random()-0.5)*3;
+      meteor.position.set(startX,10,startZ);scene.add(meteor);
+      // 流星光晕
+      const mGlow=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffdd44,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending}));
+      mGlow.scale.set(1.5,1.5,1);meteor.add(mGlow);
+      // 坠落动画+星尘拖尾
+      let mT=0;const fallDur=0.25;
+      const mFn=()=>{mT+=0.016;const t2=mT/fallDur;
+        meteor.position.x=startX+(px-startX)*t2;
+        meteor.position.y=10*(1-t2*t2); // 加速坠落
+        meteor.position.z=startZ+(pz-startZ)*t2;
+        meteor.rotation.x+=0.2;meteor.rotation.z+=0.15;
+        // 星尘拖尾粒子
+        if(Math.random()<0.6)emitGpuP(meteor.position,Math.random()<0.5?0xffee88:0xffcc44,
+          {vy:1,vx:(Math.random()-0.5)*2,vz:(Math.random()-0.5)*2,life:0.3,size:1.5,gravity:2,shrink:true});
+        if(mT>=fallDur){
+          scene.remove(meteor);
+          // 着地爆炸：星尘四射+地面星光圆
+          emitGpuBurst({x:px,y:0.3,z:pz},0xffee66,8,3,3,0.2,{gravity:5});
+          emitGpuBurst({x:px,y:0.3,z:pz},0xffcc00,5,2,2,0.15,{gravity:4});
+          // 地面星光圆环
+          const impactRing=new THREE.Mesh(new THREE.RingGeometry(0.2,impR,16),
+            new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
+          impactRing.rotation.x=-Math.PI/2;impactRing.position.set(px,0.05,pz);scene.add(impactRing);
+          addDynLight({x:px,y:1,z:pz},0xffdd44,2,5,0.4);
+          screenShake(.03,.05);
+          // 圆环消散
+          let rT=0;const rFn=()=>{rT+=0.016;impactRing.material.opacity=Math.max(0,0.3*(1-rT/0.5));
+            if(rT>=0.5){scene.remove(impactRing);return}requestAnimationFrame(rFn)};requestAnimationFrame(rFn);
+          // 伤害
+          S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(new THREE.Vector3(px,0,pz))<impR)dmgEnemy(e,dmg,{isSkill:true,skillName:'星辰坠落'})});
+          return}
+        requestAnimationFrame(mFn)};
+      requestAnimationFrame(mFn);
+    },i*300)}
+    // 星轨消散
+    setTimeout(()=>{if(starGroup.parent)scene.remove(starGroup)},meteorN*300+500);}}
+  // 😈 术士·末日守卫 — 3D恶魔实体+邪能射线
   if(hasSkill('sig_doomguard')){const k='sig_doomguard';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_doomguard');const sk=skData('sig_doomguard');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const dur=sk.guardDur+(l-1)*sk.guardDurPerLv;
     const ticks=Math.floor(dur/sk.guardAtkRate);
-    aoeEffect(hp,3,0x7733aa,.5);
+    // --- 恶魔实体3D模型 ---
+    const demonGroup=new THREE.Group();
+    const demonX=hp.x+2,demonZ=hp.z-1;
+    demonGroup.position.set(demonX,0,demonZ);
+    // 身体
+    const bodyMat=new THREE.MeshStandardMaterial({color:0x331144,emissive:0x440066,emissiveIntensity:0.5,roughness:0.6});
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.4,1.8,6),bodyMat);body.position.y=1.2;demonGroup.add(body);
+    // 头部
+    const headMat=new THREE.MeshStandardMaterial({color:0x441155,emissive:0x660088,emissiveIntensity:0.6});
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.25,6,6),headMat);head.position.y=2.3;demonGroup.add(head);
+    // 角
+    const hornMat=new THREE.MeshStandardMaterial({color:0x442200,roughness:0.4,metalness:0.3});
+    const horn1=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.4,4),hornMat);horn1.position.set(-0.15,2.5,0);horn1.rotation.z=0.3;demonGroup.add(horn1);
+    const horn2=horn1.clone();horn2.position.x=0.15;horn2.rotation.z=-0.3;demonGroup.add(horn2);
+    // 眼睛（发光邪绿）
+    const eyeMat=new THREE.MeshBasicMaterial({color:0x44ff44,blending:THREE.AdditiveBlending});
+    const eye1=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),eyeMat);eye1.position.set(-0.08,2.35,0.2);demonGroup.add(eye1);
+    const eye2=eye1.clone();eye2.position.x=0.08;demonGroup.add(eye2);
+    // 翅膀（PlaneGeometry三角形）
+    const wingMat=new THREE.MeshBasicMaterial({color:0x660099,transparent:true,opacity:0.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+    const wingGeo=new THREE.BufferGeometry();
+    const wingVerts=new Float32Array([0,0,0, -1.2,0.8,0, -0.3,1.5,0]);
+    wingGeo.setAttribute('position',new THREE.BufferAttribute(wingVerts,3));wingGeo.computeVertexNormals();
+    const wing1=new THREE.Mesh(wingGeo,wingMat);wing1.position.set(-0.3,1.5,-0.15);demonGroup.add(wing1);
+    const wing2=new THREE.Mesh(wingGeo,wingMat.clone());wing2.position.set(0.3,1.5,-0.15);wing2.scale.x=-1;demonGroup.add(wing2);
+    // 脚下邪能圈
+    const circleMat=new THREE.MeshBasicMaterial({color:0x9944cc,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const circle=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),circleMat);circle.rotation.x=-Math.PI/2;circle.position.y=0.05;demonGroup.add(circle);
+    scene.add(demonGroup);
+    addDynLight({x:demonX,y:2,z:demonZ},0x9944cc,2,6,dur);
+    // 召唤公告
     const el=document.createElement('div');el.className='kill-streak';el.textContent='😈 末日守卫降临！';
     document.getElementById('game-screen').appendChild(el);setTimeout(()=>el.remove(),1200);
+    // 召唤特效
+    emitGpuBurst({x:demonX,y:0.5,z:demonZ},0x9944cc,10,3,3,0.2,{gravity:3});
+    screenShake(.04,.08);
+    // 恶魔存在期间动画
+    let demonT=0;
+    const demonFn=()=>{if(!gameActive){scene.remove(demonGroup);return}
+      demonT+=0.016;
+      // 翅膀扇动
+      const wingAng=Math.sin(demonT*3)*0.3;
+      wing1.rotation.y=wingAng;wing2.rotation.y=-wingAng;
+      // 身体微浮
+      body.position.y=1.2+Math.sin(demonT*2)*0.05;head.position.y=2.3+Math.sin(demonT*2)*0.05;
+      // 邪能圈旋转
+      circle.rotation.z+=0.02;circle.material.opacity=0.15+Math.sin(demonT*4)*0.08;
+      // 眼睛闪烁
+      eye1.material.opacity=0.8+Math.sin(demonT*8)*0.2;eye2.material.opacity=eye1.material.opacity;
+      if(demonT>=dur){
+        // 消散
+        emitGpuBurst({x:demonX,y:1,z:demonZ},0x7733aa,8,3,3,0.2,{gravity:3});
+        scene.remove(demonGroup);return}
+      requestAnimationFrame(demonFn)};
+    requestAnimationFrame(demonFn);
+    // 攻击tick：邪能射线
     for(let i=0;i<ticks;i++){setTimeout(()=>{if(!gameActive)return;
       const t=nearest(hp,14);if(t&&t.hp>0){
         const eDmg=t.cursed?dmg*sk.cursedMult:dmg;
         dmgEnemy(t,eDmg,{isSkill:true,skillName:'末日守卫'});
-        fireProjectile(hp,t.mesh.position,0x9944cc,0,.1,20,{trail:'fire',trailColor:0x7722aa});
-        explosion(t.mesh.position,0x7733aa,4)}
+        // 邪能射线（从恶魔眼睛到目标）
+        const from={x:demonX,y:2.35,z:demonZ};
+        const to=t.mesh.position;
+        const beamCurve=new THREE.LineCurve3(new THREE.Vector3(from.x,from.y,from.z),new THREE.Vector3(to.x,to.y||0.8,to.z));
+        const beamMat=new THREE.MeshBasicMaterial({color:0xbb44ff,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending});
+        const beam=new THREE.Mesh(new THREE.TubeGeometry(beamCurve,4,0.06,4,false),beamMat);scene.add(beam);
+        const beamOuter=new THREE.Mesh(new THREE.TubeGeometry(beamCurve,4,0.2,4,false),
+          new THREE.MeshBasicMaterial({color:0x7722aa,transparent:true,opacity:0.15,blending:THREE.AdditiveBlending}));scene.add(beamOuter);
+        // 命中爆炸
+        emitGpuBurst(to,0xbb44ff,4,2,2,0.1,{gravity:4});
+        // 射线消散
+        let bT=0;const bFn=()=>{bT+=0.016;beam.material.opacity=Math.max(0,0.6*(1-bT/0.2));beamOuter.material.opacity=Math.max(0,0.15*(1-bT/0.2));
+          if(bT>=0.2){scene.remove(beam);scene.remove(beamOuter);return}requestAnimationFrame(bFn)};requestAnimationFrame(bFn);}
     },i*sk.guardAtkRate*1000)}}}
-  // 🛡️ 圣骑·复仇之盾 — 弹射盾牌+护盾
+  // 🛡️ 圣骑·复仇之盾 — 3D盾牌弹射+金色光弧
   if(hasSkill('sig_avengershield')){const k='sig_avengershield';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_avengershield');const sk=skData('sig_avengershield');
     resetCd(k,sk,l);
     const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const bounceN=sk.bounceCount+(l-1)*sk.bounceCountPerLv;
     const shieldGain=S.maxHp*(sk.shieldPct+(l-1)*sk.shieldPctPerLv);
-    let cur=nearest(hp,sk.bounceRange);let lp=hp.clone();const hit=new Set();
-    for(let i=0;i<bounceN&&cur;i++){const delay=i*120;const fromP=lp.clone();const target=cur;
-      setTimeout(()=>{if(!gameActive||!target||target.hp<=0)return;
-        dmgEnemy(target,dmg,{isSkill:true,skillName:'复仇之盾'});
-        lightBeam(target.mesh.position,0xffaa33,.5,.15);explosion(target.mesh.position,0xffdd44,4)
-      },delay);
+    // 构建弹射目标序列
+    const bounceTargets=[];let cur=nearest(hp,sk.bounceRange);let lp=hp.clone();const hit=new Set();
+    for(let i=0;i<bounceN&&cur;i++){
+      bounceTargets.push({from:lp.clone(),target:cur});
       hit.add(cur);lp=cur.mesh.position.clone();
       let nb=null,md=sk.bounceRange;for(const e of S.enemies){if(hit.has(e)||e.hp<=0)continue;const dd=e.mesh.position.distanceTo(lp);if(dd<md){md=dd;nb=e}}
-      cur=nb}
-    S.passiveStacks.divineShield=(S.passiveStacks.divineShield||0)+shieldGain;
-    aoeEffect(hp,2,0xffdd44,.3)}}
+      cur=nb;}
+    if(bounceTargets.length===0){S.passiveStacks.divineShield=(S.passiveStacks.divineShield||0)+shieldGain;return}
+    // --- 3D盾牌模型 ---
+    const shieldGroup=new THREE.Group();
+    // 盾面（圆角方形近似）
+    const faceMat=new THREE.MeshStandardMaterial({color:0xffcc33,emissive:0xffaa00,emissiveIntensity:1,metalness:0.7,roughness:0.2,transparent:true,opacity:0.9});
+    const shieldFace=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.06,6),faceMat);
+    shieldFace.rotation.x=Math.PI/2;shieldGroup.add(shieldFace);
+    // 盾面十字纹饰
+    const crossMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const crossV=new THREE.Mesh(new THREE.PlaneGeometry(0.06,0.5),crossMat);crossV.position.z=0.04;shieldGroup.add(crossV);
+    const crossH=new THREE.Mesh(new THREE.PlaneGeometry(0.35,0.06),crossMat.clone());crossH.position.z=0.04;shieldGroup.add(crossH);
+    // 盾边缘发光
+    const edgeMat=new THREE.MeshBasicMaterial({color:0xffdd66,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending});
+    const edge=new THREE.Mesh(new THREE.TorusGeometry(0.35,0.03,4,12),edgeMat);shieldGroup.add(edge);
+    // 盾光晕
+    const haloMat=new THREE.SpriteMaterial({color:0xffcc44,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending});
+    const halo=new THREE.Sprite(haloMat);halo.scale.set(1.5,1.5,1);shieldGroup.add(halo);
+    shieldGroup.position.copy(hp);shieldGroup.position.y=1;
+    scene.add(shieldGroup);
+    // 依次弹射动画
+    let bounceIdx=0;
+    function animateBounce(){
+      if(bounceIdx>=bounceTargets.length||!gameActive){
+        scene.remove(shieldGroup);
+        S.passiveStacks.divineShield=(S.passiveStacks.divineShield||0)+shieldGain;
+        // 护盾获得闪光
+        emitGpuBurst({x:hp.x,y:1,z:hp.z},0xffdd44,6,2,2,0.15,{gravity:3});
+        return}
+      const b=bounceTargets[bounceIdx];const target=b.target;
+      if(!target||target.hp<=0){bounceIdx++;animateBounce();return}
+      const from=shieldGroup.position.clone();
+      const to=target.mesh.position.clone();to.y=1;
+      const dist=from.distanceTo(to);const flyDur=Math.max(0.08,dist/25);
+      // 弹射光弧轨迹（QuadraticBezier弧线）
+      const mid=from.clone().add(to).multiplyScalar(0.5);mid.y+=1.5;
+      const trailCurve=new THREE.QuadraticBezierCurve3(from,mid,to);
+      const trailMat=new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.35,blending:THREE.AdditiveBlending});
+      const trail=new THREE.Mesh(new THREE.TubeGeometry(trailCurve,12,0.04,4,false),trailMat);scene.add(trail);
+      let flyT=0;
+      const flyFn=()=>{flyT+=0.016;const t2=Math.min(1,flyT/flyDur);
+        // 沿弧线飞行
+        const p=trailCurve.getPoint(t2);
+        shieldGroup.position.copy(p);
+        // 盾牌旋转
+        shieldGroup.rotation.y+=0.3;shieldGroup.rotation.z+=0.15;
+        // 发光拖尾粒子
+        if(Math.random()<0.4)emitGpuP(shieldGroup.position,0xffdd66,{vy:0.5,vx:(Math.random()-0.5)*2,vz:(Math.random()-0.5)*2,life:0.2,size:1.5,gravity:2,shrink:true});
+        if(t2>=1){
+          // 命中
+          dmgEnemy(target,dmg,{isSkill:true,skillName:'复仇之盾'});
+          // 命中金色爆发
+          emitGpuBurst(to,0xffdd44,6,2.5,2,0.1,{gravity:5});
+          addDynLight(to,0xffaa33,1.5,4,0.3);
+          screenShake(.03,.04);
+          // 弧线渐隐
+          let tT=0;const tFn=()=>{tT+=0.016;trail.material.opacity=Math.max(0,0.35*(1-tT/0.4));
+            if(tT>=0.4){scene.remove(trail);return}requestAnimationFrame(tFn)};requestAnimationFrame(tFn);
+          bounceIdx++;
+          setTimeout(()=>animateBounce(),60);return}
+        requestAnimationFrame(flyFn)};
+      requestAnimationFrame(flyFn);
+    }
+    animateBounce();}}
   // === 合成技能 ===
   // 👊 泰坦之握 —— 火雷合体清屏
   if(S.comboSkills.includes('titangrip')){const k='titangrip';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
@@ -3349,6 +3923,9 @@ function baseAttack(dt){
   const berserkerActive=hero==='warrior'&&S.hp<S.maxHp*0.3;
   const berserkerAtkMult=berserkerActive?1.4:1;
   if(berserkerActive)atkRate*=0.75; // 攻速+25%
+  // ===== 局内BUFF: 攻速加成 =====
+  const _bfAtk=S.buffStats||{};
+  if(_bfAtk.atkSpeed>0)atkRate*=(1-Math.min(0.35,_bfAtk.atkSpeed)); // 最多减35%间隔
   // === 被动：暗影突袭(rogue) — 暴击后下一次必暴击 ===
   const shadowCrit=hero==='rogue'&&S.passiveStacks.shadowNextCrit;
   const extraCritOpts=shadowCrit?{bonusCrit:1.0,bonusCritDmg:0.5}:{};
@@ -3364,24 +3941,27 @@ function baseAttack(dt){
   if(hero==='warrior'){
     const r=cfg.atkRange;const dmg=baseDmg*berserkerAtkMult;
     aoeEffect(hp,r,0xcc3333,.3);screenShake(.03,.08);
+    if(SFX.heroAtk)SFX.heroAtk('warrior');
     if(berserkerActive){screenFlash('#ff2200',.05,60)} // 狂暴视觉反馈
     S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r)dmgEnemy(e,dmg,{isFireDmg:false,...extraCritOpts})})}
   // 🔥 法师 — 远程多目标火球(点燃DOT由dmgEnemy中被动触发)
   else if(hero==='mage'){
-    const dmg=baseDmg;
+    const dmg=baseDmg;if(SFX.heroAtk)SFX.heroAtk('mage');
     nearestN(hp,cfg.atkRange,2).forEach(t=>fireProjectile(hp,t.mesh.position,0xff6600,dmg,.2,22,{trail:'fire',trailColor:0xff4400,isFireDmg:true,...extraCritOpts}))}
   // 🏹 猎人 — 远程散射弹幕(低单体高数量)
   else if(hero==='hunter'){
     const dmg=baseDmg; // atkRatio=0.65已经偏低，靠数量补
+    if(SFX.heroAtk)SFX.heroAtk('hunter');
     const count=Math.min(5,2+Math.floor(S.level/8)); // 随等级增加弹数
     nearestN(hp,cfg.atkRange,count).forEach(t=>fireProjectile(hp,t.mesh.position,0x88ff44,dmg,.1,26,{trail:'leaf',trailColor:0x66cc22,...extraCritOpts}))}
   // ✝️ 暗牧 — DOT暗影弹(回血由被动vampiric在dmgEnemy触发)
   else if(hero==='priest'){
-    const dmg=baseDmg;
+    const dmg=baseDmg;if(SFX.heroAtk)SFX.heroAtk('priest');
     nearestN(hp,cfg.atkRange,3).forEach(t=>{fireProjectile(hp,t.mesh.position,0xbb88ff,dmg,.15,18,{trail:'holy',trailColor:0x9966cc,isDot:true,...extraCritOpts})})}
   // 🗡️ 盗贼 — 近战高爆发单体(高暴击率+暗影突袭被动)
   else if(hero==='rogue'){
     const dmg=baseDmg; // atkRatio=1.6，配合高暴击
+    if(SFX.heroAtk)SFX.heroAtk('rogue');
     const t=nearest(hp,cfg.atkRange);
     if(t){dmgEnemy(t,dmg,{...extraCritOpts});explosion(t.mesh.position,0x444444,4);screenShake(.02,.05);
       // 暗影突袭视觉
@@ -3389,6 +3969,7 @@ function baseAttack(dt){
   // 🌊 萨满 — 图腾混合(近战AOE+远程闪电)
   else if(hero==='shaman'){
     const meleeDmg=baseDmg*0.7;const rangeDmg=baseDmg*0.6;
+    if(SFX.heroAtk)SFX.heroAtk('shaman');
     aoeEffect(hp,cfg.atkRange,0x2266bb,.3);
     S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<cfg.atkRange)dmgEnemy(e,meleeDmg,extraCritOpts)});
     nearestN(hp,14,2).forEach(t=>{fireProjectile(hp,t.mesh.position,0x44aaff,rangeDmg,.15,16,extraCritOpts);
@@ -3396,6 +3977,7 @@ function baseAttack(dt){
   // 💀 死骑 — 近战冰霜+减速(冰霜光环被动在enemy loop中处理)
   else if(hero==='deathknight'){
     const r=cfg.atkRange;const dmg=baseDmg;
+    if(SFX.heroAtk)SFX.heroAtk('deathknight');
     aoeEffect(hp,r,0x4488cc,.3);
     S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r){dmgEnemy(e,dmg,extraCritOpts);e.frozen=0.5}})}
   // 🌿 德鲁伊 — 变形切换(>50%HP远程月火/≤50%近战熊形态)
@@ -3403,16 +3985,18 @@ function baseAttack(dt){
     if(S.hp<=S.maxHp*0.5){
       // 熊形态：近战AOE + 护甲加成 + 回血
       const r=3.5;const dmg=baseDmg*0.85;
+      if(SFX.heroAtk)SFX.heroAtk('druid',{isBear:true});
       aoeEffect(hp,r,0x885522,.3);
       S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r)dmgEnemy(e,dmg,extraCritOpts)});
       S.hp=Math.min(S.maxHp,S.hp+S.maxHp*0.01*dt*60); // 每秒回血1%MaxHP
     }else{
       // 月火形态：高伤远程
       const dmg=baseDmg*1.15;
+      if(SFX.heroAtk)SFX.heroAtk('druid',{isBear:false});
       nearestN(hp,cfg.atkRange,3).forEach(t=>fireProjectile(hp,t.mesh.position,0xffff44,dmg,.18,20,{trail:'leaf',trailColor:0xaacc00,...extraCritOpts}))}}
   // 👿 术士 — 诅咒+召唤(标记诅咒由souldrain被动在killEnemy中爆炸)
   else if(hero==='warlock'){
-    const dmg=baseDmg;
+    const dmg=baseDmg;if(SFX.heroAtk)SFX.heroAtk('warlock');
     const t=nearest(hp,cfg.atkRange);
     if(t){fireProjectile(hp,t.mesh.position,0x9944cc,dmg,.22,16,{trail:'fire',trailColor:0x7722aa,...extraCritOpts});
       // 标记诅咒目标
@@ -3422,6 +4006,7 @@ function baseAttack(dt){
   // 🛡️ 圣骑士 — 近战AOE+圣光灼烧(护盾被动由tick处理)
   else if(hero==='paladin'){
     const r=cfg.atkRange;const dmg=baseDmg;
+    if(SFX.heroAtk)SFX.heroAtk('paladin');
     aoeEffect(hp,r,0xffaa33,.3);
     const hasShield=S.passiveStacks.divineShield>0;
     S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r){
@@ -3439,7 +4024,12 @@ function baseAttack(dt){
 }
 
 // ==================== 升级 & 技能选择 ====================
-function gainXP(amt){S.xp+=amt;while(S.xp>=S.xpNeed){S.xp-=S.xpNeed;S.level++;
+function gainXP(amt){
+  // ===== 局内BUFF: 经验倍率加成 =====
+  const buffXpMult=1+(S.buffStats?S.buffStats.xpMult:0);
+  S.xp+=Math.round(amt*buffXpMult);
+  while(S.xp>=S.xpNeed){S.xp-=S.xpNeed;S.level++;
+  if(SFX.levelUp)SFX.levelUp();
   // 使用新的S曲线经验公式
   S.xpNeed=calcXpNeed(S.level);
   // 缓慢但有意义的成长
@@ -3447,38 +4037,163 @@ function gainXP(amt){S.xp+=amt;while(S.xp>=S.xpNeed){S.xp-=S.xpNeed;S.level++;
   S.hp=Math.min(S.maxHp,S.hp+S.maxHp*NUM.HEAL_ON_LEVELUP);
   // 成长追踪
   if(S.growthLog){S.growthLog.levelAtk+=NUM.ATK_PER_LEVEL;S.growthLog.levelHp+=NUM.HP_PER_LEVEL}
-  // 每5级增加少量暴击率
-  if(S.level%5===0){S.critRate=Math.min(0.4,S.critRate+0.01);if(S.growthLog)S.growthLog.levelCrit+=0.01}
+  // 每3级增加暴击率（↑ 5→3级间隔，升级奖励更频繁）
+  if(S.level%3===0){S.critRate=Math.min(0.4,S.critRate+0.02);if(S.growthLog)S.growthLog.levelCrit+=0.02}
   // 属性变化浮字
   showStatChangeFloat(`⚔+${NUM.ATK_PER_LEVEL.toFixed(1)} ❤+${NUM.HP_PER_LEVEL}`,'buff');
   showSkillPanel();checkCombos()}}
+
+// ===== BUFF系统: 应用BUFF效果 =====
+function applyBuff(buffDef){
+  if(!S.buffs)S.buffs=[];
+  if(!S.buffStats)S.buffStats={xpMult:0,goldMult:0,pickupRange:0,orbValue:0,atkPct:0,critRate:0,critDmg:0,atkSpeed:0,skillDmg:0,hpPct:0,armor:0,hpRegen:0,dodge:0,moveSpd:0,skillCd:0,eliteDmg:0,leech:0,thorns:0,killHeal:0,aoeSize:0};
+  const existing=S.buffs.find(b=>b.id===buffDef.id);
+  if(existing){
+    existing.stacks++;
+  }else{
+    S.buffs.push({id:buffDef.id,name:buffDef.name,icon:buffDef.icon,stat:buffDef.stat,val:buffDef.val,stacks:1,color:buffDef.color,category:buffDef.category});
+  }
+  // 更新buffStats汇总
+  S.buffStats[buffDef.stat]=(S.buffStats[buffDef.stat]||0)+buffDef.val;
+  // ===== 立即生效的属性型BUFF =====
+  if(buffDef.stat==='atkPct'){
+    const gain=Math.round(S.attack*buffDef.val);
+    S.attack+=gain;
+    showStatChangeFloat(`⚔+${gain} (${buffDef.name})`,'buff');
+    if(S.growthLog)S.growthLog.eventAtk+=gain;
+  }else if(buffDef.stat==='hpPct'){
+    const gain=Math.round(S.maxHp*buffDef.val);
+    S.maxHp+=gain;S.hp=Math.min(S.maxHp,S.hp+gain);
+    showStatChangeFloat(`❤+${gain} (${buffDef.name})`,'buff');
+    if(S.growthLog)S.growthLog.eventHp+=gain;
+  }else if(buffDef.stat==='critRate'){
+    S.critRate=Math.min(0.6,S.critRate+buffDef.val);
+    showStatChangeFloat(`🎯+${(buffDef.val*100).toFixed(0)}% 暴击`,'buff');
+    if(S.growthLog)S.growthLog.eventCrit+=buffDef.val;
+  }else if(buffDef.stat==='critDmg'){
+    S.critDmg+=buffDef.val;
+    showStatChangeFloat(`💥+${(buffDef.val*100).toFixed(0)}% 暴伤`,'buff');
+  }else if(buffDef.stat==='armor'){
+    S.armor+=buffDef.val;
+    showStatChangeFloat(`🛡+${buffDef.val} 护甲`,'buff');
+    if(S.growthLog)S.growthLog.eventArmor+=buffDef.val;
+  }else if(buffDef.stat==='moveSpd'){
+    const gain=S.speed*buffDef.val;
+    S.speed+=gain;
+    showStatChangeFloat(`👟+${gain.toFixed(1)} 速度`,'buff');
+    if(S.growthLog)S.growthLog.eventSpd+=gain;
+  }else{
+    // 非立即型BUFF（经验/金币/拾取/回血等）在战斗循环中读取S.buffStats
+    const label={xpMult:'📖经验',goldMult:'💰金币',pickupRange:'🧲拾取',orbValue:'✨经验球',
+      atkSpeed:'🌪️攻速',skillDmg:'🔮技能伤害',hpRegen:'💚回血',dodge:'💨闪避',
+      skillCd:'⏱️CD',eliteDmg:'💀精英伤害',leech:'🩸吸血',thorns:'🦔反伤',killHeal:'🍀击杀回血',aoeSize:'🌊范围'}[buffDef.stat]||buffDef.name;
+    showStatChangeFloat(`${label}+${buffDef.stat==='armor'?buffDef.val:(buffDef.val*100).toFixed(0)+'%'}`,'buff');
+  }
+  updateBuffBar();
+  if(SFX.buff)SFX.buff();
+}
+
+// ===== 随机获取BUFF选项 =====
+function getRandBuffs(n){
+  if(!BUFF_DB||!S.buffs)return[];
+  const pool=[];
+  BUFF_DB.forEach(b=>{
+    const existing=S.buffs.find(x=>x.id===b.id);
+    const curStacks=existing?existing.stacks:0;
+    if(curStacks>=b.maxStack)return; // 已满层跳过
+    // 权重：基础5，已有的+2（鼓励叠加）
+    const wt=5+(existing?2:0);
+    for(let i=0;i<wt;i++)pool.push(b);
+  });
+  const res=[],pk=new Set();
+  while(res.length<n&&pool.length){
+    const i=Math.floor(Math.random()*pool.length);const b=pool[i];
+    if(!pk.has(b.id)){pk.add(b.id);res.push(b)}
+    pool.splice(i,1);
+  }
+  return res;
+}
+
+// ===== 创建BUFF选项卡DOM =====
+function createBuffCard(buff,panel){
+  const existing=S.buffs.find(b=>b.id===buff.id);
+  const curStacks=existing?existing.stacks:0;
+  const c=document.createElement('div');
+  c.className='skill-choice buff-choice';
+  const stackLabel=curStacks>0?`<span class="buff-stack-badge">${curStacks} → ${curStacks+1}层</span>`
+    :'<span class="buff-stack-badge buff-new">新!</span>';
+  const maxHint=curStacks+1>=buff.maxStack?`<div class="skill-max-hint">🌟 即将满层</div>`:'';
+  const valDisplay=buff.stat==='armor'?`+${buff.val}`:`+${(buff.val*100).toFixed(0)}%`;
+  c.innerHTML=`<div class="skill-choice-icon">${buff.icon}</div>
+    <div class="skill-choice-name">${buff.name} ${stackLabel}</div>
+    <div class="buff-category" style="color:${buff.color}">${buff.category}增益</div>
+    <div class="skill-choice-desc">${buff.desc}</div>
+    <div class="buff-value" style="color:${buff.color}">${valDisplay}</div>
+    <div class="buff-flavor">${buff.flavorText}</div>${maxHint}`;
+  c.style.borderColor=buff.color+'66';
+  c.onclick=()=>{
+    applyBuff(buff);
+    panel.classList.remove('active');gamePaused=false;updateSkillBar();checkCombos();
+  };
+  return c;
+}
+
+// ===== 创建技能选项卡DOM（抽取公共逻辑） =====
+function createSkillCard(sk,panel,tb){
+  const ex=S.skills.find(s=>s.id===sk.id);const curLv=ex?ex.level:0;const newLv=curLv+1;
+  const c=document.createElement('div');c.className=`skill-choice rarity-${sk.rarity}`;
+  const stats=getSkillUpgradeStats(sk,curLv,S.attack);
+  const statsHtml=renderSkillStats(stats);
+  const lvLabel=curLv>0?`<span class="skill-lv-badge lv-up">Lv${curLv} → ${newLv}</span>`:'<span class="skill-lv-badge lv-new">新!</span>';
+  const maxLvHint=newLv>=sk.maxLevel?`<div class="skill-max-hint">🌟 即将满级</div>`:'';
+  c.innerHTML=`<div class="skill-choice-icon">${sk.icon}</div><div class="skill-choice-name">${sk.name} ${lvLabel}</div><div class="skill-choice-rarity">${RARITY_NAME[sk.rarity]}</div><div class="skill-choice-desc">${sk.desc}</div>${statsHtml}${maxLvHint}`;
+  c.onclick=()=>{
+    if(ex)ex.level++;else S.skills.push({...sk,level:1});
+    if(SFX.skillPick)SFX.skillPick();
+    if(tb.doubleSkill>0&&Math.random()<tb.doubleSkill){
+      updateSkillBar();checkCombos();
+      const bonusEl=document.createElement('div');bonusEl.className='kill-streak';bonusEl.textContent='🌟 欧皇触发！额外选择一个技能！';
+      document.getElementById('game-screen').appendChild(bonusEl);setTimeout(()=>bonusEl.remove(),1500);
+      setTimeout(()=>showSkillPanel(),200);
+      return;
+    }
+    panel.classList.remove('active');gamePaused=false;updateSkillBar();checkCombos();
+  };
+  return c;
+}
+
 function showSkillPanel(){
-  gamePaused=true;const panel=document.getElementById('skill-panel'),ch=document.getElementById('skill-choices');ch.innerHTML='';
+  gamePaused=true;if(SFX.skillPanel)SFX.skillPanel();const panel=document.getElementById('skill-panel'),ch=document.getElementById('skill-choices');ch.innerHTML='';
   const tb=S.talentBonus||{};
-  const choiceCount=3+(tb.extraSkillChoice||0); // 天赋: 技能选项+1
-  const avail=getRandSkills(choiceCount);
-  avail.forEach(sk=>{const ex=S.skills.find(s=>s.id===sk.id);const curLv=ex?ex.level:0;const newLv=curLv+1;
-    const c=document.createElement('div');c.className=`skill-choice rarity-${sk.rarity}`;
-    // 生成属性变化描述
-    const stats=getSkillUpgradeStats(sk,curLv,S.attack);
-    const statsHtml=renderSkillStats(stats);
-    // 等级标签：新获得显示"新!"，升级显示"Lv X → Y"
-    const lvLabel=curLv>0?`<span class="skill-lv-badge lv-up">Lv${curLv} → ${newLv}</span>`:'<span class="skill-lv-badge lv-new">新!</span>';
-    // 满级提示
-    const maxLvHint=newLv>=sk.maxLevel?`<div class="skill-max-hint">🌟 即将满级</div>`:'';
-    c.innerHTML=`<div class="skill-choice-icon">${sk.icon}</div><div class="skill-choice-name">${sk.name} ${lvLabel}</div><div class="skill-choice-rarity">${RARITY_NAME[sk.rarity]}</div><div class="skill-choice-desc">${sk.desc}</div>${statsHtml}${maxLvHint}`;
-    c.onclick=()=>{
-      if(ex)ex.level++;else S.skills.push({...sk,level:1});
-      // ===== 天赋: 概率多选技能(欧皇) =====
-      if(tb.doubleSkill>0&&Math.random()<tb.doubleSkill){
-        // 再弹一次技能面板让玩家免费多选一个
-        updateSkillBar();checkCombos();
-        const bonusEl=document.createElement('div');bonusEl.className='kill-streak';bonusEl.textContent='🌟 欧皇触发！额外选择一个技能！';
-        document.getElementById('game-screen').appendChild(bonusEl);setTimeout(()=>bonusEl.remove(),1500);
-        setTimeout(()=>showSkillPanel(),200);
-        return;
-      }
-      panel.classList.remove('active');gamePaused=false;updateSkillBar();checkCombos()};ch.appendChild(c)});
+  const choiceCount=4+(tb.extraSkillChoice||0); // ↑ 3→4选1，更多选择更爽
+  // ===== 决定BUFF/技能分配 =====
+  let buffCount=0;
+  if(typeof BUFF_DB!=='undefined'&&BUFF_DB.length>0&&S.level>=2){
+    // Lv2起开始出现BUFF选项
+    buffCount=Math.max(BUFF_MIN_PER_PANEL,Math.min(BUFF_MAX_PER_PANEL,
+      Math.floor(Math.random()<0.5?1:2)));
+    // 确保技能至少占1个位置
+    buffCount=Math.min(buffCount,choiceCount-1);
+  }
+  const skillCount=choiceCount-buffCount;
+  const skills=getRandSkills(skillCount);
+  const buffs=getRandBuffs(buffCount);
+  // ===== 混合排列：随机插入位置 =====
+  const items=[];
+  skills.forEach(sk=>items.push({type:'skill',data:sk}));
+  buffs.forEach(bf=>items.push({type:'buff',data:bf}));
+  // 随机打乱顺序
+  for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]]}
+  items.forEach(item=>{
+    if(item.type==='skill'){
+      ch.appendChild(createSkillCard(item.data,panel,tb));
+    }else{
+      ch.appendChild(createBuffCard(item.data,panel));
+    }
+  });
+  // 更新面板标题
+  const titleEl=panel.querySelector('.skill-panel-title');
+  if(titleEl)titleEl.textContent=`⬆️ 升级！Lv.${S.level}`;
   document.getElementById('skill-refresh').style.display='block';panel.classList.add('active');
 }
 function getRandSkills(n){
@@ -3519,27 +4234,48 @@ function getRandSkills(n){
 window.refreshSkills=function(){
   document.getElementById('skill-refresh').style.display='none';
   const tb=S.talentBonus||{};
-  const refreshCount=4+(tb.extraSkillChoice||0); // 天赋: 刷新也受技能选项+1影响
-  const ch=document.getElementById('skill-choices');ch.innerHTML='';getRandSkills(refreshCount).forEach(sk=>{
-    const ex=S.skills.find(s=>s.id===sk.id);const curLv=ex?ex.level:0;const newLv=curLv+1;
-    const c=document.createElement('div');c.className=`skill-choice rarity-${sk.rarity}`;
-    const stats=getSkillUpgradeStats(sk,curLv,S.attack);
-    const statsHtml=renderSkillStats(stats);
-    const lvLabel=curLv>0?`<span class="skill-lv-badge lv-up">Lv${curLv} → ${newLv}</span>`:'<span class="skill-lv-badge lv-new">新!</span>';
-    const maxLvHint=newLv>=sk.maxLevel?`<div class="skill-max-hint">🌟 即将满级</div>`:'';
-    c.innerHTML=`<div class="skill-choice-icon">${sk.icon}</div><div class="skill-choice-name">${sk.name} ${lvLabel}</div><div class="skill-choice-rarity">${RARITY_NAME[sk.rarity]}</div><div class="skill-choice-desc">${sk.desc}</div>${statsHtml}${maxLvHint}`;
-    c.onclick=()=>{
-      if(ex)ex.level++;else S.skills.push({...sk,level:1});
-      // ===== 天赋: 概率多选技能(欧皇) =====
-      if(tb.doubleSkill>0&&Math.random()<tb.doubleSkill){
-        updateSkillBar();checkCombos();
-        const bonusEl=document.createElement('div');bonusEl.className='kill-streak';bonusEl.textContent='🌟 欧皇触发！额外选择一个技能！';
-        document.getElementById('game-screen').appendChild(bonusEl);setTimeout(()=>bonusEl.remove(),1500);
-        setTimeout(()=>showSkillPanel(),200);
-        return;
-      }
-      document.getElementById('skill-panel').classList.remove('active');gamePaused=false;updateSkillBar();checkCombos()};ch.appendChild(c)});
+  const refreshCount=5+(tb.extraSkillChoice||0); // ↑ 4→5选1，刷新比默认多1个
+  const ch=document.getElementById('skill-choices');ch.innerHTML='';
+  const panel=document.getElementById('skill-panel');
+  // 刷新也混入BUFF
+  let buffCount=0;
+  if(typeof BUFF_DB!=='undefined'&&BUFF_DB.length>0&&S.level>=2){
+    buffCount=Math.min(BUFF_MAX_PER_PANEL,Math.floor(Math.random()<0.4?1:2));
+    buffCount=Math.min(buffCount,refreshCount-1);
+  }
+  const skillCount=refreshCount-buffCount;
+  const skills=getRandSkills(skillCount);
+  const buffs=getRandBuffs(buffCount);
+  const items=[];
+  skills.forEach(sk=>items.push({type:'skill',data:sk}));
+  buffs.forEach(bf=>items.push({type:'buff',data:bf}));
+  for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]]}
+  items.forEach(item=>{
+    if(item.type==='skill'){
+      ch.appendChild(createSkillCard(item.data,panel,tb));
+    }else{
+      ch.appendChild(createBuffCard(item.data,panel));
+    }
+  });
 };
+// ===== BUFF栏HUD更新 =====
+function updateBuffBar(){
+  let bar=document.getElementById('hud-buffs');
+  if(!bar){
+    bar=document.createElement('div');bar.id='hud-buffs';bar.className='hud-buffs';
+    const hudEl=document.getElementById('game-hud');
+    if(hudEl)hudEl.appendChild(bar);
+  }
+  bar.innerHTML='';
+  if(!S.buffs||!S.buffs.length)return;
+  S.buffs.forEach(b=>{
+    const slot=document.createElement('div');slot.className='buff-slot';
+    slot.style.borderColor=b.color+'88';
+    slot.innerHTML=`<span class="buff-slot-icon">${b.icon}</span>${b.stacks>1?`<span class="buff-slot-stack">×${b.stacks}</span>`:''}`;
+    slot.title=`${b.name} ×${b.stacks}\n${BUFF_DB.find(x=>x.id===b.id)?.desc||''}`;
+    bar.appendChild(slot);
+  });
+}
 function updateSkillBar(){const bar=document.getElementById('hud-skills');bar.innerHTML='';S.skills.forEach(s=>{const sl=document.createElement('div');sl.className='skill-slot active';sl.innerHTML=`<span>${s.icon}</span><span class="skill-level">Lv${s.level}</span>`;bar.appendChild(sl)});
   S.comboSkills.forEach(cid=>{const c=SKILL_COMBOS.find(x=>x.id===cid);if(c){const sl=document.createElement('div');sl.className='skill-slot active';sl.style.borderColor='#ff8c00';sl.innerHTML=`<span>${c.icon}</span><span class="skill-level" style="background:#ff8c00">合</span>`;bar.appendChild(sl)}})}
 
@@ -3586,16 +4322,16 @@ function processWaves(dt){
   const maxEn=ch.maxEnemies||30;
   const batchMin=ch.batchMin||2;
   const batchMax=ch.batchMax||6;
-  const rate=Math.max(.25,spawnBase-S.wave*spawnScale);
-  const max=Math.min(maxEn,15+S.wave*3);
+  const rate=Math.max(.20,spawnBase-S.wave*spawnScale); // ↓ 下限0.20s，后期刷怪更密
+  const max=Math.min(maxEn,15+S.wave*4); // ↑ *3→*4 最大怪物数增长更快
   spawnTimer-=dt;if(spawnTimer<=0&&S.enemies.length<max){
     spawnTimer=rate;
-    const n=Math.min(batchMin+Math.floor(S.wave/2),batchMax);
+    const n=Math.min(batchMin+Math.floor(S.wave*0.8),batchMax); // ↑ 每批次数量增加更快
     for(let i=0;i<n;i++)spawnEnemy()}
   // 波次推进：BOSS波不能靠时间推进，必须靠击杀BOSS；同时bossSpawning期间也不推进
   if(S.waveT>=waveDur&&!S.bossActive&&!S.bossSpawning&&!bossWave){S.wave++;S.waveT=0;announceWaveEnhanced(S.wave);if(S.wave>PD.maxWave)PD.maxWave=S.wave}
 }
-function showBossWarn(name){const el=document.getElementById('boss-warning');document.getElementById('boss-warning-name').textContent=name;el.classList.add('active');setTimeout(()=>el.classList.remove('active'),2500)}
+function showBossWarn(name){const el=document.getElementById('boss-warning');document.getElementById('boss-warning-name').textContent=name;el.classList.add('active');if(SFX.bossWarn)SFX.bossWarn();setTimeout(()=>el.classList.remove('active'),2500)}
 // 保留旧接口兼容
 function announceWave(n){announceWaveEnhanced(n)}
 
@@ -3670,6 +4406,11 @@ function processPassives(dt){
   const tb=S.talentBonus||{};
   if(tb.regen>0){
     S.hp=Math.min(S.maxHp,S.hp+S.maxHp*tb.regen*dt);
+  }
+  // ===== 局内BUFF: 持续回血 =====
+  const _bfP=S.buffStats||{};
+  if(_bfP.hpRegen>0){
+    S.hp=Math.min(S.maxHp,S.hp+S.maxHp*_bfP.hpRegen*dt);
   }
 }
 
@@ -3790,7 +4531,9 @@ function updateHUD(){
 
 // ==================== 结算 ====================
 function showResult(victory){
-  gameActive=false;const sc=document.getElementById('result-screen'),tt=document.getElementById('result-title');
+  gameActive=false;if(SFX.stopBgm)SFX.stopBgm();
+  if(victory&&SFX.victory)SFX.victory();
+  const sc=document.getElementById('result-screen'),tt=document.getElementById('result-title');
   tt.textContent=victory?'🏆 通关成功！':'💀 英雄倒下了...';tt.className='result-title '+(victory?'victory':'defeat');
   const bh=document.getElementById('result-boss-hint');
   if(!victory&&S.boss)bh.textContent=`距击败${S.boss.type.name}仅剩 ${Math.max(1,Math.round(S.boss.hp/S.boss.maxHp*100))}%！`;else bh.textContent='';
@@ -3846,6 +4589,17 @@ function showResult(victory){
       growthDiv.innerHTML=gh;
       scrollBody.appendChild(growthDiv);
     }
+  }
+  // ===== 局内BUFF汇总 =====
+  if(S.buffs&&S.buffs.length>0){
+    const buffDiv=document.createElement('div');buffDiv.className='result-growth';
+    let bh='<div class="rg-title" style="color:#44ddff">⬆ 局内增益</div>';
+    S.buffs.forEach(b=>{
+      const valStr=b.stat==='armor'?`+${(b.val*b.stacks)}`:`+${(b.val*b.stacks*100).toFixed(0)}%`;
+      bh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">${b.icon}</span>${b.name}</span><span class="rg-vals"><span style="color:${b.color}">×${b.stacks} ${valStr}</span></span></div>`;
+    });
+    buffDiv.innerHTML=bh;
+    scrollBody.appendChild(buffDiv);
   }
   // 奖励展示
   const heroName=ALL_HEROES[PD.selectedHero].name;
@@ -3909,6 +4663,22 @@ function showResult(victory){
   sc.classList.add('active');save();
 }
 
+// ==================== 音效控制 ====================
+window.toggleSound=function(){
+  if(!SFX.setMuted)return;
+  const muted=!SFX.isMuted();SFX.setMuted(muted);
+  const btn=document.getElementById('hud-sound-btn');
+  if(btn){btn.textContent=muted?'🔇':'🔊';btn.classList.toggle('muted',muted)}
+};
+window.setSfxVolume=function(v){
+  const vol=parseInt(v)/100;if(SFX.setSfxVol)SFX.setSfxVol(vol);
+  const el=document.getElementById('sfx-vol-val');if(el)el.textContent=Math.round(v);
+};
+window.setBgmVolume=function(v){
+  const vol=parseInt(v)/100;if(SFX.setBgmVol)SFX.setBgmVol(vol);
+  const el=document.getElementById('bgm-vol-val');if(el)el.textContent=Math.round(v);
+};
+
 // ==================== 游戏控制 ====================
 window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;
   document.getElementById('pause-panel').classList.toggle('active',gamePaused);
@@ -3962,6 +4732,16 @@ window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;
         });
         html+=`</div></div>`;
       }
+      // --- BUFF列表 ---
+      if(S.buffs&&S.buffs.length>0){
+        html+=`<div class="pause-section"><div class="pause-section-title">⬆ 增益效果 (${S.buffs.length})</div><div class="pause-buff-list">`;
+        S.buffs.forEach(b=>{
+          const def=BUFF_DB.find(x=>x.id===b.id);
+          const valStr=b.stat==='armor'?`+${(b.val*b.stacks)}`:`+${(b.val*b.stacks*100).toFixed(0)}%`;
+          html+=`<div class="pause-buff-item" style="border-left:2px solid ${b.color}"><span class="pbi-icon">${b.icon}</span><span class="pbi-name">${b.name}</span><span class="pbi-stack" style="color:${b.color}">×${b.stacks}</span><span class="pbi-val" style="color:${b.color}">${valStr}</span></div>`;
+        });
+        html+=`</div></div>`;
+      }
       detail.innerHTML=html;
     }
   }};
@@ -3982,6 +4762,8 @@ window.backToMenu=function(){
 };
 
 function cleanupBattle(){
+  // 停止BGM
+  if(SFX.stopBgm)SFX.stopBgm();
   // 移除所有战斗相关对象
   S.enemies.forEach(e=>{try{scene.remove(e.mesh)}catch(ex){}});
   S.projectiles.forEach(p=>{try{scene.remove(p.mesh)}catch(ex){}});
@@ -3991,6 +4773,9 @@ function cleanupBattle(){
   heroMesh=null;
   S.enemies=[];S.projectiles=[];S.particles=[];S.pickups=[];
   S.boss=null;S.bossActive=false;S.bossSpawning=false;
+  S.buffs=[];S.buffStats=null;
+  // 清理BUFF HUD
+  const buffBar=document.getElementById('hud-buffs');if(buffBar)buffBar.innerHTML='';
   // 清理环境粒子
   if(ambientPSystem){try{scene.remove(ambientPSystem.points)}catch(ex){}ambientPSystem=null;}
 }
@@ -4081,11 +4866,27 @@ window.startChapterBattle=function(){
     // DOT列表
     dots:[],
     // 天赋特殊效果存储（战斗中读取）
-    talentBonus:talentBonus
+    talentBonus:talentBonus,
+    // ===== 局内BUFF系统 =====
+    buffs:[],  // 已选BUFF列表 [{id,name,icon,stacks,stat,val}]
+    buffStats:{  // BUFF效果汇总（实时读取）
+      xpMult:0,goldMult:0,pickupRange:0,orbValue:0,
+      atkPct:0,critRate:0,critDmg:0,atkSpeed:0,skillDmg:0,
+      hpPct:0,armor:0,hpRegen:0,dodge:0,
+      moveSpd:0,skillCd:0,eliteDmg:0,leech:0,thorns:0,killHeal:0,aoeSize:0
+    }
   });
   // ===== 保存初始属性快照（用于成长追踪） =====
   S.initialAtk=S.attack;S.initialHp=S.maxHp;S.initialSpd=S.speed;
   S.initialCrit=S.critRate;S.initialArmor=S.armor;S.initialCritDmg=S.critDmg;
+  // ===== 战力差距倍率 =====
+  // 当英雄战力低于推荐战力时，怪物获得额外强度加成
+  // 公式: max(1, recPower/heroPower)^0.4 — 平方根缓和，不至于完全打不过
+  // 例: 战力150 vs recPower 1500(10倍差距) → 怪物强度×10^0.4=2.51倍
+  // 例: 战力150 vs recPower 150(无差距) → 1倍
+  const heroPower=S.attack*3+S.maxHp;
+  const recP=ch.recPower||heroPower;
+  S.powerGapMult=Math.max(1, Math.pow(recP/Math.max(1,heroPower), 0.4));
   // 成长来源追踪
   S.growthLog={levelAtk:0,levelHp:0,levelCrit:0,eventAtk:0,eventHp:0,eventSpd:0,eventCrit:0,eventArmor:0,lootAtk:0,lootHp:0,lootSpd:0,lootCrit:0,lootArmor:0};
   // 属性分解存储（给暂停面板和结算用）
@@ -4143,6 +4944,8 @@ window.startChapterBattle=function(){
     }
   }
   updateSkillBar();gameActive=true;gamePaused=false;announceWave(1);
+  // 启动战斗BGM
+  if(SFX.startBgm)SFX.startBgm();
   // ===== 天赋: 开局获得免费技能 =====
   if(talentBonus.freeSkill>0){
     setTimeout(()=>{if(gameActive)showSkillPanel()},1000);
@@ -4249,7 +5052,10 @@ function loop(){
       // 无敌状态检查（时光倒流复活后）
       if(S.passiveStacks.invincible>0){S.passiveStacks.invincible-=dt;continue}
       // ===== 天赋闪避 =====
-      if(tb.dodge>0&&Math.random()<tb.dodge){continue} // 闪避成功，完全不受伤
+      if(tb.dodge>0&&Math.random()<tb.dodge){if(SFX.dodge)SFX.dodge();continue} // 闪避成功，完全不受伤
+      // ===== 局内BUFF: 闪避 =====
+      const _bfDodge=S.buffStats||{};
+      if(_bfDodge.dodge>0&&Math.random()<_bfDodge.dodge){if(SFX.dodge)SFX.dodge();continue}
       // 护甲减伤公式: reduction = armor / (armor + 20)
       const armorReduce=S.armor>0?Math.min(0.75,S.armor/(S.armor+20)):0;
       let dmgTaken=e.atk*dt*(1-armorReduce);
@@ -4270,6 +5076,8 @@ function loop(){
         setTimeout(()=>{if(S.passiveStacks)S.passiveStacks._shieldCD=false},30000);
       }
       S.hp-=dmgTaken;
+      // 受伤音效（每200ms最多一次）
+      if(dmgTaken>0&&SFX.heroDmg){const _hnt=Date.now();if(!S._lastHitSfx||_hnt-S._lastHitSfx>200){S._lastHitSfx=_hnt;SFX.heroDmg()}}
       // 触发英雄受击动画反馈
       if(dmgTaken>0&&heroMesh&&heroMesh.userData.anim){heroMesh.userData.anim.hitFlash=0.15}
       // 荆棘术反弹（使用数据驱动参数）
@@ -4278,6 +5086,8 @@ function loop(){
         dmgEnemy(e,(e.atk*reflPct)*dt,{noCrit:true,skillName:'荆棘术'})}
       // ===== 天赋荆棘甲反弹 =====
       if(tb.thorns>0){dmgEnemy(e,e.atk*tb.thorns*dt,{noCrit:true,skillName:'荆棘甲'})}
+      // ===== 局内BUFF: 反伤 =====
+      if(_bfDodge.thorns>0){dmgEnemy(e,e.atk*_bfDodge.thorns*dt,{noCrit:true,skillName:'反伤甲'})}
       // 装备特效：坚韧(板甲) — 致命伤害免死
       if(S.hp<=0&&S.equipEffects.fortify&&!S.passiveStacks.fortifyCooldown){
         S.hp=S.maxHp*0.15;S.passiveStacks.fortifyCooldown=true;
@@ -4601,7 +5411,8 @@ function loop(){
   if(Math.random()<.33)updateEdgeWarnings();
   // 拾取
   const _tb=S.talentBonus||{};
-  const _attractR=4*(1+(_tb.pickupRange||0));        // 天赋: 拾取范围加成
+  const _bs=S.buffStats||{};
+  const _attractR=4*(1+(_tb.pickupRange||0)+(_bs.pickupRange||0));        // 天赋+BUFF: 拾取范围加成
   const _magnetR=_tb.xpMagnet>0?_attractR*2.5:0;     // 天赋: XP吸引(超远距离自动飞来)
   for(let i=S.pickups.length-1;i>=0;i--){const p=S.pickups[i];p.life-=dt;p.mesh.rotation.y+=dt*2;p.mesh.position.y=.5+Math.sin(gameTime*3+i)*.15;
     const d=p.mesh.position.distanceTo(heroMesh.position);
@@ -4610,9 +5421,9 @@ function loop(){
       const dr=new THREE.Vector3().subVectors(heroMesh.position,p.mesh.position).normalize();p.mesh.position.addScaledVector(dr,6*dt)}
     if(d<_attractR){const dr=new THREE.Vector3().subVectors(heroMesh.position,p.mesh.position).normalize();p.mesh.position.addScaledVector(dr,10*dt)}
     if(d<1){
-      if(p.type==='xp'){const xpVal=Math.round(NUM.XP_ORB_BASE+S.level*NUM.XP_ORB_SCALE);gainXP(xpVal)}
-      else if(p.type==='gold'){const goldVal=Math.round(NUM.GOLD_PER_KILL_BASE+S.wave*NUM.GOLD_PER_KILL_WAVE);S.gold+=goldVal}
-      else if(p.type==='heal'){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*NUM.HEAL_ORB_VALUE);aoeEffect(heroMesh.position,1,0x44ff44,.3)}
+      if(p.type==='xp'){const orbMult=1+(_bs.orbValue||0);const xpVal=Math.round((NUM.XP_ORB_BASE+S.level*NUM.XP_ORB_SCALE)*orbMult);gainXP(xpVal);if(SFX.pickup)SFX.pickup('xp')}
+      else if(p.type==='gold'){const goldBuff=1+(_bs.goldMult||0);const goldVal=Math.round((NUM.GOLD_PER_KILL_BASE+S.wave*NUM.GOLD_PER_KILL_WAVE)*goldBuff);S.gold+=goldVal;if(SFX.pickup)SFX.pickup('gold')}
+      else if(p.type==='heal'){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*NUM.HEAL_ORB_VALUE);aoeEffect(heroMesh.position,1,0x44ff44,.3);if(SFX.pickup)SFX.pickup('heal')}
       else if(p.type==='chest'){openLootChest(p.tier||'elite')}
       scene.remove(p.mesh);S.pickups.splice(i,1)}
     else if(p.life<=0){scene.remove(p.mesh);S.pickups.splice(i,1)}}
@@ -4630,6 +5441,7 @@ function loop(){
       const revHp=_rtb.revive.hp||0.30;
       if(Math.random()<revChance){
         S.hp=S.maxHp*revHp;S.passiveStacks._reviveUsed=true;
+        if(SFX.revive)SFX.revive();
         aoeEffect(heroMesh.position,4,0xff44ff,1.0);lightBeam(heroMesh.position,0xff44ff,1.8,.7);screenFlash('#ff88ff',.3,250);screenShake(.12,.25);
         S.passiveStacks.invincible=2; // 复活后2秒无敌
         const el=document.createElement('div');el.className='kill-streak';el.textContent=`🔥 涅槃重生！(${Math.round(revHp*100)}%HP)`;document.getElementById('game-screen').appendChild(el);setTimeout(()=>el.remove(),1500);
@@ -4641,11 +5453,12 @@ function loop(){
     const revHpPct=twSk.reviveHpPct+(twLv-1)*twSk.reviveHpPctPerLv;
     const invDur=twSk.invincibleDur+(twLv-1)*twSk.invincibleDurPerLv;
     S.hp=S.maxHp*revHpPct;
+    if(SFX.revive)SFX.revive();
     aoeEffect(heroMesh.position,5,0xffff00,1.2);lightBeam(heroMesh.position,0xffff00,2,.8);screenFlash('#ffffaa',.3,300);screenShake(.15,.3);iceShatter(heroMesh.position,5,15);
     // 复活后无敌
     S.passiveStacks.invincible=invDur;
     const el=document.createElement('div');el.className='kill-streak';el.textContent=`⏪ 时光倒流！(${Math.round(revHpPct*100)}%HP)`;document.getElementById('game-screen').appendChild(el);setTimeout(()=>el.remove(),1500)}
-    else if(S.hp<=0){S.hp=0;showResult(false)}}
+    else if(S.hp<=0){S.hp=0;if(SFX.heroDeath)SFX.heroDeath();if(SFX.stopBgm)SFX.stopBgm();showResult(false)}}
   }catch(loopErr){console.error('Loop error:',loopErr)}
   updateHUD();
   // 渲染管线：Bloom后处理 or 直出

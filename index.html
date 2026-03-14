@@ -298,6 +298,7 @@
     <div class="hud-chapter-name" id="hud-chapter-name">第1章 · 艾尔文森林</div>
     <div class="boss-hp-bar" id="boss-hp-bar"><div class="boss-hp-name" id="boss-name">💀 霍格</div><div class="boss-hp-container"><div class="boss-hp-fill" id="boss-hp-fill"></div></div></div>
     <div class="hud-skills" id="hud-skills"></div>
+    <div class="hud-sound" id="hud-sound-btn" onclick="toggleSound()">🔊</div>
     <div class="hud-pause" onclick="togglePause()">⏸</div>
   </div>
 
@@ -360,6 +361,10 @@
       <div class="pause-stat"><div class="pause-stat-val" id="pause-time">0:00</div><div class="pause-stat-label">时间</div></div>
     </div>
     <div class="pause-detail" id="pause-detail"></div>
+    <div class="pause-sound-ctrl">
+      <div class="psc-row"><span class="psc-label">🔊 音效</span><input type="range" min="0" max="100" value="50" class="psc-slider" id="sfx-vol-slider" oninput="setSfxVolume(this.value)"><span class="psc-val" id="sfx-vol-val">50</span></div>
+      <div class="psc-row"><span class="psc-label">🎵 音乐</span><input type="range" min="0" max="100" value="25" class="psc-slider" id="bgm-vol-slider" oninput="setBgmVolume(this.value)"><span class="psc-val" id="bgm-vol-val">25</span></div>
+    </div>
     <button class="btn-gold" onclick="togglePause()">▶️ 继续战斗</button>
     <button class="btn-sub" onclick="backToMenu()">🚪 退出副本</button>
   </div>
@@ -382,6 +387,7 @@ window.onerror=function(msg,url,line,col,error){
 };
 </script>
 <script src="three.min.js"></script>
+<script src="sfx.js"></script>
 <script src="data.js"></script>
 <script src="systems.js"></script>
 <script src="game.js"></script>

@@ -366,6 +366,18 @@ canvas{display:block;touch-action:none}
 .skill-level{position:absolute;bottom:-3px;right:-3px;background:linear-gradient(135deg,#4466ff,#6644ff);color:#fff;font-size:8px;padding:1px 5px;border-radius:5px;font-weight:bold;box-shadow:0 1px 3px rgba(0,0,0,.5)}
 .hud-pause{position:absolute;top:12px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;transition:all .2s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .hud-pause:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
+.hud-sound{position:absolute;top:12px;right:62px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;transition:all .2s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.hud-sound:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
+.hud-sound.muted{opacity:.4}
+/* 暂停面板音量控制 */
+.pause-sound-ctrl{width:90%;max-width:300px;margin:8px auto;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.psc-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.psc-row:last-child{margin-bottom:0}
+.psc-label{font-size:12px;color:#aaa;min-width:50px}
+.psc-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,rgba(255,215,0,.3),rgba(255,215,0,.15));outline:none;cursor:pointer}
+.psc-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);border:2px solid rgba(255,255,255,.2);cursor:pointer;box-shadow:0 0 6px rgba(255,215,0,.3)}
+.psc-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);border:2px solid rgba(255,255,255,.2);cursor:pointer}
+.psc-val{font-size:11px;color:#ffd700;min-width:24px;text-align:right;font-weight:bold}
 
 /* BOSS血条 */
 .boss-hp-bar{position:absolute;top:50px;left:50%;transform:translateX(-50%);width:380px;max-width:78%;display:none;pointer-events:none}
@@ -420,6 +432,23 @@ canvas{display:block;touch-action:none}
 .skill-max-hint{font-size:9px;color:#ffd700;margin-top:5px;text-align:center;opacity:.8}
 .skill-refresh{text-align:center;font-size:13px;color:#ffd700;cursor:pointer;padding:8px 20px;border-radius:20px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.05);transition:all .2s}
 .skill-refresh:hover{background:rgba(255,215,0,.12)}
+
+/* ===== BUFF选项卡样式 ===== */
+.skill-choice.buff-choice{background:linear-gradient(135deg,rgba(40,80,120,.15),rgba(20,40,80,.08));border-style:dashed;position:relative;overflow:hidden}
+.skill-choice.buff-choice::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(68,221,255,.06) 0%,transparent 40%,transparent 60%,rgba(68,221,255,.04) 100%);pointer-events:none}
+.skill-choice.buff-choice::after{content:'⬆ 增益';position:absolute;top:5px;right:6px;font-size:9px;color:rgba(68,221,255,.7);font-weight:bold;letter-spacing:1px}
+.skill-choice.buff-choice:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 12px 30px rgba(68,221,255,.12),0 0 25px rgba(68,221,255,.06)}
+.buff-category{font-size:10px;margin-bottom:4px;font-weight:bold;letter-spacing:1px}
+.buff-value{font-size:16px;font-weight:900;margin:6px 0 4px;font-family:'Courier New',monospace;text-shadow:0 0 8px currentColor}
+.buff-flavor{font-size:9px;color:rgba(139,125,170,.5);font-style:italic;margin-top:4px}
+.buff-stack-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:3px;vertical-align:middle;font-weight:bold;background:rgba(68,221,255,.15);color:#44ddff;border:1px solid rgba(68,221,255,.3)}
+.buff-stack-badge.buff-new{background:rgba(0,255,100,.18);color:#44ff88;border:1px solid rgba(0,255,100,.3)}
+
+/* BUFF栏HUD — 紧跟在战斗属性(hud-combat-stats)下方，避免重叠 */
+.hud-buffs{position:absolute;top:136px;left:10px;display:flex;gap:4px;flex-wrap:wrap;z-index:15;max-width:200px;pointer-events:none}
+.buff-slot{width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.6);border:1.5px solid rgba(68,221,255,.4);display:flex;align-items:center;justify-content:center;position:relative;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.buff-slot-icon{font-size:16px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+.buff-slot-stack{position:absolute;bottom:-2px;right:-2px;font-size:8px;font-weight:bold;color:#fff;background:rgba(68,221,255,.8);border-radius:4px;padding:0 3px;line-height:1.3;min-width:14px;text-align:center}
 
 /* BOSS警告 */
 #boss-warning{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;background:radial-gradient(circle,transparent 30%,rgba(255,0,0,.08) 70%)}
@@ -554,6 +583,20 @@ canvas{display:block;touch-action:none}
 @keyframes lootItemIn{0%{transform:translateY(20px) scale(.5);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
 @keyframes legendaryGlow{0%,100%{box-shadow:0 0 10px rgba(255,140,0,.2)}50%{box-shadow:0 0 25px rgba(255,140,0,.5),0 0 50px rgba(255,140,0,.15)}}
 .loot-btn{margin-top:20px;cursor:pointer}
+
+/* ===== 精英战利品悬浮通知（不暂停） ===== */
+.loot-toast-container{position:fixed;top:80px;right:12px;z-index:60;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:220px}
+.loot-toast{background:linear-gradient(135deg,rgba(20,15,30,.92),rgba(40,30,20,.88));border:1px solid rgba(255,136,0,.35);border-left:3px solid #ff8800;border-radius:10px;padding:10px 12px;transform:translateX(120%);opacity:0;transition:transform .35s cubic-bezier(.18,.89,.32,1.28),opacity .35s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 15px rgba(255,136,0,.08);position:relative;overflow:hidden}
+.loot-toast.show{transform:translateX(0);opacity:1}
+.loot-toast.hide{transform:translateX(120%);opacity:0;transition:transform .3s ease-in,opacity .3s ease-in}
+.loot-toast-header{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.loot-toast-badge{font-size:14px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.loot-toast-label{font-size:11px;color:#ff8800;font-weight:700;letter-spacing:1px;text-shadow:0 0 8px rgba(255,136,0,.3)}
+.loot-toast-body{display:flex;flex-direction:column;gap:3px}
+.loot-toast-reward{display:flex;align-items:center;gap:4px;font-size:12px;color:#ffe0aa;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.ltr-icon{font-size:14px;flex-shrink:0}
+.loot-toast-extra{font-size:10px;color:rgba(255,200,100,.7);margin-top:2px}
+.loot-toast-timer{position:absolute;bottom:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#ff8800,#ffd700);border-radius:0 0 10px 10px;transform-origin:left}
 
 /* ==================== 伤害统计面板 ==================== */
 .result-dps-chart{width:100%;margin:6px 0;padding:10px;border-radius:10px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06)}
@@ -789,6 +832,10 @@ canvas{display:block;touch-action:none}
 .pause-equip-list{display:flex;flex-direction:column;gap:4px}
 .pause-equip-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,.02)}
 .pause-equip-item .pei-icon{font-size:16px}.pause-equip-item .pei-name{color:#fff;flex:1}.pause-equip-item .pei-stats{color:#aaa;font-size:10px}
+/* 暂停面板BUFF列表 */
+.pause-buff-list{display:flex;flex-direction:column;gap:3px}
+.pause-buff-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 6px;border-radius:6px;background:rgba(68,221,255,.04);padding-left:10px}
+.pause-buff-item .pbi-icon{font-size:14px}.pause-buff-item .pbi-name{color:#ddd;flex:1}.pause-buff-item .pbi-stack{font-size:10px;font-weight:bold}.pause-buff-item .pbi-val{font-size:10px;font-weight:bold;font-family:'Courier New',monospace}
 
 /* ==================== 副本属性分解 ==================== */
 .cd-power-breakdown{margin-top:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04)}

@@ -5,7 +5,7 @@
 //  【核心数值哲学】
 //  1. 所有伤害 = 基础值 + 攻击力×缩放系数，确保英雄选择有意义
 //  2. 升级曲线采用 S型曲线：前期快速（爽感）→ 中期稳定 → 后期放缓（挑战）
-//  3. 怪物HP以章节为单位指数增长（1.8倍/章），波次内线性缩放
+//  3. 怪物HP以章节为单位指数增长（1.8倍/章），波次内线性缩放，不可一刀秒杀
 //  4. 技能CD分三档：高频低伤（割草快感）、中频中伤（节奏骨架）、低频高伤（高光时刻）
 //  5. 英雄DPS预算一致，但伤害分布模式不同（AOE vs 单体 vs DOT vs 爆发）
 //
@@ -13,29 +13,30 @@
 // ==================== 数值公式常量 ====================
 const NUM = {
   // 升级经验公式: xpNeed = BASE * (level^POWER) + level*LINEAR
-  XP_BASE: 12,               // ↑ 8→12 提高基础经验需求
-  XP_POWER: 1.85,            // ↑ 1.65→1.85 升级曲线更陡
-  XP_LINEAR: 6,              // ↑ 4→6 线性部分增大
-  // 每级属性成长
-  ATK_PER_LEVEL: 1.8,        // ↓ 2.5→1.8 降低每级攻击成长
-  HP_PER_LEVEL: 5,            // ↓ 8→5 降低每级生命成长
-  HEAL_ON_LEVELUP: 0.12,     // ↓ 0.20→0.12 升级回血降低
+  XP_BASE: 8,                // ↓ 12→8 降低基础经验需求，前期升级快
+  XP_POWER: 1.55,            // ↓ 1.85→1.55 升级曲线更平缓，持续有升级感
+  XP_LINEAR: 4,              // ↓ 6→4 线性部分减小
+  // 每级属性成长 — 幅度大一些，升级有实质性感知
+  ATK_PER_LEVEL: 3.0,        // ↑ 1.8→3.0 每级攻击成长翻倍，升级即变强
+  HP_PER_LEVEL: 10,           // ↑ 5→10 每级生命成长翻倍
+  HEAL_ON_LEVELUP: 0.20,     // ↑ 0.12→0.20 升级回血增加，爽快感
   // 掉落XP球价值 = BASE + level*SCALE
   XP_ORB_BASE: 1,            // ↓ 2→1 球基础价值降低
   XP_ORB_SCALE: 0.3,         // ↓ 0.5→0.3 球随等级缩放降低
   // 怪物波次缩放: 实际属性 = 基础 * (1 + (wave-1)*WAVE_SCALE)
-  WAVE_HP_SCALE: 0.15,       // ↑ 0.12→0.15 怪物HP增长加快
-  WAVE_ATK_SCALE: 0.10,      // ↑ 0.08→0.10 怪物攻击增长加快
-  WAVE_SPD_SCALE: 0.02,      // 每波速度+2% (不变)
-  // 怪物经验掉落缩放
-  WAVE_XP_SCALE: 0.03,       // ↓ 0.06→0.03 经验随波次增长放缓
+  // 设计：8波ch1→最终波怪物HP=base*(1+7*0.25)=2.75倍，配合精英+BOSS制造压力
+  WAVE_HP_SCALE: 0.25,       // ↑ 0.15→0.25 怪物HP每波增长25%
+  WAVE_ATK_SCALE: 0.18,      // ↑ 0.10→0.18 怪物攻击每波增长18%
+  WAVE_SPD_SCALE: 0.03,      // ↑ 0.02→0.03 怪物速度也缓慢提升
+  // 怪物经验掉落缩放 — 同步增加，确保玩家升级能跟上难度
+  WAVE_XP_SCALE: 0.10,       // ↑ 0.03→0.10 怪物经验随波次大幅增长
   // 精英怪倍率
-  ELITE_HP_MULT: 4.0,        // ↑ 3.5→4.0 精英更肉
-  ELITE_ATK_MULT: 2.0,       // ↑ 1.8→2.0 精英更痛
-  ELITE_XP_MULT: 3,          // ↓ 5→3 精英经验大幅降低
+  ELITE_HP_MULT: 5.0,        // ↑ 4.0→5.0 精英更肉
+  ELITE_ATK_MULT: 2.5,       // ↑ 2.0→2.5 精英更痛
+  ELITE_XP_MULT: 5,          // ↑ 3→5 精英给更多经验，奖励冒险
   ELITE_SIZE_MULT: 1.3,
-  ELITE_CHANCE_BASE: 0.0,    // 第1波无精英
-  ELITE_CHANCE_PER_WAVE: 0.025, // 每波+2.5%概率
+  ELITE_CHANCE_BASE: 0.03,   // ↑ 0→0.03 第1波就有小概率出精英
+  ELITE_CHANCE_PER_WAVE: 0.04, // ↑ 0.025→0.04 精英出现更频繁
   // BOSS阶段转换
   BOSS_PHASE2_HP: 0.6,       // 60%血量进入P2
   BOSS_PHASE3_HP: 0.25,      // 25%血量进入P3（狂暴）
@@ -68,10 +69,12 @@ const NUM = {
 // critRate = 暴击率; critDmg = 暴击倍率
 // passive = 被动特性（在战斗中动态生效）
 // atkRate = 基础攻击间隔(秒); atkRange = 攻击范围; atkType = 攻击类型
+// 设计原则：普攻是稳定输出基底，不是机关枪！间隔1.0~1.6s，靠技能填充CD空窗
+// DPS预算 ≈ atk * atkRatio / atkRate，各职业保持接近
 const ALL_HEROES={
   warrior:{id:'warrior',name:'战士',icon:'⚔️',origin:'武器战',role:'近战AOE',color:0xcc3333,
     atk:22,hp:200,spd:4.5,critRate:0.08,critDmg:2.0,armor:3,
-    atkRate:0.5,atkRange:3.5,atkType:'melee_aoe',atkRatio:1.0,
+    atkRate:1.1,atkRange:3.5,atkType:'melee_aoe',atkRatio:1.0,
     passive:'berserker',passiveDesc:'血量低于30%时攻击力+40%，攻速+25%',
     signatureSkill:'sig_whirlwind',skill:'旋风斩',
     favorSkills:['frostnova','ashbringer','bloodthirst'], // 近战AOE偏好
@@ -79,7 +82,7 @@ const ALL_HEROES={
 
   mage:{id:'mage',name:'法师',icon:'🔥',origin:'火法',role:'远程范围',color:0xff6600,
     atk:30,hp:120,spd:4.0,critRate:0.12,critDmg:2.2,armor:0,
-    atkRate:0.4,atkRange:15,atkType:'ranged_multi',atkRatio:1.1,
+    atkRate:1.0,atkRange:15,atkType:'ranged_multi',atkRatio:1.1,
     passive:'ignite',passiveDesc:'火焰攻击使敌人燃烧，3秒内额外造成30%伤害',
     signatureSkill:'sig_firestorm',skill:'烈焰风暴',
     favorSkills:['fireball','livingbomb','eyeofsargeras'], // 火焰法术偏好
@@ -87,7 +90,7 @@ const ALL_HEROES={
 
   hunter:{id:'hunter',name:'猎人',icon:'🏹',origin:'兽王猎',role:'召唤+远程',color:0x33aa33,
     atk:20,hp:160,spd:5.0,critRate:0.10,critDmg:2.0,armor:1,
-    atkRate:0.35,atkRange:18,atkType:'ranged_barrage',atkRatio:0.65,
+    atkRate:0.9,atkRange:18,atkType:'ranged_barrage',atkRatio:0.65,
     passive:'beastmaster',passiveDesc:'每30秒召唤一只野兽助战(持续15秒)，攻击力=英雄60%',
     signatureSkill:'sig_multishot',skill:'多重射击',
     favorSkills:['naturewrath','thunder','chainlight'], // 远程多目标偏好
@@ -95,7 +98,7 @@ const ALL_HEROES={
 
   priest:{id:'priest',name:'牧师',icon:'✝️',origin:'暗牧',role:'持续伤害',color:0x9966cc,
     atk:26,hp:130,spd:4.2,critRate:0.06,critDmg:2.0,armor:0,
-    atkRate:0.55,atkRange:12,atkType:'ranged_dot',atkRatio:0.9,
+    atkRate:1.2,atkRange:12,atkType:'ranged_dot',atkRatio:0.9,
     passive:'vampiric',passiveDesc:'DOT伤害的15%转化为生命恢复',
     signatureSkill:'sig_shadowword',skill:'暗言术',
     favorSkills:['heal','bloodthirst','timewarp'], // 生存+DOT偏好
@@ -103,7 +106,7 @@ const ALL_HEROES={
 
   rogue:{id:'rogue',name:'盗贼',icon:'🗡️',origin:'狂徒贼',role:'高爆发',color:0x444444,
     atk:35,hp:110,spd:5.5,critRate:0.25,critDmg:2.8,armor:1,
-    atkRate:0.25,atkRange:4,atkType:'melee_burst',atkRatio:1.6,
+    atkRate:0.7,atkRange:4,atkType:'melee_burst',atkRatio:1.6,
     passive:'shadowstrike',passiveDesc:'暴击后下一次攻击必定暴击，且暴击伤害+50%',
     signatureSkill:'sig_shadowdance',skill:'影舞',
     favorSkills:['thunder','chainstorm','ashbringer'], // 爆发+暴击偏好
@@ -111,7 +114,7 @@ const ALL_HEROES={
 
   shaman:{id:'shaman',name:'萨满',icon:'🌊',origin:'增强萨',role:'图腾流',color:0x2266bb,
     atk:24,hp:170,spd:4.3,critRate:0.08,critDmg:2.0,armor:2,
-    atkRate:0.6,atkRange:5,atkType:'totem_hybrid',atkRatio:0.8,
+    atkRate:1.3,atkRange:5,atkType:'totem_hybrid',atkRatio:0.8,
     passive:'totemic',passiveDesc:'每20秒自动放置一个图腾(火/水/风轮替)，持续12秒',
     signatureSkill:'sig_totemstorm',skill:'图腾风暴',
     favorSkills:['chainlight','heal','frostnova'], // 元素混合偏好
@@ -119,7 +122,7 @@ const ALL_HEROES={
 
   deathknight:{id:'deathknight',name:'死骑',icon:'💀',origin:'冰DK',role:'减速控制',color:0x4488cc,
     atk:26,hp:220,spd:3.8,critRate:0.07,critDmg:2.0,armor:4,
-    atkRate:0.55,atkRange:3.5,atkType:'melee_frost',atkRatio:0.95,
+    atkRate:1.2,atkRange:3.5,atkType:'melee_frost',atkRatio:0.95,
     passive:'frostpresence',passiveDesc:'近身怪物持续受到冰霜光环伤害(每秒ATK×20%)并减速30%',
     signatureSkill:'sig_wintercoming',skill:'凛冬将至',
     favorSkills:['frostnova','blizzard','frostmourne'], // 冰霜偏好
@@ -127,7 +130,7 @@ const ALL_HEROES={
 
   druid:{id:'druid',name:'德鲁伊',icon:'🌿',origin:'鸟德',role:'变形切换',color:0x44aa44,
     atk:23,hp:180,spd:4.5,critRate:0.08,critDmg:2.0,armor:2,
-    atkRate:0.5,atkRange:12,atkType:'shapeshifter',atkRatio:0.85,
+    atkRate:1.1,atkRange:12,atkType:'shapeshifter',atkRatio:0.85,
     passive:'shapeshift',passiveDesc:'血量>50%为远程月火形态(高伤害)，<50%自动切熊形态(+80%护甲,近战AOE,每秒回血1%)',
     signatureSkill:'sig_starfall',skill:'星辰坠落',
     favorSkills:['thorns','naturewrath','heal'], // 自然生存偏好
@@ -135,7 +138,7 @@ const ALL_HEROES={
 
   warlock:{id:'warlock',name:'术士',icon:'👿',origin:'痛苦术',role:'诅咒召唤',color:0x7733aa,
     atk:28,hp:115,spd:4.0,critRate:0.10,critDmg:2.2,armor:0,
-    atkRate:0.65,atkRange:14,atkType:'curse_summon',atkRatio:1.0,
+    atkRate:1.4,atkRange:14,atkType:'curse_summon',atkRatio:1.0,
     passive:'souldrain',passiveDesc:'被诅咒的敌人死亡时爆炸，对周围造成其最大HP×15%的伤害',
     signatureSkill:'sig_doomguard',skill:'末日守卫',
     favorSkills:['livingbomb','eyeofsargeras','dalaran'], // 高伤AOE偏好
@@ -143,7 +146,7 @@ const ALL_HEROES={
 
   paladin:{id:'paladin',name:'圣骑士',icon:'🛡️',origin:'惩戒骑',role:'AOE+护盾',color:0xffaa33,
     atk:21,hp:250,spd:4.0,critRate:0.06,critDmg:2.0,armor:5,
-    atkRate:0.55,atkRange:3.5,atkType:'melee_holy',atkRatio:0.9,
+    atkRate:1.2,atkRange:3.5,atkType:'melee_holy',atkRatio:0.9,
     passive:'divineprotection',passiveDesc:'每25秒获得一个神圣护盾(吸收=最大HP×15%)，护盾存在时攻击附带圣光灼烧',
     signatureSkill:'sig_avengershield',skill:'复仇之盾',
     favorSkills:['heal','thorns','ashbringer'], // 坦克近战偏好
@@ -151,12 +154,13 @@ const ALL_HEROES={
 };
 
 // ==================== 8个副本（指数级难度曲线） ====================
-// HP基础值设计: ch1=15 → ch7=15*1.8^6 ≈ 510 (34倍跨度)
+// HP基础值设计: ch1=40 → ch7=40*1.8^6 ≈ 1360 (34倍跨度)
 // 每个副本3种怪：炮灰(低HP高速)、标准(中等)、精英型(高HP低速高伤)
 // BOSS增加阶段机制
+// 设计原则：小怪不能被普攻一刀秒杀！最弱的炮灰也需要2-3下
 const CHAPTERS={
   ch1:{id:'ch1',num:1,name:'艾尔文森林',desc:'狗头人与豺狼人出没',bgColor:0x1a2a1a,
-    boss:{name:'霍格',hp:500,atk:12,spd:2.0,color:0x884422,sz:2.0,
+    boss:{name:'霍格',hp:800,atk:15,spd:2.0,color:0x884422,sz:2.0,
       phases:[
         {hpPct:1.0,skills:['charge'],atkMult:1.0,spdMult:1.0,interval:5},
         {hpPct:0.5,skills:['charge','whirlwind'],atkMult:1.3,spdMult:1.2,interval:4}
@@ -166,11 +170,11 @@ const CHAPTERS={
     // 刷怪节奏：初始慢→渐快
     spawnBase:1.8,spawnScalePerWave:0.15,maxEnemies:20,batchMin:2,batchMax:5,
     enemyTypes:[
-      {name:'狗头人',color:0x886644,sz:0.6,hp:15,atk:3,spd:2.0,xp:2,type:'fodder'},
-      {name:'豺狼人',color:0xaa7744,sz:0.7,hp:24,atk:5,spd:1.8,xp:3,type:'standard'}]},
+      {name:'狗头人',color:0x886644,sz:0.6,hp:40,atk:4,spd:2.0,xp:2,type:'fodder'},
+      {name:'豺狼人',color:0xaa7744,sz:0.7,hp:65,atk:7,spd:1.8,xp:3,type:'standard'}]},
 
   ch2:{id:'ch2',num:2,name:'西部荒野',desc:'迪菲亚兄弟会地盘',bgColor:0x2a2210,
-    boss:{name:'范克里夫',hp:1200,atk:18,spd:2.5,color:0xaa2222,sz:2.2,
+    boss:{name:'范克里夫',hp:1800,atk:22,spd:2.5,color:0xaa2222,sz:2.2,
       phases:[
         {hpPct:1.0,skills:['knifestorm'],atkMult:1.0,spdMult:1.0,interval:6},
         {hpPct:0.6,skills:['knifestorm','summon_adds'],atkMult:1.2,spdMult:1.1,interval:5},
@@ -180,12 +184,12 @@ const CHAPTERS={
     reward:{gold:700,xp:280,frags:2},unlockReq:'ch1',
     spawnBase:1.6,spawnScalePerWave:0.12,maxEnemies:25,batchMin:2,batchMax:6,
     enemyTypes:[
-      {name:'迪菲亚打手',color:0xcc4422,sz:0.65,hp:28,atk:6,spd:2.2,xp:3,type:'standard'},
-      {name:'迪菲亚盗贼',color:0xcc2222,sz:0.6,hp:20,atk:10,spd:2.8,xp:4,type:'fast'},
-      {name:'迪菲亚法师',color:0xcc6622,sz:0.6,hp:18,atk:14,spd:1.6,xp:5,type:'caster'}]},
+      {name:'迪菲亚打手',color:0xcc4422,sz:0.65,hp:75,atk:8,spd:2.2,xp:3,type:'standard'},
+      {name:'迪菲亚盗贼',color:0xcc2222,sz:0.6,hp:50,atk:14,spd:2.8,xp:4,type:'fast'},
+      {name:'迪菲亚法师',color:0xcc6622,sz:0.6,hp:45,atk:18,spd:1.6,xp:5,type:'caster'}]},
 
   ch3:{id:'ch3',num:3,name:'荆棘谷',desc:'巨魔与猛兽横行',bgColor:0x0a2a0a,
-    boss:{name:'血领主曼多基尔',hp:2200,atk:24,spd:2.2,color:0x882244,sz:2.5,
+    boss:{name:'血领主曼多基尔',hp:3200,atk:30,spd:2.2,color:0x882244,sz:2.5,
       phases:[
         {hpPct:1.0,skills:['charge','throw_spear'],atkMult:1.0,spdMult:1.0,interval:5},
         {hpPct:0.6,skills:['charge','throw_spear','blood_frenzy'],atkMult:1.3,spdMult:1.3,interval:4},
@@ -195,12 +199,12 @@ const CHAPTERS={
     reward:{gold:1000,xp:420,frags:3},unlockReq:'ch2',
     spawnBase:1.5,spawnScalePerWave:0.12,maxEnemies:30,batchMin:3,batchMax:7,
     enemyTypes:[
-      {name:'丛林巨魔',color:0x44aa66,sz:0.7,hp:45,atk:8,spd:2.0,xp:4,type:'standard'},
-      {name:'银背猩猩',color:0x666633,sz:0.85,hp:70,atk:12,spd:1.5,xp:6,type:'tank'},
-      {name:'猛虎',color:0xcc8844,sz:0.65,hp:30,atk:15,spd:3.2,xp:5,type:'fast'}]},
+      {name:'丛林巨魔',color:0x44aa66,sz:0.7,hp:110,atk:11,spd:2.0,xp:4,type:'standard'},
+      {name:'银背猩猩',color:0x666633,sz:0.85,hp:170,atk:16,spd:1.5,xp:6,type:'tank'},
+      {name:'猛虎',color:0xcc8844,sz:0.65,hp:75,atk:20,spd:3.2,xp:5,type:'fast'}]},
 
   ch4:{id:'ch4',num:4,name:'灼热峡谷',desc:'黑铁矮人与火元素',bgColor:0x2a1008,
-    boss:{name:'拉格纳罗斯',hp:4000,atk:32,spd:1.8,color:0xff4400,sz:3.0,
+    boss:{name:'拉格纳罗斯',hp:6000,atk:40,spd:1.8,color:0xff4400,sz:3.0,
       phases:[
         {hpPct:1.0,skills:['magma_blast','lava_pool'],atkMult:1.0,spdMult:1.0,interval:5},
         {hpPct:0.5,skills:['magma_blast','lava_pool','fire_nova'],atkMult:1.4,spdMult:1.0,interval:4},
@@ -210,12 +214,12 @@ const CHAPTERS={
     reward:{gold:1500,xp:600,frags:4},unlockReq:'ch3',
     spawnBase:1.4,spawnScalePerWave:0.10,maxEnemies:35,batchMin:3,batchMax:8,
     enemyTypes:[
-      {name:'黑铁矮人',color:0x884422,sz:0.6,hp:60,atk:10,spd:2.0,xp:5,type:'standard'},
-      {name:'火元素',color:0xff6622,sz:0.7,hp:80,atk:16,spd:1.4,xp:7,type:'caster'},
-      {name:'熔岩犬',color:0xff4400,sz:0.55,hp:40,atk:8,spd:3.0,xp:4,type:'fast'}]},
+      {name:'黑铁矮人',color:0x884422,sz:0.6,hp:150,atk:14,spd:2.0,xp:5,type:'standard'},
+      {name:'火元素',color:0xff6622,sz:0.7,hp:200,atk:22,spd:1.4,xp:7,type:'caster'},
+      {name:'熔岩犬',color:0xff4400,sz:0.55,hp:100,atk:11,spd:3.0,xp:4,type:'fast'}]},
 
   ch5:{id:'ch5',num:5,name:'东瘟疫之地',desc:'天灾军团的腐化之地',bgColor:0x1a1a2a,
-    boss:{name:'克尔苏加德之影',hp:7000,atk:40,spd:2.0,color:0x6644aa,sz:2.8,
+    boss:{name:'克尔苏加德之影',hp:10000,atk:50,spd:2.0,color:0x6644aa,sz:2.8,
       phases:[
         {hpPct:1.0,skills:['frostbolt','frost_nova'],atkMult:1.0,spdMult:1.0,interval:4},
         {hpPct:0.6,skills:['frostbolt','frost_nova','summon_adds'],atkMult:1.3,spdMult:1.1,interval:3.5},
@@ -225,12 +229,12 @@ const CHAPTERS={
     reward:{gold:2200,xp:900,frags:5},unlockReq:'ch4',
     spawnBase:1.3,spawnScalePerWave:0.10,maxEnemies:40,batchMin:3,batchMax:8,
     enemyTypes:[
-      {name:'食尸鬼',color:0x44aa44,sz:0.6,hp:55,atk:9,spd:2.8,xp:5,type:'fast'},
-      {name:'憎恶',color:0x668844,sz:0.95,hp:120,atk:18,spd:1.0,xp:10,type:'tank'},
-      {name:'亡灵法师',color:0x664488,sz:0.6,hp:45,atk:22,spd:1.5,xp:8,type:'caster'}]},
+      {name:'食尸鬼',color:0x44aa44,sz:0.6,hp:140,atk:12,spd:2.8,xp:5,type:'fast'},
+      {name:'憎恶',color:0x668844,sz:0.95,hp:280,atk:24,spd:1.0,xp:10,type:'tank'},
+      {name:'亡灵法师',color:0x664488,sz:0.6,hp:110,atk:28,spd:1.5,xp:8,type:'caster'}]},
 
   ch6:{id:'ch6',num:6,name:'海加尔山',desc:'燃烧军团大举入侵',bgColor:0x2a0a0a,
-    boss:{name:'阿克蒙德',hp:12000,atk:50,spd:1.5,color:0x882200,sz:3.5,
+    boss:{name:'阿克蒙德',hp:16000,atk:60,spd:1.5,color:0x882200,sz:3.5,
       phases:[
         {hpPct:1.0,skills:['soul_charge','rain_of_fire'],atkMult:1.0,spdMult:1.0,interval:5},
         {hpPct:0.55,skills:['soul_charge','rain_of_fire','finger_of_death'],atkMult:1.4,spdMult:1.2,interval:3.5},
@@ -240,12 +244,12 @@ const CHAPTERS={
     reward:{gold:3500,xp:1500,frags:6},unlockReq:'ch5',
     spawnBase:1.2,spawnScalePerWave:0.08,maxEnemies:45,batchMin:4,batchMax:10,
     enemyTypes:[
-      {name:'恶魔卫兵',color:0xaa4422,sz:0.75,hp:90,atk:14,spd:2.2,xp:7,type:'standard'},
-      {name:'地狱火',color:0xff4400,sz:0.95,hp:150,atk:22,spd:0.9,xp:12,type:'tank'},
-      {name:'末日守卫',color:0x882200,sz:0.85,hp:100,atk:28,spd:1.8,xp:10,type:'caster'}]},
+      {name:'恶魔卫兵',color:0xaa4422,sz:0.75,hp:220,atk:18,spd:2.2,xp:7,type:'standard'},
+      {name:'地狱火',color:0xff4400,sz:0.95,hp:360,atk:28,spd:0.9,xp:12,type:'tank'},
+      {name:'末日守卫',color:0x882200,sz:0.85,hp:250,atk:35,spd:1.8,xp:10,type:'caster'}]},
 
   ch7:{id:'ch7',num:7,name:'诺森德',desc:'巫妖王的领地',bgColor:0x0a1a2a,
-    boss:{name:'巫妖王',hp:20000,atk:60,spd:2.2,color:0x4488ff,sz:3.5,
+    boss:{name:'巫妖王',hp:28000,atk:75,spd:2.2,color:0x4488ff,sz:3.5,
       phases:[
         {hpPct:1.0,skills:['frost_strike','remorseless_winter'],atkMult:1.0,spdMult:1.0,interval:4},
         {hpPct:0.65,skills:['frost_strike','remorseless_winter','defile'],atkMult:1.3,spdMult:1.2,interval:3},
@@ -256,12 +260,12 @@ const CHAPTERS={
     reward:{gold:6000,xp:3000,frags:8},unlockReq:'ch6',
     spawnBase:1.1,spawnScalePerWave:0.08,maxEnemies:50,batchMin:4,batchMax:10,
     enemyTypes:[
-      {name:'维库人',color:0x8888aa,sz:0.8,hp:110,atk:16,spd:2.0,xp:8,type:'standard'},
-      {name:'冰霜巨龙',color:0x88ccff,sz:1.05,hp:180,atk:30,spd:1.3,xp:15,type:'tank'},
-      {name:'瓦格里',color:0xaaaacc,sz:0.7,hp:80,atk:24,spd:2.6,xp:10,type:'fast'}]},
+      {name:'维库人',color:0x8888aa,sz:0.8,hp:280,atk:22,spd:2.0,xp:8,type:'standard'},
+      {name:'冰霜巨龙',color:0x88ccff,sz:1.05,hp:440,atk:38,spd:1.3,xp:15,type:'tank'},
+      {name:'瓦格里',color:0xaaaacc,sz:0.7,hp:200,atk:30,spd:2.6,xp:10,type:'fast'}]},
 
   endless:{id:'endless',num:8,name:'扭曲虚空',desc:'无尽挑战',bgColor:0x0a0a1a,
-    boss:{name:'虚空领主',hp:5000,atk:35,spd:2.0,color:0x6622aa,sz:3.0,
+    boss:{name:'虚空领主',hp:8000,atk:45,spd:2.0,color:0x6622aa,sz:3.0,
       phases:[
         {hpPct:1.0,skills:['void_bolt','shadow_nova'],atkMult:1.0,spdMult:1.0,interval:4},
         {hpPct:0.5,skills:['void_bolt','shadow_nova','summon_adds'],atkMult:1.4,spdMult:1.2,interval:3},
@@ -273,9 +277,9 @@ const CHAPTERS={
     spawnBase:1.3,spawnScalePerWave:0.06,maxEnemies:50,batchMin:3,batchMax:10,
     endlessScale:true, // 标记为无尽缩放模式
     enemyTypes:[
-      {name:'虚空行者',color:0x6622aa,sz:0.7,hp:70,atk:12,spd:2.0,xp:6,type:'standard'},
-      {name:'扭曲畸体',color:0x883388,sz:0.85,hp:100,atk:18,spd:1.8,xp:8,type:'tank'},
-      {name:'暗影精英',color:0x7744bb,sz:0.75,hp:80,atk:22,spd:2.4,xp:9,type:'fast'}]}
+      {name:'虚空行者',color:0x6622aa,sz:0.7,hp:180,atk:16,spd:2.0,xp:6,type:'standard'},
+      {name:'扭曲畸体',color:0x883388,sz:0.85,hp:250,atk:22,spd:1.8,xp:8,type:'tank'},
+      {name:'暗影精英',color:0x7744bb,sz:0.75,hp:160,atk:28,spd:2.4,xp:9,type:'fast'}]}
 };
 
 // ==================== 技能树（完整数值参数版） ====================
@@ -597,6 +601,105 @@ const DRAW_PRIZES=[
   {icon:'⚡',text:'30体力',weight:15},
 ];
 
+// ==================== 局内升级BUFF数据库 ====================
+// 设计原则：升级时有概率出现BUFF选项（而非技能），增加策略维度
+// 每个BUFF可叠加多次（maxStack），效果线性叠加
+// 类别：经济型 / 防御型 / 攻击型 / 辅助型，形成不同build方向
+const BUFF_DB = [
+  // ===== 经济型 — 滚雪球流 =====
+  {id:'buff_xp_boost',name:'求知欲',icon:'📖',
+    desc:'经验获取+20%',category:'经济',color:'#44ddff',
+    stat:'xpMult',val:0.20,maxStack:5,
+    flavorText:'知识就是力量'},
+  {id:'buff_gold_boost',name:'点金术',icon:'💰',
+    desc:'金币掉落+25%',category:'经济',color:'#ffd700',
+    stat:'goldMult',val:0.25,maxStack:4,
+    flavorText:'贪婪是一种美德'},
+  {id:'buff_pickup_range',name:'磁力场',icon:'🧲',
+    desc:'拾取范围+30%',category:'辅助',color:'#88aaff',
+    stat:'pickupRange',val:0.30,maxStack:3,
+    flavorText:'万物皆为我所用'},
+  {id:'buff_orb_value',name:'悟性',icon:'✨',
+    desc:'经验球价值+35%',category:'经济',color:'#aaffee',
+    stat:'orbValue',val:0.35,maxStack:4,
+    flavorText:'一颗顶三颗'},
+
+  // ===== 攻击型 — 暴力输出流 =====
+  {id:'buff_atk_pct',name:'狂战之力',icon:'⚔️',
+    desc:'攻击力+12%',category:'攻击',color:'#ff6644',
+    stat:'atkPct',val:0.12,maxStack:5,
+    flavorText:'以力破巧'},
+  {id:'buff_crit_rate',name:'鹰眼',icon:'🎯',
+    desc:'暴击率+5%',category:'攻击',color:'#ff8844',
+    stat:'critRate',val:0.05,maxStack:4,
+    flavorText:'洞察一切弱点'},
+  {id:'buff_crit_dmg',name:'致命打击',icon:'💥',
+    desc:'暴击伤害+20%',category:'攻击',color:'#ff4444',
+    stat:'critDmg',val:0.20,maxStack:3,
+    flavorText:'一击毙命'},
+  {id:'buff_atk_speed',name:'疾风',icon:'🌪️',
+    desc:'攻击速度+10%',category:'攻击',color:'#ffaa44',
+    stat:'atkSpeed',val:0.10,maxStack:4,
+    flavorText:'天下武功唯快不破'},
+  {id:'buff_skill_dmg',name:'奥术增幅',icon:'🔮',
+    desc:'技能伤害+15%',category:'攻击',color:'#aa44ff',
+    stat:'skillDmg',val:0.15,maxStack:4,
+    flavorText:'魔力汹涌如潮'},
+
+  // ===== 防御型 — 坦克流 =====
+  {id:'buff_max_hp',name:'生命图腾',icon:'❤️',
+    desc:'最大生命+15%',category:'防御',color:'#44ff88',
+    stat:'hpPct',val:0.15,maxStack:5,
+    flavorText:'血厚才是硬道理'},
+  {id:'buff_armor',name:'铁壁',icon:'🛡️',
+    desc:'护甲+3',category:'防御',color:'#8888cc',
+    stat:'armor',val:3,maxStack:5,
+    flavorText:'固若金汤'},
+  {id:'buff_regen',name:'生命之泉',icon:'💚',
+    desc:'每秒回复0.3%最大生命',category:'防御',color:'#44ff44',
+    stat:'hpRegen',val:0.003,maxStack:5,
+    flavorText:'源源不断'},
+  {id:'buff_dodge',name:'灵动',icon:'💨',
+    desc:'8%概率闪避攻击',category:'防御',color:'#aaddff',
+    stat:'dodge',val:0.08,maxStack:3,
+    flavorText:'打不中就是最好的防御'},
+
+  // ===== 辅助型 — 特殊机制 =====
+  {id:'buff_move_speed',name:'风行者',icon:'👟',
+    desc:'移动速度+8%',category:'辅助',color:'#88ff88',
+    stat:'moveSpd',val:0.08,maxStack:4,
+    flavorText:'跑得快才活得久'},
+  {id:'buff_skill_cd',name:'时空扭曲',icon:'⏱️',
+    desc:'技能CD-8%',category:'辅助',color:'#44aaff',
+    stat:'skillCd',val:0.08,maxStack:4,
+    flavorText:'时间在我掌控之中'},
+  {id:'buff_elite_dmg',name:'屠杀者',icon:'💀',
+    desc:'对精英/BOSS伤害+20%',category:'攻击',color:'#ff2222',
+    stat:'eliteDmg',val:0.20,maxStack:3,
+    flavorText:'猎杀强者'},
+  {id:'buff_leech',name:'吸血鬼',icon:'🩸',
+    desc:'伤害的2%转化为生命',category:'防御',color:'#cc2244',
+    stat:'leech',val:0.02,maxStack:3,
+    flavorText:'以彼之血养我之身'},
+  {id:'buff_thorns',name:'反伤甲',icon:'🦔',
+    desc:'受到攻击时反弹15%伤害',category:'防御',color:'#cc8844',
+    stat:'thorns',val:0.15,maxStack:3,
+    flavorText:'碰我者皆伤'},
+  {id:'buff_kill_heal',name:'收割之喜',icon:'🍀',
+    desc:'击杀回复1%最大生命',category:'防御',color:'#44cc44',
+    stat:'killHeal',val:0.01,maxStack:3,
+    flavorText:'每一次击杀都是馈赠'},
+  {id:'buff_aoe_size',name:'余震',icon:'🌊',
+    desc:'AOE范围+15%',category:'辅助',color:'#6688ff',
+    stat:'aoeSize',val:0.15,maxStack:3,
+    flavorText:'波及四方'},
+];
+
+// BUFF出现概率：每次升级选择面板中至少1个选项为BUFF
+const BUFF_APPEAR_CHANCE = 0.45;  // 每个技能槽位被替换为BUFF的概率
+const BUFF_MIN_PER_PANEL = 1;     // 面板中最少BUFF数
+const BUFF_MAX_PER_PANEL = 3;     // ↑ 2→3 面板中最多BUFF数，更多选择
+
 // ==================== 数值工具函数（暴露给战斗系统） ====================
 // 计算升级所需经验
 function calcXpNeed(level){
@@ -819,15 +922,22 @@ function renderSkillStats(stats){
 }
 
 // 计算怪物波次缩放后属性
+// 设计：前4波线性增长（温水煮青蛙），第5波起叠加指数因子（压力骤增）
 function calcEnemyStats(baseEnemy, wave, chapter){
-  const wm = 1 + (wave - 1) * NUM.WAVE_HP_SCALE;
-  const am = 1 + (wave - 1) * NUM.WAVE_ATK_SCALE;
+  // 线性部分
+  const linearHP = 1 + (wave - 1) * NUM.WAVE_HP_SCALE;
+  const linearATK = 1 + (wave - 1) * NUM.WAVE_ATK_SCALE;
   const sm = 1 + (wave - 1) * NUM.WAVE_SPD_SCALE;
   const xm = 1 + (wave - 1) * NUM.WAVE_XP_SCALE;
-  // 无尽模式额外指数缩放
+  // 第5波起叠加指数因子: 1.08^(wave-4)，越往后越猛
+  const expHP = wave > 4 ? Math.pow(1.08, wave - 4) : 1;
+  const expATK = wave > 4 ? Math.pow(1.06, wave - 4) : 1;
+  const wm = linearHP * expHP;
+  const am = linearATK * expATK;
+  // 无尽模式额外指数缩放（叠加在上面之上）
   let endlessMult = 1;
   if(chapter && chapter.endlessScale && wave > 5){
-    endlessMult = Math.pow(1.12, wave - 5); // 每波额外+12%
+    endlessMult = Math.pow(1.15, wave - 5); // ↑ 1.12→1.15 无尽更陡
   }
   return {
     hp: Math.round(baseEnemy.hp * wm * endlessMult),
@@ -1036,5 +1146,6 @@ window.DATA={ALL_HEROES,CHAPTERS,SKILL_DB,SKILL_COMBOS,RARITY_NAME,RARITY_COLOR,
   ARENA_RANKS,ARENA_RANK_NAMES,ARENA_RANK_ICONS,ARENA_RANK_REQ,BP_MAX,BP_XP,BP_REWARDS,
   ACHIEVEMENTS,QUEST_TEMPLATES,SHOP_DATA,DRAW_PRIZES,NUM,
   HERO_LEVEL,TALENT_TREES,ENHANCE_DATA,HERO_STAR,STUCK_GUIDE,
+  BUFF_DB,BUFF_MIN_PER_PANEL,BUFF_MAX_PER_PANEL,
   calcXpNeed,calcSkillDmg,calcSkillCd,calcEnemyStats,calcBossStats,rollCrit,calcFinalDmg,isEliteSpawn,
   calcHeroXpNeed,calcHeroLevelBonus};
