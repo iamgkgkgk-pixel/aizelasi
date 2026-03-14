@@ -230,6 +230,7 @@ function renderChapters(PD){
       <div class="cd-pwr-bar"><div class="cd-pwr-fill" style="width:${pBarPct}%;background:${pColor}"></div><div class="cd-pwr-mark"></div></div>
       <div class="cd-pwr-label" style="color:${pColor}">${pLabel}</div>
     </div>
+    ${renderPowerBreakdown(PD)}
     <div class="cd-boss">BOSS：💀 ${sel.boss.name} (HP:${sel.boss.hp})</div>
     <div class="cd-enemies">敌人：${sel.enemyTypes.map(e=>e.name).join('、')}</div>
     <div class="cd-reward">奖励：💰${sel.reward.gold} | ✨${sel.reward.xp}经验 | 🧩${sel.reward.frags}碎片</div>`;
@@ -271,6 +272,88 @@ function renderForge(PD){
     }
     slots.appendChild(slot);
   }
+  // ===== 我的装备总览 =====
+  renderMyEquipment(PD);
+}
+// ==================== 我的装备总览+换装 ====================
+function renderMyEquipment(PD){
+  let container=$('my-equipment');
+  if(!container){
+    container=document.createElement('div');container.id='my-equipment';
+    const forgeBody=$('forge').querySelector('.panel-body');
+    if(forgeBody)forgeBody.insertBefore(container,forgeBody.firstChild);
+  }
+  const slotNames={weapon:'⚔️ 武器',armor:'🛡️ 护甲',trinket:'💎 饰品',ring:'💍 戒指'};
+  const slots=['weapon','armor','trinket','ring'];
+  let html='<div class="my-equip-title">📋 当前装备</div><div class="my-equip-grid">';
+  let totalAtk=0,totalHp=0,totalCrit=0,totalArmor=0;
+  slots.forEach(slot=>{
+    const eqId=PD.equipment[slot];
+    const eq=eqId?EQUIPMENT_DB.find(e=>e.id===eqId):null;
+    const enhLv=eq?(PD.equipEnhance[eqId]||0):0;
+    const hasInv=PD.inventory.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.slot===slot}).length>0;
+    if(eq){
+      totalAtk+=eq.atk;totalHp+=eq.hp;totalCrit+=(eq.critRate||0);totalArmor+=(eq.armor||0);
+      html+=`<div class="my-equip-slot rarity-${eq.rarity}" onclick="window._showEquipSwap('${slot}')">
+        <div class="mes-label">${slotNames[slot]}</div>
+        <div class="mes-icon">${eq.icon}</div>
+        <div class="mes-name">${eq.name}${enhLv>0?' <span style="color:#ffd700">+'+enhLv+'</span>':''}</div>
+        <div class="mes-stats">${eq.atk>0?'⚔'+eq.atk+' ':''}${eq.hp>0?'❤'+eq.hp+' ':''}${eq.armor>0?'🛡'+eq.armor+' ':''}${eq.critRate>0?'💥'+(eq.critRate*100).toFixed(0)+'%':''}</div>
+        ${eq.effectDesc?'<div class="mes-effect">'+eq.effectDesc+'</div>':''}
+        ${hasInv?'<div class="mes-swap-hint">点击换装</div>':''}
+      </div>`;
+    }else{
+      html+=`<div class="my-equip-slot empty" onclick="window._showEquipSwap('${slot}')">
+        <div class="mes-label">${slotNames[slot]}</div>
+        <div class="mes-icon" style="opacity:.3">➕</div>
+        <div class="mes-name" style="color:#666">未装备</div>
+        ${hasInv?'<div class="mes-swap-hint">点击装备</div>':'<div class="mes-stats" style="color:#444">锻造获取</div>'}
+      </div>`;
+    }
+  });
+  html+='</div>';
+  // 装备总属性汇总
+  html+=`<div class="my-equip-summary">
+    <span>装备总属性：</span>
+    ${totalAtk>0?`<span class="mes-sum-item">⚔${totalAtk}</span>`:''}
+    ${totalHp>0?`<span class="mes-sum-item">❤${totalHp}</span>`:''}
+    ${totalArmor>0?`<span class="mes-sum-item">🛡${totalArmor}</span>`:''}
+    ${totalCrit>0?`<span class="mes-sum-item">💥${(totalCrit*100).toFixed(0)}%</span>`:''}
+  </div>`;
+  container.innerHTML=html;
+}
+function showEquipSwap(PD,slot){
+  // 弹窗选择该槽位可用装备
+  const available=PD.inventory.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.slot===slot}).filter((v,i,a)=>a.indexOf(v)===i); // 去重
+  const current=PD.equipment[slot];
+  if(available.length===0&&!current){showRewardPopup([{icon:'🔨',text:'背包中没有该类型装备，去锻造吧！'}]);return}
+  let items=[];
+  // 卸下当前装备选项
+  if(current){
+    const curEq=EQUIPMENT_DB.find(e=>e.id===current);
+    items.push({icon:curEq?curEq.icon:'❌',text:`卸下 ${curEq?curEq.name:'当前装备'}`,action:'unequip'});
+  }
+  // 可换的装备
+  available.forEach(id=>{
+    if(id===current)return; // 跳过已装备的
+    const eq=EQUIPMENT_DB.find(e=>e.id===id);if(!eq)return;
+    const enhLv=PD.equipEnhance[id]||0;
+    items.push({icon:eq.icon,text:`${eq.name}${enhLv>0?' +'+enhLv:''} | ⚔${eq.atk} ❤${eq.hp}${eq.effectDesc?' | '+eq.effectDesc:''}`,action:'equip',eqId:id});
+  });
+  if(items.length===0){showRewardPopup([{icon:'✅',text:'当前已是最优装备！'}]);return}
+  // 使用奖励弹窗展示选择
+  $('popup-reward-title').textContent='🔧 更换装备';
+  $('popup-reward-items').innerHTML=items.map((it,i)=>`<div class="popup-item" style="cursor:pointer;min-width:200px" onclick="window._doEquipSwap('${slot}','${it.action}','${it.eqId||''}');document.getElementById('popup-reward').classList.remove('active')"><div class="popup-item-icon">${it.icon}</div><div style="font-size:12px">${it.text}</div></div>`).join('');
+  $('popup-reward').classList.add('active');
+}
+function doEquipSwap(PD,slot,action,eqId){
+  if(action==='unequip'){
+    PD.equipment[slot]=null;
+  }else if(action==='equip'&&eqId){
+    PD.equipment[slot]=eqId;
+  }
+  saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
+  showRewardPopup([{icon:'✅',text:'装备已更换！'}]);
 }
 function startForge(PD,idx){
   if(PD.gold<200){showRewardPopup([{icon:'💰',text:'金币不足(需200)'}]);return}
@@ -454,14 +537,58 @@ function renderBattlePass(PD){
   $('bp-bar').style.width=(PD.bpXp/BP_XP*100)+'%';
   $('bp-xp').textContent=`${PD.bpXp}/${BP_XP}`;
   const tracks=$('bp-tracks');tracks.innerHTML='';
+  let unclaimedCount=0;
   for(let i=0;i<Math.min(BP_REWARDS.length,15);i++){
-    const r=BP_REWARDS[i];const current=PD.bpLevel===r.level;const claimed=PD.bpLevel>r.level;
-    const row=document.createElement('div');row.className=`bp-row${current?' current':''}${claimed?' claimed':''}`;
-    row.innerHTML=`<div class="bp-lv">${r.level}</div><div class="bp-free">${r.free.icon} ${r.free.text}</div>
-      <div class="bp-paid${!PD.bpPaid?' locked':''}">${r.paid.icon} ${r.paid.text}</div>`;
+    const r=BP_REWARDS[i];
+    const reached=PD.bpLevel>=r.level; // 已达到该等级
+    const current=PD.bpLevel===r.level;
+    const freeClaimed=(PD.bpClaimed||[]).includes('free_'+r.level);
+    const paidClaimed=(PD.bpClaimed||[]).includes('paid_'+r.level);
+    const canClaimFree=reached&&!freeClaimed;
+    const canClaimPaid=reached&&PD.bpPaid&&!paidClaimed;
+    if(canClaimFree)unclaimedCount++;
+    if(canClaimPaid)unclaimedCount++;
+    const row=document.createElement('div');
+    row.className=`bp-row${current?' current':''}${freeClaimed&&(paidClaimed||!PD.bpPaid)?' claimed':''}`;
+    // 免费轨道
+    const freeHtml=canClaimFree
+      ?`<div class="bp-free bp-claimable" onclick="window._claimBpReward(${r.level},'free')">${r.free.icon} ${r.free.text} <span style="color:#44ff44;font-size:10px">✋领取</span></div>`
+      :freeClaimed
+        ?`<div class="bp-free" style="opacity:.5">${r.free.icon} ${r.free.text} ✅</div>`
+        :`<div class="bp-free">${r.free.icon} ${r.free.text}</div>`;
+    // 付费轨道
+    const paidHtml=canClaimPaid
+      ?`<div class="bp-paid bp-claimable" onclick="window._claimBpReward(${r.level},'paid')">${r.paid.icon} ${r.paid.text} <span style="color:#44ff44;font-size:10px">✋领取</span></div>`
+      :paidClaimed
+        ?`<div class="bp-paid" style="opacity:.5">${r.paid.icon} ${r.paid.text} ✅</div>`
+        :`<div class="bp-paid${!PD.bpPaid?' locked':''}">${r.paid.icon} ${r.paid.text}</div>`;
+    row.innerHTML=`<div class="bp-lv">${r.level}</div>${freeHtml}${paidHtml}`;
     tracks.appendChild(row);
   }
-  $('bp-unclaimed').textContent=PD.bpPaid?0:Math.max(0,PD.bpLevel-1);
+  $('bp-unclaimed').textContent=unclaimedCount;
+}
+function claimBpReward(PD,level,track){
+  if(!PD.bpClaimed)PD.bpClaimed=[];
+  const key=track+'_'+level;
+  if(PD.bpClaimed.includes(key))return;
+  if(PD.bpLevel<level)return;
+  if(track==='paid'&&!PD.bpPaid)return;
+  PD.bpClaimed.push(key);
+  const r=BP_REWARDS.find(x=>x.level===level);if(!r)return;
+  const reward=track==='free'?r.free:r.paid;
+  // 发放奖励
+  const rewards=[];
+  if(reward.text.includes('💰')){const gold=parseInt(reward.text.match(/\d+/))||100;PD.gold+=gold;rewards.push({icon:'💰',text:`${gold}金币`})}
+  if(reward.text.includes('💎')){const dia=parseInt(reward.text.match(/\d+/))||50;PD.diamond+=dia;rewards.push({icon:'💎',text:`${dia}钻石`})}
+  if(reward.text.includes('碎片')){const frags=parseInt(reward.text.match(/\d+/))||5;PD.totalFrags=(PD.totalFrags||0)+frags;rewards.push({icon:'🧩',text:`${frags}碎片`})}
+  if(reward.text.includes('装备箱')){
+    // 随机发放一件装备碎片
+    PD.totalFrags=(PD.totalFrags||0)+10;rewards.push({icon:'📦',text:'10通用碎片'})
+  }
+  if(reward.text.includes('皮肤')){rewards.push({icon:'🎨',text:'限定皮肤已收藏'})}
+  if(rewards.length===0)rewards.push({icon:reward.icon,text:reward.text});
+  showRewardPopup(rewards);
+  saveToDisk(PD);renderBattlePass(PD);refreshMainMenu(PD);
 }
 
 // ==================== 成就 ====================
@@ -790,9 +917,45 @@ function calcTotalPower(PD){
   // 装备基础
   let eqAtk=0,eqHp=0;
   if(PD.equipment){Object.values(PD.equipment).forEach(eqId=>{if(eqId){const e=EQUIPMENT_DB.find(x=>x.id===eqId);if(e){eqAtk+=e.atk;eqHp+=e.hp}}})}
-  const totalAtk=Math.round(((hero.atk+lvBonus.atk)*starMult+eqAtk+enhBonus.atk+talentBonus.atk)*(1+talentBonus.allPct));
-  const totalHp=Math.round(((hero.hp+lvBonus.hp)*starMult+eqHp+enhBonus.hp+talentBonus.hp)*(1+talentBonus.allPct));
+  // 公会BUFF
+  let guildAtk=0,guildHp=0;
+  if(PD.guildJoined){const gLv=Math.min(10,Math.floor((PD.guildContrib||0)/500)+1);guildAtk=gLv*2;guildHp=gLv*10}
+  const totalAtk=Math.round(((hero.atk+lvBonus.atk)*starMult+eqAtk+enhBonus.atk+talentBonus.atk+guildAtk)*(1+talentBonus.allPct));
+  const totalHp=Math.round(((hero.hp+lvBonus.hp)*starMult+eqHp+enhBonus.hp+talentBonus.hp+guildHp)*(1+talentBonus.allPct));
   return {atk:totalAtk, hp:totalHp, power:totalAtk*3+totalHp};
+}
+
+// ==================== 战力属性分解 ====================
+function renderPowerBreakdown(PD){
+  const hero=ALL_HEROES[PD.selectedHero];
+  const hd=PD.heroes[PD.selectedHero]||{level:1,star:0};
+  const lvBonus=calcHeroLevelBonus(hd.level||1);
+  const starMult=HERO_STAR.STAT_MULT[hd.star||0];
+  const talentBonus=calcTalentBonus(PD);
+  const enhBonus=calcEquipEnhanceBonus(PD);
+  let eqAtk=0,eqHp=0;
+  if(PD.equipment){Object.values(PD.equipment).forEach(eqId=>{if(eqId){const e=EQUIPMENT_DB.find(x=>x.id===eqId);if(e){eqAtk+=e.atk;eqHp+=e.hp}}})}
+  let guildAtk=0,guildHp=0;
+  if(PD.guildJoined){const gLv=Math.min(10,Math.floor((PD.guildContrib||0)/500)+1);guildAtk=gLv*2;guildHp=gLv*10}
+  const starAtkBonus=Math.round((hero.atk+lvBonus.atk)*starMult-(hero.atk+lvBonus.atk));
+  const starHpBonus=Math.round((hero.hp+lvBonus.hp)*starMult-(hero.hp+lvBonus.hp));
+  const rows=[
+    {icon:'🦸',label:'英雄基础',atk:hero.atk,hp:hero.hp},
+    {icon:'📊',label:`等级(Lv.${hd.level||1})`,atk:lvBonus.atk,hp:lvBonus.hp},
+    {icon:'⭐',label:`星级(${hd.star||0}星×${starMult})`,atk:starAtkBonus,hp:starHpBonus},
+    {icon:'⚔️',label:'装备基础',atk:eqAtk,hp:eqHp},
+    {icon:'🔨',label:'装备强化',atk:enhBonus.atk,hp:enhBonus.hp},
+    {icon:'🌟',label:'天赋加成',atk:talentBonus.atk,hp:talentBonus.hp},
+    {icon:'👥',label:'公会BUFF',atk:guildAtk,hp:guildHp}
+  ];
+  let html='<div class="cd-power-breakdown"><div class="cd-pb-title">⚔️ 攻击力分解 / ❤️ 生命分解</div>';
+  rows.forEach(r=>{
+    if(r.atk===0&&r.hp===0)return;
+    html+=`<div class="cd-pb-row"><span class="cd-pb-label"><span class="pb-icon">${r.icon}</span>${r.label}</span><span class="cd-pb-val${r.atk===0&&r.hp===0?' pb-zero':''}">⚔${r.atk} ❤${r.hp}</span></div>`;
+  });
+  if(talentBonus.allPct>0)html+=`<div class="cd-pb-row"><span class="cd-pb-label"><span class="pb-icon">✨</span>全属性加成</span><span class="cd-pb-val">×${(1+talentBonus.allPct).toFixed(2)}</span></div>`;
+  html+='</div>';
+  return html;
 }
 
 // ==================== 卡关引导 ====================
@@ -834,10 +997,10 @@ function renderForgeWithEnhance(PD){
 window.SYS={
   loadSave,saveToDisk,createDefaultPD,showRewardPopup,refreshMainMenu,
   renderSignIn,doSignIn,renderHeroes,renderChapters,renderForge,renderForgeWithEnhance,
-  renderArena,arenaFight,renderGuild,joinGuild,guildDonate,guildRaid,guildRank,guildBuff,
+  renderArena,arenaFight,renderGuild,joinGuild,guildDonate,guildRaid,guildRank,guildBuff,showEquipSwap,doEquipSwap,
   renderShop,switchShopTab,buyStamina,buyStaminaFull,renderBattlePass,renderAchievements,claimAchievement,
   renderDailyQuests,claimQuest,renderLuckyDraw,doLuckyDraw,renderChests,
-  doFirstCharge,buyBattlePass,
+  doFirstCharge,buyBattlePass,claimBpReward,
   // 新增养成系统
   heroUpStar,renderTalent,chooseTalent,renderEnhance,enhanceEquip,
   addHeroXp,calcTalentBonus,calcEquipEnhanceBonus,calcTotalPower,renderStuckGuide

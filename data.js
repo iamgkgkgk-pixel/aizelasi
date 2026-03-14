@@ -13,26 +13,26 @@
 // ==================== 数值公式常量 ====================
 const NUM = {
   // 升级经验公式: xpNeed = BASE * (level^POWER) + level*LINEAR
-  XP_BASE: 8,
-  XP_POWER: 1.65,
-  XP_LINEAR: 4,
+  XP_BASE: 12,               // ↑ 8→12 提高基础经验需求
+  XP_POWER: 1.85,            // ↑ 1.65→1.85 升级曲线更陡
+  XP_LINEAR: 6,              // ↑ 4→6 线性部分增大
   // 每级属性成长
-  ATK_PER_LEVEL: 2.5,       // 每级+2.5攻击（缓慢但有意义）
-  HP_PER_LEVEL: 8,           // 每级+8生命
-  HEAL_ON_LEVELUP: 0.20,     // 升级回复20%最大生命
+  ATK_PER_LEVEL: 1.8,        // ↓ 2.5→1.8 降低每级攻击成长
+  HP_PER_LEVEL: 5,            // ↓ 8→5 降低每级生命成长
+  HEAL_ON_LEVELUP: 0.12,     // ↓ 0.20→0.12 升级回血降低
   // 掉落XP球价值 = BASE + level*SCALE
-  XP_ORB_BASE: 2,
-  XP_ORB_SCALE: 0.5,
+  XP_ORB_BASE: 1,            // ↓ 2→1 球基础价值降低
+  XP_ORB_SCALE: 0.3,         // ↓ 0.5→0.3 球随等级缩放降低
   // 怪物波次缩放: 实际属性 = 基础 * (1 + (wave-1)*WAVE_SCALE)
-  WAVE_HP_SCALE: 0.12,       // 每波怪物HP+12%
-  WAVE_ATK_SCALE: 0.08,      // 每波怪物ATK+8%
-  WAVE_SPD_SCALE: 0.02,      // 每波速度+2%
+  WAVE_HP_SCALE: 0.15,       // ↑ 0.12→0.15 怪物HP增长加快
+  WAVE_ATK_SCALE: 0.10,      // ↑ 0.08→0.10 怪物攻击增长加快
+  WAVE_SPD_SCALE: 0.02,      // 每波速度+2% (不变)
   // 怪物经验掉落缩放
-  WAVE_XP_SCALE: 0.06,       // 每波XP+6%
+  WAVE_XP_SCALE: 0.03,       // ↓ 0.06→0.03 经验随波次增长放缓
   // 精英怪倍率
-  ELITE_HP_MULT: 3.5,
-  ELITE_ATK_MULT: 1.8,
-  ELITE_XP_MULT: 5,
+  ELITE_HP_MULT: 4.0,        // ↑ 3.5→4.0 精英更肉
+  ELITE_ATK_MULT: 2.0,       // ↑ 1.8→2.0 精英更痛
+  ELITE_XP_MULT: 3,          // ↓ 5→3 精英经验大幅降低
   ELITE_SIZE_MULT: 1.3,
   ELITE_CHANCE_BASE: 0.0,    // 第1波无精英
   ELITE_CHANCE_PER_WAVE: 0.025, // 每波+2.5%概率
@@ -48,8 +48,8 @@ const NUM = {
   SKILL_DPS_EPIC: 55,        // 史诗技能 ~55 DPS
   SKILL_DPS_LEGENDARY: 80,   // 传说技能 ~80 DPS
   // 技能每级成长
-  SKILL_DMG_PER_LV: 0.15,    // 每级伤害+15%
-  SKILL_CD_PER_LV: 0.08,     // 每级CD减少8%
+  SKILL_DMG_PER_LV: 0.12,    // ↓ 15%→12% 每级伤害成长放缓
+  SKILL_CD_PER_LV: 0.06,     // ↓ 8%→6% 每级CD减少放缓
   // 暴击系统
   CRIT_CHANCE_BASE: 0.05,
   CRIT_DAMAGE_MULT: 2.0,
@@ -58,8 +58,8 @@ const NUM = {
   GOLD_PER_KILL_WAVE: 0.3,
   GOLD_BOSS_MULT: 25,
   // 生命恢复球
-  HEAL_ORB_CHANCE: 0.06,     // 6%掉率
-  HEAL_ORB_VALUE: 0.08,      // 回复8%最大HP
+  HEAL_ORB_CHANCE: 0.04,     // ↓ 6%→4%掉率
+  HEAL_ORB_VALUE: 0.06,      // ↓ 8%→6%最大HP回复
 };
 
 // ==================== 10大英雄（差异化DPS预算版） ====================

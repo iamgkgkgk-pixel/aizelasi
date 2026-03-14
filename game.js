@@ -471,17 +471,6 @@ function createGround(chId){
     color:baseC,roughness:.85,metalness:.02
   });
   const mesh=new THREE.Mesh(g,gMat);mesh.rotation.x=-Math.PI/2;mesh.receiveShadow=true;scene.add(mesh);
-  // 十字路径（稍亮的路面）
-  const pathC=new THREE.Color(baseC).multiplyScalar(1.2).getHex();
-  const pg=new THREE.PlaneGeometry(3,60);const pm=new THREE.MeshStandardMaterial({color:pathC,roughness:.95,metalness:0});
-  const p1=new THREE.Mesh(pg,pm);p1.rotation.x=-Math.PI/2;p1.position.y=.03;scene.add(p1);const p2=p1.clone();p2.rotation.z=Math.PI/2;scene.add(p2);
-  // 路径边缘装饰线（石头条）
-  const edgeM=new THREE.MeshStandardMaterial({color:0x555555,roughness:.9});
-  for(let side=-1;side<=1;side+=2){
-    const eg=new THREE.PlaneGeometry(.15,60);
-    const em=new THREE.Mesh(eg,edgeM);em.rotation.x=-Math.PI/2;em.position.set(side*1.6,.04,0);scene.add(em);
-    const em2=new THREE.Mesh(eg,edgeM);em2.rotation.x=-Math.PI/2;em2.rotation.z=Math.PI/2;em2.position.set(0,.04,side*1.6);scene.add(em2);
-  }
   // 树木（更多层次感）
   const treeCount=perfTier==='low'?15:30;
   for(let i=0;i<treeCount;i++){const t=mkTree(variant);const a=Math.random()*Math.PI*2,d=18+Math.random()*18;t.position.set(Math.cos(a)*d,0,Math.sin(a)*d);scene.add(t)}
@@ -1977,7 +1966,7 @@ function spawnBoss(cfg){
     hp:bossHp,maxHp:bossHp,
     atk:bossAtk,baseAtk:bossAtk, // baseAtk用于阶段转换乘数
     speed:cfg.spd,baseSpd:cfg.spd,
-    xp:Math.round(50*(1+S.wave*0.2)),
+    xp:Math.round(25*(1+S.wave*0.15)),  // ↓ BOSS经验降低
     isBoss:true,isElite:false,hitFlash:0,frozen:0,
     burning:0,burnDmg:0,cursed:false,
     // BOSS阶段系统
@@ -2317,8 +2306,8 @@ function killEnemy(e){
   if(e.isBoss){screenShake(.2,.3);screenFlash('#ff4400',.2,200);lightBeam(ep,ec,2,.6)}
   else if(e.isElite){screenShake(.1,.15);screenFlash('#ffaa00',.1,100);lightBeam(ep,0xffaa00,1.2,.4)}
   else if(Math.random()<.3)screenShake(.03,.06);
-  // XP掉落：基于怪物XP值而非固定
-  const xpDropCount=e.isBoss?Math.ceil(e.xp/3):Math.max(1,Math.ceil(e.xp/2));
+  // XP掉落：固定少量球，避免经验膨胀
+  const xpDropCount=e.isBoss?3:e.isElite?2:1;
   for(let i=0;i<xpDropCount;i++)spawnPickup(e.mesh.position,'xp');
   // 金币掉落：波次缩放
   const goldChance=e.isBoss?1.0:e.isElite?0.8:0.4;
@@ -2362,13 +2351,16 @@ function killEnemy(e){
   scene.remove(e.mesh);const idx=S.enemies.indexOf(e);if(idx>=0)S.enemies.splice(idx,1);
   S.kills++;S.killStreak++;S.ksTimer=2;PD.totalKills++;PD.dailyProgress.kills=(PD.dailyProgress.kills||0)+1;
   if(e.isElite){S.eliteKills++;PD.totalEliteKills=(PD.totalEliteKills||0)+1;PD.dailyProgress.eliteKills=(PD.dailyProgress.eliteKills||0)+1}
-  if(e.isBoss){S.boss=null;S.bossActive=false;S.bossPhase=0;S.bossKillsThisGame++;
+  if(e.isBoss){S.boss=null;S.bossActive=false;S.bossSpawning=false;S.bossPhase=0;S.bossKillsThisGame++;
     document.getElementById('boss-hp-bar').classList.remove('active');
     S.gold+=Math.round(NUM.GOLD_BOSS_MULT*(1+S.wave*0.5));
     PD.totalBossKills++;PD.dailyProgress.bossKills=(PD.dailyProgress.bossKills||0)+1;
     // BOSS击杀宝箱掉落
     spawnLootChest(ep,'boss');
-    if(S.chapter&&S.chapter.id!=='endless'&&S.wave>=S.chapter.waves){showResult(true);return}}
+    if(S.chapter&&S.chapter.id!=='endless'&&S.wave>=S.chapter.waves){showResult(true);return}
+    // 无尽模式或非终极BOSS波：击杀BOSS后推进下一波
+    if(S.chapter&&(S.chapter.id==='endless'||S.wave<S.chapter.waves)){S.wave++;S.waveT=0;announceWaveEnhanced(S.wave);if(S.wave>PD.maxWave)PD.maxWave=S.wave}
+  }
   // 精英怪掉落宝箱概率（天赋: 精英掉宝率提升）
   else if(e.isElite&&Math.random()<0.4+(tb.eliteLoot||0))spawnLootChest(ep,'elite');
   if(S.killStreak>PD.maxKillStreak)PD.maxKillStreak=S.killStreak;
@@ -2574,13 +2566,13 @@ function openLootChest(tier){
   // 应用奖励
   rewards.forEach(r=>{
     if(r.type==='gold')S.gold+=r.amount;
-    else if(r.type==='atkBuff')S.attack+=r.amount;
+    else if(r.type==='atkBuff'){S.attack+=r.amount;if(S.growthLog)S.growthLog.lootAtk+=r.amount}
     else if(r.type==='heal')S.hp=Math.min(S.maxHp,S.hp+S.maxHp*r.amount);
-    else if(r.type==='spdBuff')S.speed+=r.amount;
-    else if(r.type==='critBuff')S.critRate=Math.min(0.6,S.critRate+r.amount);
-    else if(r.type==='maxHpBuff'){S.maxHp+=r.amount;S.hp+=r.amount}
-    else if(r.type==='armorBuff')S.armor+=r.amount;
-    else if(r.type==='allBuff'){S.attack=Math.round(S.attack*(1+r.amount));S.maxHp=Math.round(S.maxHp*(1+r.amount));S.hp=Math.min(S.maxHp,S.hp);S.speed+=(r.amount*2)}
+    else if(r.type==='spdBuff'){S.speed+=r.amount;if(S.growthLog)S.growthLog.lootSpd+=r.amount}
+    else if(r.type==='critBuff'){S.critRate=Math.min(0.6,S.critRate+r.amount);if(S.growthLog)S.growthLog.lootCrit+=r.amount}
+    else if(r.type==='maxHpBuff'){S.maxHp+=r.amount;S.hp+=r.amount;if(S.growthLog)S.growthLog.lootHp+=r.amount}
+    else if(r.type==='armorBuff'){S.armor+=r.amount;if(S.growthLog)S.growthLog.lootArmor+=r.amount}
+    else if(r.type==='allBuff'){const atkGain=Math.round(S.attack*r.amount);const hpGain=Math.round(S.maxHp*r.amount);S.attack=Math.round(S.attack*(1+r.amount));S.maxHp=Math.round(S.maxHp*(1+r.amount));S.hp=Math.min(S.maxHp,S.hp);S.speed+=(r.amount*2);if(S.growthLog){S.growthLog.lootAtk+=atkGain;S.growthLog.lootHp+=hpGain;S.growthLog.lootSpd+=r.amount*2}}
   });
   // 显示开箱UI
   const popup=document.getElementById('loot-popup');
@@ -2677,8 +2669,8 @@ function processEvent(dt){
     if(ev.progress>=ev.target){
       // 挑战成功！
       const r=ev.reward;
-      if(r.type==='atkBuff')S.attack+=r.amount;
-      else if(r.type==='critBuff')S.critRate=Math.min(0.6,S.critRate+r.amount);
+      if(r.type==='atkBuff'){S.attack+=r.amount;if(S.growthLog)S.growthLog.eventAtk+=r.amount}
+      else if(r.type==='critBuff'){S.critRate=Math.min(0.6,S.critRate+r.amount);if(S.growthLog)S.growthLog.eventCrit+=r.amount}
       showMilestone('挑战完成！',r.text,1);
       S.activeEvent=null;hideEventBanner();return;
     }
@@ -2709,15 +2701,16 @@ function processEvent(dt){
           ev.activated=true;
           // 随机祝福
           const blessings=[
-            {text:'攻击力+8',apply:()=>{S.attack+=8}},
-            {text:'移速+0.5',apply:()=>{S.speed+=0.5}},
-            {text:'暴击率+4%',apply:()=>{S.critRate=Math.min(0.6,S.critRate+0.04)}},
-            {text:'护甲+3',apply:()=>{S.armor+=3}},
-            {text:'最大生命+40',apply:()=>{S.maxHp+=40;S.hp=Math.min(S.maxHp,S.hp+40)}},
+            {text:'攻击力+8',apply:()=>{S.attack+=8;if(S.growthLog)S.growthLog.eventAtk+=8}},
+            {text:'移速+0.5',apply:()=>{S.speed+=0.5;if(S.growthLog)S.growthLog.eventSpd+=0.5}},
+            {text:'暴击率+4%',apply:()=>{S.critRate=Math.min(0.6,S.critRate+0.04);if(S.growthLog)S.growthLog.eventCrit+=0.04}},
+            {text:'护甲+3',apply:()=>{S.armor+=3;if(S.growthLog)S.growthLog.eventArmor+=3}},
+            {text:'最大生命+40',apply:()=>{S.maxHp+=40;S.hp=Math.min(S.maxHp,S.hp+40);if(S.growthLog)S.growthLog.eventHp+=40}},
           ];
           const b=blessings[Math.floor(Math.random()*blessings.length)];
           b.apply();
           showMilestone('获得祝福',b.text,1);
+          showStatChangeFloat('🏛️ '+b.text,'buff');
           if(heroMesh)emitGpuBurst(heroMesh.position,0x44ddff,15,4,3,.7,{gravity:3});
           // 移除神龛
           if(ev.mesh){try{scene.remove(ev.mesh)}catch(ex){}}
@@ -3452,8 +3445,12 @@ function gainXP(amt){S.xp+=amt;while(S.xp>=S.xpNeed){S.xp-=S.xpNeed;S.level++;
   // 缓慢但有意义的成长
   S.attack+=NUM.ATK_PER_LEVEL;S.maxHp+=NUM.HP_PER_LEVEL;
   S.hp=Math.min(S.maxHp,S.hp+S.maxHp*NUM.HEAL_ON_LEVELUP);
+  // 成长追踪
+  if(S.growthLog){S.growthLog.levelAtk+=NUM.ATK_PER_LEVEL;S.growthLog.levelHp+=NUM.HP_PER_LEVEL}
   // 每5级增加少量暴击率
-  if(S.level%5===0)S.critRate=Math.min(0.5,S.critRate+0.01);
+  if(S.level%5===0){S.critRate=Math.min(0.4,S.critRate+0.01);if(S.growthLog)S.growthLog.levelCrit+=0.01}
+  // 属性变化浮字
+  showStatChangeFloat(`⚔+${NUM.ATK_PER_LEVEL.toFixed(1)} ❤+${NUM.HP_PER_LEVEL}`,'buff');
   showSkillPanel();checkCombos()}}
 function showSkillPanel(){
   gamePaused=true;const panel=document.getElementById('skill-panel'),ch=document.getElementById('skill-choices');ch.innerHTML='';
@@ -3577,7 +3574,12 @@ function processWaves(dt){
   S.waveT+=dt;const ch=S.chapter||CHAPTERS.ch1;
   const waveDur=ch.waveDur||25;
   const bossWave=ch.id==='endless'?(S.wave%5===0):(S.wave===ch.waves);
-  if(bossWave&&!S.bossActive&&S.waveT>2&&!S.boss){showBossWarn(ch.boss.name);setTimeout(()=>{if(gameActive)spawnBoss(ch.boss)},2500)}
+  // BOSS波次触发：添加bossSpawning标志防止竞态
+  if(bossWave&&!S.bossActive&&!S.bossSpawning&&S.waveT>2&&!S.boss){
+    S.bossSpawning=true; // 标记BOSS正在生成中，阻止波次推进
+    showBossWarn(ch.boss.name);
+    setTimeout(()=>{if(gameActive){spawnBoss(ch.boss);S.bossSpawning=false}else{S.bossSpawning=false}},2500)
+  }
   // 使用副本自定义的刷怪参数
   const spawnBase=ch.spawnBase||1.5;
   const spawnScale=ch.spawnScalePerWave||0.12;
@@ -3590,7 +3592,8 @@ function processWaves(dt){
     spawnTimer=rate;
     const n=Math.min(batchMin+Math.floor(S.wave/2),batchMax);
     for(let i=0;i<n;i++)spawnEnemy()}
-  if(S.waveT>=waveDur&&!S.bossActive){S.wave++;S.waveT=0;announceWaveEnhanced(S.wave);if(S.wave>PD.maxWave)PD.maxWave=S.wave}
+  // 波次推进：BOSS波不能靠时间推进，必须靠击杀BOSS；同时bossSpawning期间也不推进
+  if(S.waveT>=waveDur&&!S.bossActive&&!S.bossSpawning&&!bossWave){S.wave++;S.waveT=0;announceWaveEnhanced(S.wave);if(S.wave>PD.maxWave)PD.maxWave=S.wave}
 }
 function showBossWarn(name){const el=document.getElementById('boss-warning');document.getElementById('boss-warning-name').textContent=name;el.classList.add('active');setTimeout(()=>el.classList.remove('active'),2500)}
 // 保留旧接口兼容
@@ -3755,12 +3758,34 @@ function processInput(){
   if(len>0)S.moveDir.set(dx/len,dz/len);else S.moveDir.set(0,0);
 }
 
+// ==================== 属性变化浮字 ====================
+function showStatChangeFloat(text,type){
+  const el=document.createElement('div');
+  el.className='stat-change-float '+(type||'buff');
+  el.textContent=text;
+  el.style.left='70px';el.style.top='90px';
+  document.getElementById('game-screen').appendChild(el);
+  setTimeout(()=>el.remove(),1600);
+}
+
 // ==================== HUD ====================
 function updateHUD(){
   document.getElementById('hp-bar').style.width=(S.hp/S.maxHp*100)+'%';document.getElementById('hp-text').textContent=`${Math.round(S.hp)}/${Math.round(S.maxHp)}`;
   document.getElementById('xp-bar').style.width=(S.xp/S.xpNeed*100)+'%';document.getElementById('xp-text').textContent=`${S.xp}/${S.xpNeed}`;
   document.getElementById('hud-level').textContent=S.level;document.getElementById('kill-count').textContent=S.kills;document.getElementById('gold-count').textContent=S.gold;document.getElementById('wave-num').textContent=S.wave;
   const m=Math.floor(gameTime/60),s=Math.floor(gameTime%60);document.getElementById('time-count').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  // 战斗属性指标
+  const atkEl=document.getElementById('hcs-atk');if(atkEl)atkEl.textContent=Math.round(S.attack);
+  const critEl=document.getElementById('hcs-crit');if(critEl)critEl.textContent=(S.critRate*100).toFixed(1)+'%';
+  const armorEl=document.getElementById('hcs-armor');if(armorEl)armorEl.textContent=Math.round(S.armor);
+  const spdEl=document.getElementById('hcs-spd');if(spdEl)spdEl.textContent=S.speed.toFixed(1);
+  // 属性变化量(delta)
+  if(S.initialAtk!==undefined){
+    const ad=document.getElementById('hcs-atk-d');if(ad){const d=Math.round(S.attack-S.initialAtk);ad.textContent=d>0?'+'+d:'';ad.className='hcs-delta'+(d<0?' negative':'')}
+    const cd=document.getElementById('hcs-crit-d');if(cd){const d=S.critRate-S.initialCrit;cd.textContent=d>0.001?'+'+(d*100).toFixed(1)+'%':'';cd.className='hcs-delta'+(d<0?' negative':'')}
+    const ard=document.getElementById('hcs-armor-d');if(ard){const d=Math.round(S.armor-S.initialArmor);ard.textContent=d>0?'+'+d:'';ard.className='hcs-delta'+(d<0?' negative':'')}
+    const sd=document.getElementById('hcs-spd-d');if(sd){const d=S.speed-S.initialSpd;sd.textContent=d>0.01?'+'+d.toFixed(1):'';sd.className='hcs-delta'+(d<0?' negative':'')}
+  }
 }
 
 // ==================== 结算 ====================
@@ -3788,22 +3813,54 @@ function showResult(victory){
   const heroXp=Math.round((S.kills*2+S.wave*15+S.level*8+(victory?50:0))*mul);
   
   // 结算统计
+  // 清理上次残留的动态元素
+  const scrollBody=document.getElementById('result-scroll-body');
+  scrollBody.querySelectorAll('.result-growth,.result-dps-wrap,.result-levelup,.result-stuck-guide').forEach(el=>el.remove());
+  scrollBody.scrollTop=0;
+  
   document.getElementById('result-stats').innerHTML=`<div class="result-stat"><div class="result-stat-value">${S.kills}</div><div class="result-stat-label">消灭怪物</div></div><div class="result-stat"><div class="result-stat-value">${S.level}</div><div class="result-stat-label">达到等级</div></div><div class="result-stat"><div class="result-stat-value">${m}:${String(s).padStart(2,'0')}</div><div class="result-stat-label">存活时间</div></div><div class="result-stat"><div class="result-stat-value">第${S.wave}波</div><div class="result-stat-label">最高波次</div></div>${S.eliteKills>0?`<div class="result-stat"><div class="result-stat-value">${S.eliteKills}</div><div class="result-stat-label">精英击杀</div></div>`:''}`;
   
+  // ===== 属性成长摘要（紧凑行内模式） =====
+  if(S.initialAtk!==undefined){
+    const atkGain=Math.round(S.attack-S.initialAtk);
+    const hpGain=Math.round(S.maxHp-S.initialHp);
+    const critGain=S.critRate-S.initialCrit;
+    const armorGain=Math.round(S.armor-S.initialArmor);
+    const spdGain=S.speed-S.initialSpd;
+    if(atkGain>0||hpGain>0||critGain>0.001||armorGain>0||spdGain>0.01){
+      const growthDiv=document.createElement('div');growthDiv.className='result-growth';
+      let gh=`<div class="rg-title">📈 本局属性成长</div>`;
+      if(atkGain>0)gh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">⚔️</span>攻击</span><span class="rg-vals"><span class="rg-init">${S.initialAtk}</span><span class="rg-arrow">→</span><span class="rg-final">${Math.round(S.attack)}</span><span class="hcs-delta">+${atkGain}</span></span></div>`;
+      if(hpGain>0)gh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">❤️</span>生命</span><span class="rg-vals"><span class="rg-init">${S.initialHp}</span><span class="rg-arrow">→</span><span class="rg-final">${Math.round(S.maxHp)}</span><span class="hcs-delta">+${hpGain}</span></span></div>`;
+      if(critGain>0.001)gh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">💥</span>暴击</span><span class="rg-vals"><span class="rg-init">${(S.initialCrit*100).toFixed(1)}%</span><span class="rg-arrow">→</span><span class="rg-final">${(S.critRate*100).toFixed(1)}%</span><span class="hcs-delta">+${(critGain*100).toFixed(1)}%</span></span></div>`;
+      if(armorGain>0)gh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">🛡️</span>护甲</span><span class="rg-vals"><span class="rg-init">${S.initialArmor}</span><span class="rg-arrow">→</span><span class="rg-final">${Math.round(S.armor)}</span><span class="hcs-delta">+${armorGain}</span></span></div>`;
+      if(spdGain>0.01)gh+=`<div class="rg-row"><span class="rg-label"><span class="rg-icon">👟</span>速度</span><span class="rg-vals"><span class="rg-init">${S.initialSpd.toFixed(1)}</span><span class="rg-arrow">→</span><span class="rg-final">${S.speed.toFixed(1)}</span><span class="hcs-delta">+${spdGain.toFixed(1)}</span></span></div>`;
+      // 来源说明
+      if(S.growthLog){
+        const g=S.growthLog;const sources=[];
+        if(g.levelAtk>0||g.levelHp>0)sources.push(`升级(Lv.${S.level}): ⚔+${g.levelAtk.toFixed(1)} ❤+${g.levelHp}`);
+        if(g.eventAtk>0||g.eventHp>0||g.eventCrit>0||g.eventArmor>0||g.eventSpd>0)sources.push('事件: '+(g.eventAtk>0?'⚔+'+g.eventAtk+' ':'')+(g.eventCrit>0?'💥+'+(g.eventCrit*100).toFixed(0)+'% ':'')+(g.eventArmor>0?'🛡+'+g.eventArmor:''));
+        if(g.lootAtk>0||g.lootHp>0||g.lootCrit>0||g.lootArmor>0||g.lootSpd>0)sources.push('战利品: '+(g.lootAtk>0?'⚔+'+g.lootAtk+' ':'')+(g.lootCrit>0?'💥+'+(g.lootCrit*100).toFixed(0)+'% ':'')+(g.lootArmor>0?'🛡+'+g.lootArmor:''));
+        if(sources.length>0)gh+=`<div class="rg-sources">${sources.join(' · ')}</div>`;
+      }
+      growthDiv.innerHTML=gh;
+      scrollBody.appendChild(growthDiv);
+    }
+  }
   // 奖励展示
   const heroName=ALL_HEROES[PD.selectedHero].name;
   const curHeroLv=(PD.heroes[PD.selectedHero]||{}).level||1;
   document.getElementById('result-rewards').innerHTML=`
-    ${mul>1?'<div style="width:100%;text-align:center;color:#44ff44;font-size:14px;margin-bottom:8px">🎯 今日首胜 ×3倍奖励！</div>':''}
+    ${mul>1?'<div style="width:100%;text-align:center;color:#44ff44;font-size:12px;margin-bottom:4px">🎯 今日首胜 ×3倍奖励！</div>':''}
     <div class="reward-item"><div class="reward-icon">💰</div><div class="reward-text">${gr}金币${goldMult>1?`<span class="reward-bonus">×${goldMult.toFixed(1)}</span>`:''}</div></div>
-    <div class="reward-item"><div class="reward-icon">⬆️</div><div class="reward-text">${heroXp} 英雄经验</div></div>
-    <div class="reward-item"><div class="reward-icon">🧩</div><div class="reward-text">${heroFrags} ${heroName}碎片</div></div>
-    <div class="reward-item"><div class="reward-icon">🔧</div><div class="reward-text">${universalFrags} 通用碎片</div></div>`;
+    <div class="reward-item"><div class="reward-icon">⬆️</div><div class="reward-text">${heroXp} 经验</div></div>
+    <div class="reward-item"><div class="reward-icon">🧩</div><div class="reward-text">${heroFrags} 碎片</div></div>
+    <div class="reward-item"><div class="reward-icon">🔧</div><div class="reward-text">${universalFrags} 通碎</div></div>`;
   
   // 插入DPS伤害统计图表
   const dpsChartHtml=renderDpsChart();
-  const dpsContainer=document.createElement('div');dpsContainer.innerHTML=dpsChartHtml;
-  document.getElementById('result-stats').after(dpsContainer);
+  const dpsContainer=document.createElement('div');dpsContainer.className='result-dps-wrap';dpsContainer.style.width='100%';dpsContainer.style.maxWidth='380px';dpsContainer.innerHTML=dpsChartHtml;
+  scrollBody.appendChild(dpsContainer);
   document.getElementById('btn-revive').classList.toggle('show',!victory&&!S.revived);
   
   // ========== 写入存档 ==========
@@ -3821,7 +3878,7 @@ function showResult(victory){
     // 在奖励区域追加升级提示
     const lvUpDiv=document.createElement('div');lvUpDiv.className='result-levelup';
     lvUpDiv.innerHTML=`<div class="rlv-icon">⬆️</div><div class="rlv-text">${heroName} 升至 Lv.${newLv}！<br><span class="rlv-bonus">攻击+${bonus.atk} 生命+${bonus.hp}</span></div>`;
-    document.getElementById('result-rewards').after(lvUpDiv);
+    scrollBody.appendChild(lvUpDiv);
   }
   
   if(victory){PD.firstWinToday=true;if(S.chapter){PD.chapters[S.chapter.id]={unlocked:true,stars:3,cleared:true};
@@ -3842,7 +3899,7 @@ function showResult(victory){
         });
         guideHtml+='</div>';
         guideDiv.innerHTML=guideHtml;
-        document.getElementById('result-rewards').after(guideDiv);
+        scrollBody.appendChild(guideDiv);
       }
     }
   }
@@ -3859,6 +3916,54 @@ window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;
     const pk=document.getElementById('pause-kills');if(pk)pk.textContent=S.kills;
     const pw=document.getElementById('pause-wave');if(pw)pw.textContent=S.wave;
     const pt=document.getElementById('pause-time');if(pt){const m=Math.floor(gameTime/60);const s=Math.floor(gameTime%60);pt.textContent=m+':'+String(s).padStart(2,'0')}
+    // ===== 渲染详细面板 =====
+    const detail=document.getElementById('pause-detail');
+    if(detail){
+      let html='';
+      // --- 属性详情 ---
+      const atkDelta=Math.round(S.attack-(S.initialAtk||S.attack));
+      const hpDelta=Math.round(S.maxHp-(S.initialHp||S.maxHp));
+      const critDelta=S.critRate-(S.initialCrit||S.critRate);
+      const armorDelta=Math.round(S.armor-(S.initialArmor||S.armor));
+      const spdDelta=S.speed-(S.initialSpd||S.speed);
+      html+=`<div class="pause-section"><div class="pause-section-title">📊 当前属性</div><div class="pause-attr-grid">
+        <div class="pause-attr"><span class="pa-icon">⚔️</span><span class="pa-label">攻击</span><span class="pa-val">${Math.round(S.attack)}</span>${atkDelta>0?`<span class="pa-delta">+${atkDelta}</span>`:''}</div>
+        <div class="pause-attr"><span class="pa-icon">❤️</span><span class="pa-label">生命</span><span class="pa-val">${Math.round(S.maxHp)}</span>${hpDelta>0?`<span class="pa-delta">+${hpDelta}</span>`:''}</div>
+        <div class="pause-attr"><span class="pa-icon">💥</span><span class="pa-label">暴击</span><span class="pa-val">${(S.critRate*100).toFixed(1)}%</span>${critDelta>0.001?`<span class="pa-delta">+${(critDelta*100).toFixed(1)}%</span>`:''}</div>
+        <div class="pause-attr"><span class="pa-icon">🛡️</span><span class="pa-label">护甲</span><span class="pa-val">${Math.round(S.armor)}</span>${armorDelta>0?`<span class="pa-delta">+${armorDelta}</span>`:''}</div>
+        <div class="pause-attr"><span class="pa-icon">👟</span><span class="pa-label">速度</span><span class="pa-val">${S.speed.toFixed(1)}</span>${spdDelta>0.01?`<span class="pa-delta">+${spdDelta.toFixed(1)}</span>`:''}</div>
+        <div class="pause-attr"><span class="pa-icon">💀</span><span class="pa-label">暴伤</span><span class="pa-val">×${S.critDmg.toFixed(1)}</span></div>
+      </div></div>`;
+      // --- 成长来源 ---
+      if(S.growthLog){
+        const g=S.growthLog;const hasGrowth=(g.levelAtk+g.eventAtk+g.lootAtk+g.levelHp+g.eventHp+g.lootHp)>0;
+        if(hasGrowth){
+          html+=`<div class="pause-section"><div class="pause-section-title">📈 本局成长来源</div><div style="font-size:11px;color:#aaa;line-height:1.6">`;
+          if(g.levelAtk>0||g.levelHp>0)html+=`<div>📊 升级(Lv.${S.level})：${g.levelAtk>0?'⚔+'+g.levelAtk.toFixed(1)+' ':''}${g.levelHp>0?'❤+'+g.levelHp+' ':''}${g.levelCrit>0?'💥+'+(g.levelCrit*100).toFixed(0)+'%':''}</div>`;
+          if(g.eventAtk>0||g.eventHp>0||g.eventSpd>0||g.eventCrit>0||g.eventArmor>0)html+=`<div>🏛️ 事件/神龛：${g.eventAtk>0?'⚔+'+g.eventAtk+' ':''}${g.eventHp>0?'❤+'+g.eventHp+' ':''}${g.eventSpd>0?'👟+'+g.eventSpd.toFixed(1)+' ':''}${g.eventCrit>0?'💥+'+(g.eventCrit*100).toFixed(0)+'% ':''}${g.eventArmor>0?'🛡+'+g.eventArmor:''}</div>`;
+          if(g.lootAtk>0||g.lootHp>0||g.lootSpd>0||g.lootCrit>0||g.lootArmor>0)html+=`<div>📦 战利品：${g.lootAtk>0?'⚔+'+g.lootAtk+' ':''}${g.lootHp>0?'❤+'+g.lootHp+' ':''}${g.lootSpd>0?'👟+'+g.lootSpd.toFixed(1)+' ':''}${g.lootCrit>0?'💥+'+(g.lootCrit*100).toFixed(0)+'% ':''}${g.lootArmor>0?'🛡+'+g.lootArmor:''}</div>`;
+          html+=`</div></div>`;
+        }
+      }
+      // --- 技能列表 ---
+      if(S.skills&&S.skills.length>0){
+        html+=`<div class="pause-section"><div class="pause-section-title">🔮 当前技能 (${S.skills.length})</div><div class="pause-skill-list">`;
+        S.skills.forEach(sk=>{
+          html+=`<div class="pause-skill-item"><span class="psi-icon">${sk.icon}</span><span class="psi-name">${sk.name}</span><span class="psi-lv">Lv.${sk.level||1}</span></div>`;
+        });
+        html+=`</div></div>`;
+      }
+      // --- 装备信息 ---
+      if(S.equipEffects&&Object.keys(S.equipEffects).length>0){
+        html+=`<div class="pause-section"><div class="pause-section-title">⚔️ 装备特效</div><div class="pause-equip-list">`;
+        Object.keys(S.equipEffects).forEach(eff=>{
+          const eq=EQUIPMENT_DB.find(e=>e.effect===eff);
+          if(eq)html+=`<div class="pause-equip-item"><span class="pei-icon">${eq.icon}</span><span class="pei-name">${eq.name}</span><span class="pei-stats">${eq.effectDesc||''}</span></div>`;
+        });
+        html+=`</div></div>`;
+      }
+      detail.innerHTML=html;
+    }
   }};
 window.watchAdRevive=function(){if(S.revived)return;S.revived=true;S.hp=S.maxHp;gameActive=true;document.getElementById('result-screen').classList.remove('active')};
 window.watchAdDouble=function(){PD.gold+=S.gold+S.kills*2;PD.totalFrags=(PD.totalFrags||0)+2;SYS.showRewardPopup([{icon:'💰',text:`额外${S.gold+S.kills*2}金币 + 2通用碎片`}]);save()};
@@ -3885,7 +3990,7 @@ function cleanupBattle(){
   if(heroMesh){try{scene.remove(heroMesh)}catch(ex){}}
   heroMesh=null;
   S.enemies=[];S.projectiles=[];S.particles=[];S.pickups=[];
-  S.boss=null;S.bossActive=false;
+  S.boss=null;S.bossActive=false;S.bossSpawning=false;
   // 清理环境粒子
   if(ambientPSystem){try{scene.remove(ambientPSystem.points)}catch(ex){}ambientPSystem=null;}
 }
@@ -3925,12 +4030,18 @@ window.startChapterBattle=function(){
     if(e.effect)eqEffects[e.effect]=true}}})}
   // 5. 装备强化加成
   const enhBonus=SYS.calcEquipEnhanceBonus(PD);
+  // 6. 公会BUFF加成
+  let guildAtkBonus=0,guildHpBonus=0;
+  if(PD.guildJoined){
+    const gLv=Math.min(10,Math.floor((PD.guildContrib||0)/500)+1);
+    guildAtkBonus=gLv*2;guildHpBonus=gLv*10;
+  }
   // ========== 最终属性计算 ==========
   const baseAtk=Math.round((cfg.atk+lvBonus.atk)*starMult);
   const baseHp=Math.round((cfg.hp+lvBonus.hp)*starMult);
   const allPctMult=1+(talentBonus.allPct||0);
-  const finalAtk=Math.round((baseAtk+eqAtk+enhBonus.atk+talentBonus.atk)*allPctMult);
-  const finalHp=Math.round((baseHp+eqHp+enhBonus.hp+talentBonus.hp)*allPctMult);
+  const finalAtk=Math.round((baseAtk+eqAtk+enhBonus.atk+talentBonus.atk+guildAtkBonus)*allPctMult);
+  const finalHp=Math.round((baseHp+eqHp+enhBonus.hp+talentBonus.hp+guildHpBonus)*allPctMult);
   const finalSpd=cfg.spd+eqSpd+enhBonus.spd+(talentBonus.spd||0);
   const finalCrit=NUM.CRIT_CHANCE_BASE+cfg.critRate+eqCrit+enhBonus.critRate+(talentBonus.critRate||0);
   const finalCritDmg=cfg.critDmg+(talentBonus.critDmg||0);
@@ -3949,7 +4060,7 @@ window.startChapterBattle=function(){
     // 护甲系统
     armor:finalArmor,
     skills:[],enemies:[],projectiles:[],particles:[],pickups:[],
-    boss:null,bossActive:false,bossPhase:0,
+    boss:null,bossActive:false,bossSpawning:false,bossPhase:0,
     killStreak:0,ksTimer:0,bossKillsThisGame:0,revived:false,comboSkills:[],
     eliteKills:0,
     // 被动系统初始化
@@ -3972,6 +4083,14 @@ window.startChapterBattle=function(){
     // 天赋特殊效果存储（战斗中读取）
     talentBonus:talentBonus
   });
+  // ===== 保存初始属性快照（用于成长追踪） =====
+  S.initialAtk=S.attack;S.initialHp=S.maxHp;S.initialSpd=S.speed;
+  S.initialCrit=S.critRate;S.initialArmor=S.armor;S.initialCritDmg=S.critDmg;
+  // 成长来源追踪
+  S.growthLog={levelAtk:0,levelHp:0,levelCrit:0,eventAtk:0,eventHp:0,eventSpd:0,eventCrit:0,eventArmor:0,lootAtk:0,lootHp:0,lootSpd:0,lootCrit:0,lootArmor:0};
+  // 属性分解存储（给暂停面板和结算用）
+  S.atkBreakdown={base:cfg.atk,level:lvBonus.atk,star:Math.round((cfg.atk+lvBonus.atk)*starMult-(cfg.atk+lvBonus.atk)),equip:eqAtk,enhance:enhBonus.atk,talent:talentBonus.atk,guild:guildAtkBonus};
+  S.hpBreakdown={base:cfg.hp,level:lvBonus.hp,star:Math.round((cfg.hp+lvBonus.hp)*starMult-(cfg.hp+lvBonus.hp)),equip:eqHp,enhance:enhBonus.hp,talent:talentBonus.hp,guild:guildHpBonus};
   S.moveDir.set(0,0);gameTime=0;baseAtkTimer=0;spawnTimer=0;Object.keys(skillTimers).forEach(k=>delete skillTimers[k]);
   // ===== 天赋开局效果 =====
   // 开战护盾: 战斗开始获得MaxHP百分比护盾
@@ -4051,6 +4170,7 @@ window.closePopup=function(id){const el=document.getElementById(id);if(el)el.cla
 window.doSignIn=function(){SYS.doSignIn(PD)};
 window.doFirstCharge=function(){SYS.doFirstCharge(PD)};
 window.buyBattlePass=function(){SYS.buyBattlePass(PD)};
+window._claimBpReward=function(lv,track){SYS.claimBpReward(PD,lv,track)};
 window.doLuckyDraw=function(){SYS.doLuckyDraw(PD)};
 window.switchShopTab=function(el,tab){SYS.switchShopTab(PD,el,tab)};
 window.watchAdArena=function(){if(PD.arenaCharges<5){PD.arenaCharges++;save();SYS.renderArena(PD)}};
@@ -4061,6 +4181,8 @@ window._guildDonate=function(){SYS.guildDonate(PD)};
 window._guildRaid=function(){SYS.guildRaid(PD)};
 window._guildRank=function(){SYS.guildRank(PD)};
 window._guildBuff=function(){SYS.guildBuff(PD)};
+window._showEquipSwap=function(slot){SYS.showEquipSwap(PD,slot)};
+window._doEquipSwap=function(slot,action,eqId){SYS.doEquipSwap(PD,slot,action,eqId)};
 window._claimAchieve=function(id){SYS.claimAchievement(PD,id)};
 window._claimQuest=function(idx){SYS.claimQuest(PD,idx)};
 // 新增养成系统事件
