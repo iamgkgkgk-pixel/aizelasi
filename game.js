@@ -5923,6 +5923,56 @@ window._claimQuest=function(idx){SYS.claimQuest(PD,idx)};
 window._heroUpStar=function(){SYS.heroUpStar(PD)};
 window._chooseTalent=function(heroId,tree,tier,id,cost){SYS.chooseTalent(PD,heroId,tree,tier,id,cost)};
 window._enhanceEquip=function(eqId){SYS.enhanceEquip(PD,eqId)};
+// 装备中心：锻造选部位+分解+Tab切换
+window._selectForgeSlot=function(slot,idx){SYS.selectForgeSlot(PD,slot,idx)};
+window._confirmForge=function(slot,idx,cost){SYS.confirmForge(PD,slot,idx,cost)};
+window._doSalvage=function(eqId){SYS.doSalvage(PD,eqId)};
+window._doSalvageBatch=function(){SYS.doSalvageBatch(PD)};
+window._switchForgeTab=function(el,tab){
+  document.querySelectorAll('.forge-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.forge-tab-content').forEach(c=>c.style.display='none');
+  const target=document.getElementById('ftab-'+tab);
+  if(target)target.style.display='';
+  if(tab==='equip'){SYS.renderForge(PD)}
+  else if(tab==='craft'){SYS.renderForge(PD)}
+  else if(tab==='salvage'){_renderSalvageInline()}
+};
+function _renderSalvageInline(){
+  const container=document.getElementById('salvage-inline');
+  if(!container)return;
+  const equipped=new Set(Object.values(PD.equipment||{}).filter(Boolean));
+  const salvageable=PD.inventory.filter(id=>!equipped.has(id)).filter((v,i,a)=>a.indexOf(v)===i);
+  const salRewards={common:{gold:30,frags:1},rare:{gold:60,frags:2},epic:{gold:150,frags:5},legendary:{gold:300,frags:10},mythic:{gold:600,frags:25}};
+  const RARITY_COLOR=window.DATA.RARITY_COLOR;
+  let html=`<div class="sal-balance">🧩 碎片: ${PD.totalFrags||0} | 💰 金币: ${PD.gold}</div>`;
+  if(salvageable.length===0){
+    html+=`<div class="sal-empty">没有可分解的装备<br><span style="color:#7a6e55;font-size:11px">已装备的装备无法分解</span></div>`;
+  }else{
+    html+=`<div class="sal-list">`;
+    salvageable.forEach(id=>{
+      const eq=window.DATA.EQUIPMENT_DB.find(e=>e.id===id);if(!eq)return;
+      const reward=salRewards[eq.rarity]||salRewards.common;
+      html+=`<div class="sal-item rarity-${eq.rarity}">
+        <div class="sal-item-main">
+          <span class="sal-item-icon">${eq.icon}</span>
+          <div class="sal-item-info">
+            <div class="sal-item-name" style="color:${RARITY_COLOR[eq.rarity]}">${eq.name}</div>
+            <div class="sal-item-stats">⚔${eq.atk} ❤${eq.hp}</div>
+          </div>
+        </div>
+        <div class="sal-item-reward"><span>💰${reward.gold}</span> <span>🧩${reward.frags}</span></div>
+        <button class="sal-btn" onclick="window._doSalvage('${id}');window._switchForgeTab(document.querySelector('.forge-tab[data-ftab=salvage]'),'salvage')">分解</button>
+      </div>`;
+    });
+    html+=`</div>`;
+    const commonSalvage=salvageable.filter(id=>{const e=window.DATA.EQUIPMENT_DB.find(x=>x.id===id);return e&&e.rarity==='common'});
+    if(commonSalvage.length>1){
+      html+=`<button class="sal-batch-btn" onclick="window._doSalvageBatch();window._switchForgeTab(document.querySelector('.forge-tab[data-ftab=salvage]'),'salvage')">⚒️ 一键分解全部普通装备 (${commonSalvage.length}件)</button>`;
+    }
+  }
+  container.innerHTML=html;
+}
 // 装备图鉴+Build推荐 事件绑定
 window._codexSwitchTab=function(el,tab){
   document.querySelectorAll('.codex-tab').forEach(t=>t.classList.remove('active'));

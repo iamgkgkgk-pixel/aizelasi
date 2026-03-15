@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hero Live2D Preview — 英雄动效预览</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a14;
+  color: #e8dcc8;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+h1 {
+  font-size: 22px;
+  color: #c9a44a;
+  margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(201,164,74,0.3);
+}
+.subtitle {
+  font-size: 13px;
+  color: #8b7a60;
+  margin-bottom: 24px;
+}
+.heroes-row {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-card {
+  background: linear-gradient(135deg, rgba(20,18,30,0.95), rgba(30,25,40,0.9));
+  border: 1px solid rgba(201,164,74,0.2);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(201,164,74,0.5), transparent);
+}
+.hero-label {
+  font-size: 15px;
+  font-weight: bold;
+  color: #c9a44a;
+  margin-bottom: 8px;
+}
+.hero-desc {
+  font-size: 11px;
+  color: #8b7a60;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.hero-container {
+  width: 300px;
+  height: 300px;
+  position: relative;
+  background: radial-gradient(ellipse at center bottom, rgba(201,164,74,0.05) 0%, transparent 70%);
+  border-radius: 12px;
+}
+.fx-list {
+  margin-top: 12px;
+  text-align: left;
+  font-size: 11px;
+  color: #b8a88c;
+  line-height: 1.8;
+}
+.fx-list span { color: #c9a44a; }
+.tech-note {
+  margin-top: 24px;
+  max-width: 800px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 12px;
+  color: #8b7a60;
+  line-height: 1.8;
+}
+.tech-note h3 {
+  color: #c9a44a;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.tech-note code {
+  background: rgba(201,164,74,0.1);
+  color: #c9a44a;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+
+<h1>✨ Hero Live2D-lite Engine Preview</h1>
+<p class="subtitle">基于Canvas的程序化立绘动效 — 一张静态图生成呼吸、飘动、闪烁、粒子</p>
+
+<div class="heroes-row">
+  <!-- 法师 -->
+  <div class="hero-card">
+    <div class="hero-label">🔮 精灵法师 — 奥术之力</div>
+    <div class="hero-desc">优雅静谧的魔法涌动</div>
+    <div class="hero-container" id="mage-container"></div>
+    <div class="fx-list">
+      <span>🌊 披风飘动</span> 两侧披风随风波动<br>
+      <span>✨ 水晶闪烁</span> 法杖+手持水晶脉动<br>
+      <span>💜 奥术粒子</span> 蓝紫色光点上浮<br>
+      <span>💨 呼吸感</span> 柔和的身体起伏
+    </div>
+  </div>
+
+  <!-- 战士 -->
+  <div class="hero-card">
+    <div class="hero-label">⚔️ 矮人战士 — 钢铁意志</div>
+    <div class="hero-desc">沉稳威武的战场气息</div>
+    <div class="hero-container" id="warrior-container"></div>
+    <div class="fx-list">
+      <span>🌊 斗篷飘动</span> 红色战袍随风飞舞<br>
+      <span>⚡ 剑身反光</span> 大剑金属冷光闪烁<br>
+      <span>✨ 金色微光</span> 护甲金色装饰粒子<br>
+      <span>💨 呼吸感</span> 厚重的身体微动
+    </div>
+  </div>
+
+  <!-- 萨满 -->
+  <div class="hero-card">
+    <div class="hero-label">⚡ 牛头人萨满 — 雷霆之怒</div>
+    <div class="hero-desc">狂野不羁的元素力量</div>
+    <div class="hero-container" id="shaman-container"></div>
+    <div class="fx-list">
+      <span>🌊 羽毛飘动</span> 肩甲羽毛随风摆动<br>
+      <span>⚡ 闪电脉动</span> 图腾法杖雷电闪烁<br>
+      <span>💙 电火花</span> 蓝白色电弧粒子<br>
+      <span>💨 呼吸感</span> 强壮的胸膛起伏
+    </div>
+  </div>
+</div>
+
+<div class="tech-note">
+  <h3>🛠 技术方案</h3>
+  <p>
+    与传统的 AI 逐帧生成不同，此方案基于 <code>单张静态PNG</code> + <code>Canvas 实时渲染</code>：
+  </p>
+  <p>
+    <b>1. 呼吸感</b> — 以脚底为支点，整体做正弦缩放（Y轴 ±0.6~0.8%），模拟呼吸起伏<br>
+    <b>2. 飘动变形</b> — 将图片切成60个水平条（Slice），对每个处于飘动区域的条施加正弦X偏移，实现披风/头发/羽毛的波浪飘动<br>
+    <b>3. 发光闪烁</b> — 在特定区域（水晶/闪电/护甲）叠加 <code>screen</code> 模式的径向渐变光晕，配合正弦脉动<br>
+    <b>4. 粒子漂浮</b> — 三种模式：上浮（法师奥术）、漂浮（战士金光）、电火花（萨满闪电），每个粒子独立生命周期+淡入淡出
+  </p>
+  <p style="color:#44ff44;margin-top:8px">
+    ✅ 流畅60fps · ✅ 无帧间跳变 · ✅ 每英雄独立配置 · ✅ 自动回退到静态图
+  </p>
+</div>
+
+<script src="hero-live2d.js"></script>
+<script>
+  // 创建三个英雄的Live2D实例
+  new HeroLive2D(document.getElementById('mage-container'), 'mage', 'assets/heroes/mage.png');
+  new HeroLive2D(document.getElementById('warrior-container'), 'warrior', 'assets/heroes/warrior.png');
+  new HeroLive2D(document.getElementById('shaman-container'), 'shaman', 'assets/heroes/shaman.png');
+</script>
+
+</body>
+</html>

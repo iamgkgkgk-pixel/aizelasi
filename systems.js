@@ -3,7 +3,10 @@
 // =====================================================================
 (function(){
 const {ALL_HEROES,CHAPTERS,SIGNIN_REWARDS,EQUIPMENT_DB,ARENA_RANKS,ARENA_RANK_NAMES,ARENA_RANK_ICONS,ARENA_RANK_REQ,BP_REWARDS,BP_MAX,BP_XP,ACHIEVEMENTS,QUEST_TEMPLATES,SHOP_DATA,DRAW_PRIZES,SKILL_DB,RARITY_NAME,RARITY_COLOR,
-  HERO_LEVEL,TALENT_TREES,ENHANCE_DATA,HERO_STAR,STUCK_GUIDE,calcHeroXpNeed,calcHeroLevelBonus} = window.DATA;
+  HERO_LEVEL,TALENT_TREES,ENHANCE_DATA,HERO_STAR,STUCK_GUIDE,calcHeroXpNeed,calcHeroLevelBonus,
+  SET_BONUSES:_SET_BONUSES_DATA,BUILD_RECOMMENDS,EQUIP_SLOT_NAMES,EQUIP_SLOT_ORDER,RARITY_ORDER} = window.DATA;
+// SET_BONUSES might also be on window directly
+const SET_BONUSES=window.SET_BONUSES||_SET_BONUSES_DATA;
 
 // ==================== 持久化 ====================
 const SAVE_KEY='azeroth_sv';
@@ -61,14 +64,28 @@ function refreshMainMenu(PD){
   $('cur-gold').textContent=PD.gold;
   $('cur-stamina').textContent=PD.stamina;
   const maxStEl=$('max-stamina');if(maxStEl)maxStEl.textContent=PD.maxStamina;
-  $('mm-hero-model').textContent=hero.icon;
-  // 尝试用立绘替代emoji
+  // 使用Canvas Live2D程序化动效（呼吸+飘动+闪烁+粒子）
   const heroImgEl=$('mm-hero-model');
-  const heroImgPath='assets/heroes/'+hero.id+'.png';
-  const _testImg=new Image();
-  _testImg.onload=()=>{heroImgEl.textContent='';heroImgEl.style.backgroundImage='url('+heroImgPath+')';heroImgEl.style.backgroundSize='contain';heroImgEl.style.backgroundRepeat='no-repeat';heroImgEl.style.backgroundPosition='center';heroImgEl.style.width='160px';heroImgEl.style.height='160px';heroImgEl.style.margin='0 auto'};
-  _testImg.onerror=()=>{heroImgEl.style.backgroundImage='';heroImgEl.textContent=hero.icon};
-  _testImg.src=heroImgPath;
+  // 清理旧的序列帧定时器
+  if(window._heroIdleTimer){clearInterval(window._heroIdleTimer);window._heroIdleTimer=null}
+  // 启动Live2D动效（只在英雄切换或首次时重建，避免频繁销毁重建导致闪烁）
+  const needRebuild=!window._heroLive2D||window._heroLive2DId!==hero.id;
+  if(needRebuild){
+    if(window.createHeroLive2D){
+      heroImgEl.textContent='';heroImgEl.innerHTML='';
+      heroImgEl.style.backgroundImage='none';
+      heroImgEl.style.fontSize='0';
+      window._heroLive2DId=hero.id;
+      window.createHeroLive2D(heroImgEl, hero.id);
+    }else{
+      // 回退：静态立绘
+      const heroStaticPath='assets/heroes/'+hero.id+'.png';
+      const _testStatic=new Image();
+      _testStatic.onload=()=>{heroImgEl.textContent='';heroImgEl.style.backgroundImage='url('+heroStaticPath+')';heroImgEl.style.backgroundSize='contain';heroImgEl.style.backgroundRepeat='no-repeat';heroImgEl.style.backgroundPosition='center'};
+      _testStatic.onerror=()=>{heroImgEl.style.backgroundImage='';heroImgEl.textContent=hero.icon};
+      _testStatic.src=heroStaticPath;
+    }
+  }
   $('mm-hero-tag').textContent=hero.name;
   // 显示英雄职业
   const roleEl=$('mm-hero-role');
@@ -252,6 +269,10 @@ function checkChapterUnlock(ch,PD){
 }
 
 // ==================== 锻造 ====================
+const FORGE_SLOT_NAMES={weapon:'⚔️ 武器',armor:'🛡️ 护甲',helmet:'⛑️ 头盔',boots:'👢 靴子',trinket:'💎 饰品',ring:'💍 戒指'};
+const FORGE_SLOT_ORDER=['weapon','armor','helmet','boots','trinket','ring'];
+const FORGE_COSTS={weapon:250,armor:250,helmet:200,boots:200,trinket:300,ring:200};
+
 function renderForge(PD){
   const slots=$('forge-slots');slots.innerHTML='';
   // 确保有6个锻造槽
@@ -263,34 +284,200 @@ function renderForge(PD){
     const s=PD.forgeSlots[i];const slot=document.createElement('div');
     if(!s){
       slot.className='fg-slot';
-      slot.innerHTML=`<div class="fg-icon">➕</div><div class="fg-name">空闲</div><div class="fg-status">点击开始锻造</div>`;
-      slot.onclick=()=>startForge(PD,i);
+      slot.innerHTML=`<div class="fg-icon">➕</div><div class="fg-name">空闲</div><div class="fg-status">点击选择锻造</div>`;
+      slot.onclick=()=>showForgeSlotPicker(PD,i);
     }else{
       const eq=EQUIPMENT_DB.find(e=>e.id===s.itemId);
       const now=Date.now();const ready=now>=s.endTime;
       slot.className=`fg-slot${ready?' ready':' forging'}`;
       if(ready){
-        slot.innerHTML=`<div class="fg-icon">${eq.icon}</div><div class="fg-name">${eq.name}</div><div class="fg-status" style="color:#44ff44">✅ 完成！点击领取</div>`;
+        slot.innerHTML=`<div class="fg-icon">${eq.icon}</div><div class="fg-name" style="color:${RARITY_COLOR[eq.rarity]||'#aaa'}">${eq.name}</div><div class="fg-status" style="color:#44ff44">✅ 完成！点击领取</div>`;
         slot.onclick=()=>claimForge(PD,i);
       }else{
         const left=Math.ceil((s.endTime-now)/1000);const m=Math.floor(left/60),sec=left%60;
-        slot.innerHTML=`<div class="fg-icon">${eq.icon}</div><div class="fg-name">${eq.name}</div><div class="fg-status">⏰ ${m}:${String(sec).padStart(2,'0')}</div>`;
+        slot.innerHTML=`<div class="fg-icon">${eq.icon}</div><div class="fg-name" style="color:${RARITY_COLOR[eq.rarity]||'#aaa'}">${eq.name}</div><div class="fg-status">⏰ ${m}:${String(sec).padStart(2,'0')}</div>`;
       }
     }
     slots.appendChild(slot);
   }
   // ===== 我的装备总览 =====
   renderMyEquipment(PD);
+  // ===== 套装追踪面板 =====
+  renderSetTracker(PD);
 }
+
+// ==================== 锻造选部位 + 概率预览 ====================
+function showForgeSlotPicker(PD, forgeIdx){
+  // 移除旧弹窗
+  const oldOverlay=document.querySelector('.forge-picker-overlay');
+  if(oldOverlay)oldOverlay.remove();
+
+  const heroId=PD.selectedHero||'warrior';
+  const overlay=document.createElement('div');
+  overlay.className='forge-picker-overlay';
+  
+  let html=`<div class="forge-picker-modal">
+    <div class="fpm-header">
+      <div class="fpm-title">🔨 选择锻造部位</div>
+      <div class="fpm-close" onclick="this.closest('.forge-picker-overlay').remove()">✕</div>
+    </div>
+    <div class="fpm-subtitle">选择一个装备部位进行定向锻造</div>
+    <div class="fpm-slots">`;
+  
+  FORGE_SLOT_ORDER.forEach(slot=>{
+    const cost=FORGE_COSTS[slot];
+    const pool=_getForgePool(heroId, slot);
+    const mythicCount=pool.filter(e=>e.rarity==='mythic').length;
+    const legendCount=pool.filter(e=>e.rarity==='legendary').length;
+    const epicCount=pool.filter(e=>e.rarity==='epic').length;
+    const rareCount=pool.filter(e=>e.rarity==='rare').length;
+    const commonCount=pool.filter(e=>e.rarity==='common').length;
+    const currentEq=PD.equipment[slot];
+    const curEqData=currentEq?EQUIPMENT_DB.find(e=>e.id===currentEq):null;
+    
+    html+=`<div class="fpm-slot-card" onclick="window._selectForgeSlot('${slot}',${forgeIdx})">
+      <div class="fpm-slot-header">
+        <span class="fpm-slot-name">${FORGE_SLOT_NAMES[slot]}</span>
+        <span class="fpm-slot-cost">💰${cost}</span>
+      </div>
+      <div class="fpm-slot-current">${curEqData?`<span style="color:${RARITY_COLOR[curEqData.rarity]}">${curEqData.icon} ${curEqData.name}</span>`:'<span style="color:#555">未装备</span>'}</div>
+      <div class="fpm-slot-pool">
+        ${mythicCount>0?`<span class="fpm-rarity" style="color:#ff2222">神话×${mythicCount}</span>`:''}
+        ${legendCount>0?`<span class="fpm-rarity" style="color:#ff8800">传说×${legendCount}</span>`:''}
+        ${epicCount>0?`<span class="fpm-rarity" style="color:#aa44ff">史诗×${epicCount}</span>`:''}
+        ${rareCount>0?`<span class="fpm-rarity" style="color:#44ff44">精良×${rareCount}</span>`:''}
+        ${commonCount>0?`<span class="fpm-rarity" style="color:#aaa">普通×${commonCount}</span>`:''}
+      </div>
+      <div class="fpm-slot-total">${pool.length}件可锻造</div>
+    </div>`;
+  });
+  
+  html+=`</div>
+    <div class="fpm-preview-area" id="fpm-preview-area"></div>
+  </div>`;
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  // 点击遮罩关闭
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+}
+
+// 获取指定部位的锻造池
+function _getForgePool(heroId, slot){
+  return EQUIPMENT_DB.filter(e=>{
+    if(e.slot!==slot)return false;
+    if(e.classReq&&e.classReq!==heroId)return false;
+    return true;
+  });
+}
+
+// 选择部位后显示概率预览
+function selectForgeSlot(PD, slot, forgeIdx){
+  const heroId=PD.selectedHero||'warrior';
+  const cost=FORGE_COSTS[slot];
+  const pool=_getForgePool(heroId, slot);
+  
+  // 计算概率
+  const rarityWeights={common:60, rare:35, epic:20, legendary:8, mythic:2};
+  const itemsWithWeight=pool.map(eq=>{
+    const w=rarityWeights[eq.rarity]||10;
+    return {eq, weight:w};
+  });
+  const totalWeight=itemsWithWeight.reduce((s,i)=>s+i.weight,0);
+  
+  // 按品质分组排序显示
+  const rarOrder=['mythic','legendary','epic','rare','common'];
+  const grouped={};
+  itemsWithWeight.forEach(({eq,weight})=>{
+    if(!grouped[eq.rarity])grouped[eq.rarity]=[];
+    grouped[eq.rarity].push({eq, pct:(weight/totalWeight*100)});
+  });
+  
+  const preview=$('fpm-preview-area');
+  if(!preview)return;
+  
+  let html=`<div class="fpm-preview-header">
+    <span>${FORGE_SLOT_NAMES[slot]} 锻造预览</span>
+    <button class="fpm-forge-btn${PD.gold>=cost?'':' disabled'}" onclick="window._confirmForge('${slot}',${forgeIdx},${cost})">
+      🔨 开始锻造 (💰${cost})
+    </button>
+  </div>
+  <div class="fpm-preview-list">`;
+  
+  rarOrder.forEach(rarity=>{
+    const items=grouped[rarity];
+    if(!items)return;
+    const groupPct=items.reduce((s,i)=>s+i.pct,0);
+    html+=`<div class="fpm-rarity-group">
+      <div class="fpm-rarity-header" style="color:${RARITY_COLOR[rarity]}">
+        ${RARITY_NAME[rarity]} <span class="fpm-rarity-pct">${groupPct.toFixed(1)}%</span>
+      </div>`;
+    items.forEach(({eq, pct})=>{
+      const currentEq=PD.equipment[slot]?EQUIPMENT_DB.find(e=>e.id===PD.equipment[slot]):null;
+      // 与当前装备对比
+      let compHtml='';
+      if(currentEq){
+        const dAtk=eq.atk-currentEq.atk;
+        const dHp=eq.hp-currentEq.hp;
+        const dArmor=(eq.armor||0)-(currentEq.armor||0);
+        compHtml=`<span class="fpm-comp">${dAtk!==0?`<span class="${dAtk>0?'stat-up':'stat-down'}">⚔${dAtk>0?'+':''}${dAtk}</span>`:''} ${dHp!==0?`<span class="${dHp>0?'stat-up':'stat-down'}">❤${dHp>0?'+':''}${dHp}</span>`:''} ${dArmor!==0?`<span class="${dArmor>0?'stat-up':'stat-down'}">🛡${dArmor>0?'+':''}${dArmor}</span>`:''}</span>`;
+      }
+      html+=`<div class="fpm-item">
+        <span class="fpm-item-icon">${eq.icon}</span>
+        <span class="fpm-item-name" style="color:${RARITY_COLOR[eq.rarity]}">${eq.name}</span>
+        <span class="fpm-item-stats">⚔${eq.atk} ❤${eq.hp}${eq.armor?' 🛡'+eq.armor:''}</span>
+        ${compHtml}
+        <span class="fpm-item-pct">${pct.toFixed(1)}%</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  preview.innerHTML=html;
+  preview.scrollIntoView({behavior:'smooth'});
+  
+  // 高亮选中的slot card
+  document.querySelectorAll('.fpm-slot-card').forEach(c=>c.classList.remove('selected'));
+  const cards=document.querySelectorAll('.fpm-slot-card');
+  const idx=FORGE_SLOT_ORDER.indexOf(slot);
+  if(cards[idx])cards[idx].classList.add('selected');
+}
+
+// 确认锻造
+function confirmForge(PD, slot, forgeIdx, cost){
+  if(PD.gold<cost){showRewardPopup([{icon:'💰',text:`金币不足！需要${cost}💰`}]);return}
+  PD.gold-=cost;
+  const heroId=PD.selectedHero||'warrior';
+  // 定向锻造池
+  const pool=_getForgePool(heroId, slot);
+  const rarityWeights={common:60, rare:35, epic:20, legendary:8, mythic:2};
+  const itemsWithWeight=pool.map(eq=>({eq, weight:rarityWeights[eq.rarity]||10}));
+  const totalWeight=itemsWithWeight.reduce((s,i)=>s+i.weight,0);
+  let r=Math.random()*totalWeight;
+  let chosen=itemsWithWeight[0].eq;
+  for(const {eq, weight} of itemsWithWeight){
+    r-=weight;if(r<=0){chosen=eq;break}
+  }
+  PD.forgeSlots[forgeIdx]={itemId:chosen.id,endTime:Date.now()+chosen.forgeTime,slot:slot};
+  PD.dailyProgress.forges=(PD.dailyProgress.forges||0)+1;
+  // 关闭弹窗
+  const overlay=document.querySelector('.forge-picker-overlay');
+  if(overlay)overlay.remove();
+  saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
+  showRewardPopup([{icon:'🔨',text:`开始锻造 ${FORGE_SLOT_NAMES[slot].replace(/[^\u4e00-\u9fa5]/g,'')} · ${chosen.name}`}]);
+}
+
 // ==================== 我的装备总览+换装 ====================
 function renderMyEquipment(PD){
   let container=$('my-equipment');
   if(!container){
     container=document.createElement('div');container.id='my-equipment';
-    const forgeBody=$('forge').querySelector('.panel-body');
-    if(forgeBody)forgeBody.insertBefore(container,forgeBody.firstChild);
+    const ftabEquip=$('ftab-equip');
+    if(ftabEquip)ftabEquip.appendChild(container);
+    else{
+      const forgeBody=$('forge').querySelector('.panel-body');
+      if(forgeBody)forgeBody.insertBefore(container,forgeBody.firstChild);
+    }
   }
-  const slotNames={weapon:'⚔️ 武器',armor:'🛡️ 护甲',helmet:'⛑️ 头盔',boots:'👢 靴子',trinket:'💎 饰品',ring:'💍 戒指'};
   const slots=['weapon','armor','helmet','boots','trinket','ring'];
   // 确保PD.equipment有新槽位
   if(!PD.equipment.helmet)PD.equipment.helmet=null;
@@ -308,7 +495,7 @@ function renderMyEquipment(PD){
       if(eq.setId)equippedSets[eq.setId]=(equippedSets[eq.setId]||0)+1;
       const rarColor=RARITY_COLOR[eq.rarity]||'#aaa';
       html+=`<div class="my-equip-slot rarity-${eq.rarity}" onclick="window._showEquipSwap('${slot}')">
-        <div class="mes-label">${slotNames[slot]}</div>
+        <div class="mes-label">${FORGE_SLOT_NAMES[slot]}</div>
         <div class="mes-icon">${eq.icon}</div>
         <div class="mes-name" style="color:${rarColor}">${eq.name}${enhLv>0?' <span style="color:#c9a44a">+'+enhLv+'</span>':''}${eq.classReq?' <span style="font-size:10px;color:#8b7a60">['+((ALL_HEROES[eq.classReq]||{}).name||eq.classReq)+']</span>':''}</div>
         <div class="mes-stats">${eq.atk>0?'⚔'+eq.atk+' ':''}${eq.hp>0?'❤'+eq.hp+' ':''}${eq.armor>0?'🛡'+eq.armor+' ':''}${eq.critRate>0?'💥'+(eq.critRate*100).toFixed(0)+'%':''}${eq.spd>0?'💨'+eq.spd:''}</div>
@@ -318,7 +505,7 @@ function renderMyEquipment(PD){
       </div>`;
     }else{
       html+=`<div class="my-equip-slot empty" onclick="window._showEquipSwap('${slot}')">
-        <div class="mes-label">${slotNames[slot]}</div>
+        <div class="mes-label">${FORGE_SLOT_NAMES[slot]}</div>
         <div class="mes-icon" style="opacity:.3">➕</div>
         <div class="mes-name" style="color:#7a6e55">未装备</div>
         ${hasInv?'<div class="mes-swap-hint">点击装备</div>':'<div class="mes-stats" style="color:#444">锻造获取</div>'}
@@ -342,30 +529,158 @@ function renderMyEquipment(PD){
   if(activeSetHtml)html+=`<div style="margin-top:6px">${activeSetHtml}</div>`;
   container.innerHTML=html;
 }
+
+// ==================== P1: 套装追踪面板 ====================
+function renderSetTracker(PD){
+  let tracker=$('set-tracker');
+  if(!tracker){
+    tracker=document.createElement('div');tracker.id='set-tracker';
+    const ftabEquip=$('ftab-equip');
+    if(ftabEquip)ftabEquip.appendChild(tracker);
+    else{
+      const forgeBody=$('forge').querySelector('.panel-body');
+      if(forgeBody)forgeBody.appendChild(tracker);
+    }
+  }
+  const heroId=PD.selectedHero||'warrior';
+  // 找出与当前英雄相关的套装
+  const relevantSets=Object.entries(SET_BONUSES).filter(([setId,sb])=>{
+    // 套装件中有当前英雄专属的，或通用
+    return sb.pieces.some(pid=>{
+      const eq=EQUIPMENT_DB.find(e=>e.id===pid);
+      return eq&&(!eq.classReq||eq.classReq===heroId);
+    });
+  });
+  if(relevantSets.length===0){tracker.innerHTML='';return}
+  
+  const owned=new Set([...PD.inventory,...Object.values(PD.equipment||{}).filter(Boolean)]);
+  
+  let html=`<div class="st-title">🎯 套装收集</div><div class="st-list">`;
+  relevantSets.forEach(([setId,sb])=>{
+    const pieces=sb.pieces;
+    const ownedPieces=pieces.filter(pid=>owned.has(pid));
+    const total=pieces.length;
+    const count=ownedPieces.length;
+    const isComplete=count>=total;
+    const isActive=count>=2;
+    
+    html+=`<div class="st-item${isActive?' active':''}${isComplete?' complete':''}">
+      <div class="st-header">
+        <span class="st-name">${sb.name}</span>
+        <span class="st-progress">${count}/${total}</span>
+      </div>
+      <div class="st-pieces">`;
+    pieces.forEach(pid=>{
+      const eq=EQUIPMENT_DB.find(e=>e.id===pid);
+      if(!eq)return;
+      const has=owned.has(pid);
+      const equipped=Object.values(PD.equipment||{}).includes(pid);
+      html+=`<div class="st-piece${has?' owned':''}${equipped?' equipped':''}">
+        <span class="st-piece-icon">${eq.icon}</span>
+        <span class="st-piece-name" style="color:${has?RARITY_COLOR[eq.rarity]:'#555'}">${eq.name}</span>
+        <span class="st-piece-slot">${FORGE_SLOT_NAMES[eq.slot]||eq.slot}</span>
+        ${equipped?'<span class="st-piece-badge">装备中</span>':has?'<span class="st-piece-badge st-owned">背包中</span>':'<span class="st-piece-badge st-missing">缺少</span>'}
+      </div>`;
+    });
+    html+=`</div>
+      <div class="st-bonus${isActive?' active':''}">
+        ${isActive?'✅':'🔒'} 2件效果: ${sb.bonus2.desc}
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+  tracker.innerHTML=html;
+}
+
+// ==================== P0: 换装新旧对比弹窗 ====================
 function showEquipSwap(PD,slot){
-  // 弹窗选择该槽位可用装备
-  const available=PD.inventory.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.slot===slot}).filter((v,i,a)=>a.indexOf(v)===i); // 去重
+  const available=PD.inventory.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.slot===slot}).filter((v,i,a)=>a.indexOf(v)===i);
   const current=PD.equipment[slot];
   if(available.length===0&&!current){showRewardPopup([{icon:'🔨',text:'背包中没有该类型装备，去锻造吧！'}]);return}
-  let items=[];
-  // 卸下当前装备选项
-  if(current){
-    const curEq=EQUIPMENT_DB.find(e=>e.id===current);
-    items.push({icon:curEq?curEq.icon:'❌',text:`卸下 ${curEq?curEq.name:'当前装备'}`,action:'unequip'});
+  
+  // 移除旧弹窗
+  const oldOverlay=document.querySelector('.equip-swap-overlay');
+  if(oldOverlay)oldOverlay.remove();
+  
+  const curEq=current?EQUIPMENT_DB.find(e=>e.id===current):null;
+  const curEnhLv=curEq?(PD.equipEnhance[current]||0):0;
+  
+  const overlay=document.createElement('div');
+  overlay.className='equip-swap-overlay';
+  
+  let html=`<div class="esw-modal">
+    <div class="esw-header">
+      <div class="esw-title">🔧 ${FORGE_SLOT_NAMES[slot]} 换装</div>
+      <div class="esw-close" onclick="this.closest('.equip-swap-overlay').remove()">✕</div>
+    </div>`;
+  
+  // 当前装备展示
+  if(curEq){
+    html+=`<div class="esw-current">
+      <div class="esw-current-label">当前装备</div>
+      <div class="esw-current-card rarity-${curEq.rarity}">
+        <div class="esw-eq-icon">${curEq.icon}</div>
+        <div class="esw-eq-info">
+          <div class="esw-eq-name" style="color:${RARITY_COLOR[curEq.rarity]}">${curEq.name}${curEnhLv>0?' +'+curEnhLv:''}</div>
+          <div class="esw-eq-stats">⚔${curEq.atk} ❤${curEq.hp}${curEq.armor?' 🛡'+curEq.armor:''}${curEq.critRate?' 💥'+(curEq.critRate*100).toFixed(0)+'%':''}${curEq.spd?' 💨'+curEq.spd:''}</div>
+          ${curEq.effectDesc?`<div class="esw-eq-effect">${curEq.effectDesc}</div>`:''}
+        </div>
+        <button class="esw-unequip-btn" onclick="window._doEquipSwap('${slot}','unequip','');this.closest('.equip-swap-overlay').remove()">卸下</button>
+      </div>
+    </div>`;
   }
-  // 可换的装备
-  available.forEach(id=>{
-    if(id===current)return; // 跳过已装备的
-    const eq=EQUIPMENT_DB.find(e=>e.id===id);if(!eq)return;
-    const enhLv=PD.equipEnhance[id]||0;
-    items.push({icon:eq.icon,text:`${eq.name}${enhLv>0?' +'+enhLv:''} | ⚔${eq.atk} ❤${eq.hp}${eq.effectDesc?' | '+eq.effectDesc:''}`,action:'equip',eqId:id});
-  });
-  if(items.length===0){showRewardPopup([{icon:'✅',text:'当前已是最优装备！'}]);return}
-  // 使用奖励弹窗展示选择
-  $('popup-reward-title').textContent='🔧 更换装备';
-  $('popup-reward-items').innerHTML=items.map((it,i)=>`<div class="popup-item" style="cursor:pointer;min-width:200px" onclick="window._doEquipSwap('${slot}','${it.action}','${it.eqId||''}');document.getElementById('popup-reward').classList.remove('active')"><div class="popup-item-icon">${it.icon}</div><div style="font-size:12px">${it.text}</div></div>`).join('');
-  $('popup-reward').classList.add('active');
+  
+  // 可选装备列表（带对比）
+  const swappable=available.filter(id=>id!==current);
+  if(swappable.length>0){
+    html+=`<div class="esw-available">
+      <div class="esw-available-label">可更换 (${swappable.length})</div>`;
+    swappable.forEach(id=>{
+      const eq=EQUIPMENT_DB.find(e=>e.id===id);if(!eq)return;
+      const enhLv=PD.equipEnhance[id]||0;
+      // 对比
+      const dAtk=eq.atk-(curEq?curEq.atk:0);
+      const dHp=eq.hp-(curEq?curEq.hp:0);
+      const dArmor=(eq.armor||0)-(curEq?(curEq.armor||0):0);
+      const dCrit=(eq.critRate||0)-(curEq?(curEq.critRate||0):0);
+      const dSpd=(eq.spd||0)-(curEq?(curEq.spd||0):0);
+      
+      function diffSpan(val, prefix, suffix=''){
+        if(val===0)return '';
+        return `<span class="${val>0?'stat-up':'stat-down'}">${prefix}${val>0?'+':''}${suffix?val.toFixed?val.toFixed(suffix==='%'?0:1):val:val}${suffix}</span>`;
+      }
+      
+      html+=`<div class="esw-item rarity-${eq.rarity}" onclick="window._doEquipSwap('${slot}','equip','${id}');this.closest('.equip-swap-overlay').remove()">
+        <div class="esw-item-main">
+          <div class="esw-item-icon">${eq.icon}</div>
+          <div class="esw-item-info">
+            <div class="esw-item-name" style="color:${RARITY_COLOR[eq.rarity]}">${eq.name}${enhLv>0?' +'+enhLv:''}</div>
+            <div class="esw-item-base">⚔${eq.atk} ❤${eq.hp}${eq.armor?' 🛡'+eq.armor:''}${eq.critRate?' 💥'+(eq.critRate*100).toFixed(0)+'%':''}${eq.spd?' 💨'+eq.spd:''}</div>
+            ${eq.effectDesc?`<div class="esw-item-effect">${eq.effectDesc}</div>`:''}
+            ${eq.setId?`<div class="esw-item-set" style="color:#c9a44a">${(SET_BONUSES[eq.setId]||{}).name||''}</div>`:''}
+          </div>
+        </div>
+        <div class="esw-item-diff">
+          ${diffSpan(dAtk,'⚔')}
+          ${diffSpan(dHp,'❤')}
+          ${diffSpan(dArmor,'🛡')}
+          ${dCrit!==0?`<span class="${dCrit>0?'stat-up':'stat-down'}">💥${dCrit>0?'+':''}${(dCrit*100).toFixed(0)}%</span>`:''}
+          ${diffSpan(dSpd,'💨')}
+        </div>
+        <div class="esw-equip-btn">装备</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }else if(!current){
+    html+=`<div class="esw-empty">背包中没有该类型装备</div>`;
+  }
+  
+  html+=`</div>`;
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
 }
+
 function doEquipSwap(PD,slot,action,eqId){
   if(action==='unequip'){
     PD.equipment[slot]=null;
@@ -373,33 +688,163 @@ function doEquipSwap(PD,slot,action,eqId){
     PD.equipment[slot]=eqId;
   }
   saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
-  showRewardPopup([{icon:'✅',text:'装备已更换！'}]);
 }
+
+// ==================== 锻造(旧接口兼容) ====================
 function startForge(PD,idx){
-  if(PD.gold<200){showRewardPopup([{icon:'💰',text:'金币不足(需200)'}]);return}
-  PD.gold-=200;
-  const heroId=PD.selectedHero||'warrior';
-  // 锻造池：通用装备 + 当前英雄的职业专属装备
-  const pool=EQUIPMENT_DB.filter(e=>{
-    if(e.classReq&&e.classReq!==heroId)return false; // 排除其他职业专属
-    if(e.rarity==='mythic')return Math.random()<0.03; // 神话3%概率进池
-    if(e.rarity==='legendary')return Math.random()<0.15; // 传说15%
-    if(e.rarity==='epic')return Math.random()<0.35; // 史诗35%
-    return Math.random()<0.6||e.rarity==='common';
-  });
-  const eq=pool[Math.floor(Math.random()*pool.length)]||EQUIPMENT_DB[0];
-  PD.forgeSlots[idx]={itemId:eq.id,endTime:Date.now()+eq.forgeTime};
-  PD.dailyProgress.forges=(PD.dailyProgress.forges||0)+1;
-  saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
+  showForgeSlotPicker(PD,idx);
 }
+
+// ==================== P1: 开箱动画 ====================
 function claimForge(PD,idx){
   const s=PD.forgeSlots[idx];if(!s)return;
   const eq=EQUIPMENT_DB.find(e=>e.id===s.itemId);
   PD.inventory.push(eq.id);
-  if(!PD.equipment[eq.slot])PD.equipment[eq.slot]=eq.id;
+  const autoEquip=!PD.equipment[eq.slot];
+  if(autoEquip)PD.equipment[eq.slot]=eq.id;
   PD.forgeSlots[idx]=null;
-  showRewardPopup([{icon:eq.icon,text:`获得 ${eq.name}！`}]);
-  saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
+  saveToDisk(PD);
+  // 开箱动画
+  _showForgeReveal(eq, autoEquip, PD);
+}
+
+function _showForgeReveal(eq, autoEquip, PD){
+  const oldReveal=document.querySelector('.forge-reveal-overlay');
+  if(oldReveal)oldReveal.remove();
+  
+  const overlay=document.createElement('div');
+  overlay.className='forge-reveal-overlay';
+  
+  const rarColor=RARITY_COLOR[eq.rarity]||'#aaa';
+  const rarName=RARITY_NAME[eq.rarity]||'';
+  
+  overlay.innerHTML=`<div class="fr-modal rarity-${eq.rarity}">
+    <div class="fr-particles" id="fr-particles"></div>
+    <div class="fr-glow rarity-glow-${eq.rarity}"></div>
+    <div class="fr-icon-wrap">
+      <div class="fr-icon">${eq.icon}</div>
+    </div>
+    <div class="fr-rarity" style="color:${rarColor}">${rarName}</div>
+    <div class="fr-name" style="color:${rarColor}">${eq.name}</div>
+    <div class="fr-stats">
+      ${eq.atk>0?`<span>⚔ 攻击 ${eq.atk}</span>`:''}
+      ${eq.hp>0?`<span>❤ 生命 ${eq.hp}</span>`:''}
+      ${eq.armor>0?`<span>🛡 护甲 ${eq.armor}</span>`:''}
+      ${eq.critRate>0?`<span>💥 暴击 ${(eq.critRate*100).toFixed(0)}%</span>`:''}
+      ${eq.spd>0?`<span>💨 速度 ${eq.spd}</span>`:''}
+    </div>
+    ${eq.effectDesc?`<div class="fr-effect">${eq.effectDesc}</div>`:''}
+    ${eq.setId?`<div class="fr-set">${(SET_BONUSES[eq.setId]||{}).name||''}</div>`:''}
+    ${autoEquip?'<div class="fr-auto-equip">✅ 已自动装备</div>':''}
+    <button class="fr-close-btn" onclick="this.closest('.forge-reveal-overlay').remove()">确认</button>
+  </div>`;
+  
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+  
+  // 粒子效果
+  const particleContainer=overlay.querySelector('#fr-particles');
+  if(particleContainer){
+    for(let i=0;i<20;i++){
+      const p=document.createElement('div');
+      p.className='fr-particle';
+      p.style.cssText=`--angle:${Math.random()*360}deg;--dist:${60+Math.random()*80}px;--delay:${Math.random()*0.5}s;--color:${rarColor};animation-delay:var(--delay)`;
+      particleContainer.appendChild(p);
+    }
+  }
+  
+  // 动画结束后刷新
+  renderForge(PD);refreshMainMenu(PD);
+}
+
+// ==================== P2: 装备分解系统 ====================
+function showSalvage(PD){
+  const oldOverlay=document.querySelector('.salvage-overlay');
+  if(oldOverlay)oldOverlay.remove();
+  
+  // 可分解的装备：背包中但未装备的
+  const equipped=new Set(Object.values(PD.equipment||{}).filter(Boolean));
+  const salvageable=PD.inventory.filter(id=>!equipped.has(id)).filter((v,i,a)=>a.indexOf(v)===i);
+  
+  const overlay=document.createElement('div');
+  overlay.className='salvage-overlay';
+  
+  let html=`<div class="salvage-modal">
+    <div class="sal-header">
+      <div class="sal-title">⚒️ 装备分解</div>
+      <div class="sal-close" onclick="this.closest('.salvage-overlay').remove()">✕</div>
+    </div>
+    <div class="sal-subtitle">分解多余装备获取碎片和金币</div>
+    <div class="sal-balance">🧩 碎片: ${PD.totalFrags||0} | 💰 金币: ${PD.gold}</div>`;
+  
+  if(salvageable.length===0){
+    html+=`<div class="sal-empty">没有可分解的装备<br><span style="color:#7a6e55;font-size:11px">已装备的装备无法分解</span></div>`;
+  }else{
+    html+=`<div class="sal-list">`;
+    const salRewards={common:{gold:30,frags:1},rare:{gold:60,frags:2},epic:{gold:150,frags:5},legendary:{gold:300,frags:10},mythic:{gold:600,frags:25}};
+    salvageable.forEach(id=>{
+      const eq=EQUIPMENT_DB.find(e=>e.id===id);if(!eq)return;
+      const reward=salRewards[eq.rarity]||salRewards.common;
+      html+=`<div class="sal-item rarity-${eq.rarity}">
+        <div class="sal-item-main">
+          <span class="sal-item-icon">${eq.icon}</span>
+          <div class="sal-item-info">
+            <div class="sal-item-name" style="color:${RARITY_COLOR[eq.rarity]}">${eq.name}</div>
+            <div class="sal-item-stats">⚔${eq.atk} ❤${eq.hp}</div>
+          </div>
+        </div>
+        <div class="sal-item-reward">
+          <span>💰${reward.gold}</span> <span>🧩${reward.frags}</span>
+        </div>
+        <button class="sal-btn" onclick="window._doSalvage('${id}')">分解</button>
+      </div>`;
+    });
+    html+=`</div>`;
+    // 一键分解普通装备
+    const commonSalvage=salvageable.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.rarity==='common'});
+    if(commonSalvage.length>1){
+      html+=`<button class="sal-batch-btn" onclick="window._doSalvageBatch()">⚒️ 一键分解全部普通装备 (${commonSalvage.length}件)</button>`;
+    }
+  }
+  
+  html+=`</div>`;
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+}
+
+function doSalvage(PD, eqId){
+  const idx=PD.inventory.indexOf(eqId);
+  if(idx===-1)return;
+  const eq=EQUIPMENT_DB.find(e=>e.id===eqId);if(!eq)return;
+  const salRewards={common:{gold:30,frags:1},rare:{gold:60,frags:2},epic:{gold:150,frags:5},legendary:{gold:300,frags:10},mythic:{gold:600,frags:25}};
+  const reward=salRewards[eq.rarity]||salRewards.common;
+  PD.inventory.splice(idx,1);
+  PD.gold+=reward.gold;
+  PD.totalFrags=(PD.totalFrags||0)+reward.frags;
+  saveToDisk(PD);
+  showRewardPopup([{icon:'⚒️',text:`分解 ${eq.name} → 💰${reward.gold} + 🧩${reward.frags}`}]);
+  // 刷新分解弹窗
+  showSalvage(PD);
+  refreshMainMenu(PD);
+}
+
+function doSalvageBatch(PD){
+  const equipped=new Set(Object.values(PD.equipment||{}).filter(Boolean));
+  const salRewards={common:{gold:30,frags:1}};
+  let totalGold=0, totalFrags=0, count=0;
+  PD.inventory=PD.inventory.filter(id=>{
+    if(equipped.has(id))return true;
+    const eq=EQUIPMENT_DB.find(e=>e.id===id);
+    if(!eq||eq.rarity!=='common')return true;
+    const reward=salRewards.common;
+    totalGold+=reward.gold;totalFrags+=reward.frags;count++;
+    return false;
+  });
+  PD.gold+=totalGold;PD.totalFrags=(PD.totalFrags||0)+totalFrags;
+  saveToDisk(PD);
+  showRewardPopup([{icon:'⚒️',text:`批量分解${count}件 → 💰${totalGold} + 🧩${totalFrags}`}]);
+  showSalvage(PD);refreshMainMenu(PD);
 }
 
 // ==================== 竞技场 ====================
@@ -1101,11 +1546,6 @@ function renderStuckGuide(PD,chapterId){
 // ==================== 锻造面板改造（增加强化入口） ====================
 function renderForgeWithEnhance(PD){
   renderForge(PD);
-  // 在锻造面板底部增加强化入口
-  const tip=document.querySelector('.forge-tip');
-  if(tip){
-    tip.innerHTML+=`<br><button class="btn-sm" style="margin-top:8px" onclick="openPanel('enhance')">🔨 装备强化</button>`;
-  }
 }
 
 // ==================== 装备图鉴系统 ====================
@@ -1596,6 +2036,8 @@ window.SYS={
   // 装备图鉴+Build推荐
   renderEquipCodex,renderBuildRecommends,codexShowDetail,_setCodexFilter,
   // 心流引导系统
-  applyProgressiveUnlock,refreshQuestBar,refreshNextStep,startEnhancedGuide,getCurrentQuest
+  applyProgressiveUnlock,refreshQuestBar,refreshNextStep,startEnhancedGuide,getCurrentQuest,
+  // 装备系统增强
+  showForgeSlotPicker,selectForgeSlot,confirmForge,showSalvage,doSalvage,doSalvageBatch,renderSetTracker
 };
 })();

@@ -92,7 +92,7 @@
   <div class="mm-nav">
     <div class="nav-btn" data-unlock="signin" onclick="openPanel('sign-in')"><div class="nav-icon">📅</div><div class="nav-label">签到</div><div class="nav-dot" id="dot-signin"></div></div>
     <div class="nav-btn" data-unlock="heroes" onclick="openPanel('heroes')"><div class="nav-icon">🦸</div><div class="nav-label">英雄</div></div>
-    <div class="nav-btn" data-unlock="forge" onclick="openPanel('forge')"><div class="nav-icon">🔨</div><div class="nav-label">锻造</div><div class="nav-dot" id="dot-forge"></div></div>
+    <div class="nav-btn" data-unlock="forge" onclick="openPanel('forge')"><div class="nav-icon">⚔️</div><div class="nav-label">装备</div><div class="nav-dot" id="dot-forge"></div></div>
     <div class="nav-btn nav-btn-main" data-unlock="fight" onclick="openPanel('chapter-select')"><div class="nav-icon">⚔️</div><div class="nav-label">出战</div></div>
     <div class="nav-btn" data-unlock="talent" onclick="openPanel('talent')"><div class="nav-icon">🌟</div><div class="nav-label">天赋</div></div>
     <div class="nav-btn" data-unlock="arena" onclick="openPanel('arena')"><div class="nav-icon">🏟️</div><div class="nav-label">竞技场</div></div>
@@ -165,13 +165,26 @@
   </div>
 </div>
 
-<!-- ==================== 锻造面板 ==================== -->
+<!-- ==================== 装备中心 ==================== -->
 <div id="forge" class="panel">
-  <div class="panel-header"><div class="panel-close" onclick="closePanel('forge')">✕</div><div class="panel-title">🔨 装备锻造</div></div>
+  <div class="panel-header"><div class="panel-close" onclick="closePanel('forge')">✕</div><div class="panel-title">⚔️ 装备中心</div></div>
   <div class="panel-body">
-    <div class="forge-slots" id="forge-slots"></div>
-    <div class="forge-queue" id="forge-queue"></div>
-    <div class="forge-tip">⏰ 锻造需要时间，锻造完成后回来领取！<br>🎬 观看短片可加速2小时</div>
+    <div class="forge-tabs">
+      <div class="forge-tab active" data-ftab="equip" onclick="window._switchForgeTab(this,'equip')">📋 装备</div>
+      <div class="forge-tab" data-ftab="craft" onclick="window._switchForgeTab(this,'craft')">🔨 锻造</div>
+      <div class="forge-tab" data-ftab="salvage" onclick="window._switchForgeTab(this,'salvage')">⚒️ 分解</div>
+    </div>
+    <div class="forge-tab-content" id="ftab-equip">
+      <!-- 装备总览 + 套装追踪由JS渲染 -->
+    </div>
+    <div class="forge-tab-content" id="ftab-craft" style="display:none">
+      <div class="forge-slots" id="forge-slots"></div>
+      <div class="forge-queue" id="forge-queue"></div>
+      <div class="forge-tip">💡 点击空闲槽位选择部位进行定向锻造<br>⏰ 锻造完成后点击领取装备</div>
+    </div>
+    <div class="forge-tab-content" id="ftab-salvage" style="display:none">
+      <div id="salvage-inline"></div>
+    </div>
   </div>
 </div>
 
@@ -432,6 +445,7 @@ window.onerror=function(msg,url,line,col,error){
 <script src="three.min.js"></script>
 <script src="sfx.js"></script>
 <script src="data.js"></script>
+<script src="hero-live2d.js"></script>
 <script src="systems.js"></script>
 <script src="game.js"></script>
 <script>
