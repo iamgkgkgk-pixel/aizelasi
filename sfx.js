@@ -267,32 +267,41 @@ function sfxFireball(){
   osc('triangle',700,t+0.05,0.08,0.06);
 }
 
-// ❄️ 霜冻新星 — 冰晶爆裂扩散
+// ❄️ 霜冻新星 — 冰面碎裂+冰晶扩散
 function sfxFrostNova(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  // 中心爆裂
-  noiseBurst(t,0.08,0.15,6000,'highpass');
-  osc('sine',1500,t,0.04,0.1);
-  // 冰晶扩散
-  for(let i=0;i<4;i++){
-    osc('sine',2000+i*500,t+0.05+i*0.03,0.05,0.04);
+  // 冰面碎裂（低频冲击+高频碎裂声）
+  osc('sine',60,t,0.12,0.12);
+  noiseBurst(t,0.04,0.18,8000,'highpass'); // 碎裂高频噪声
+  noiseBurst(t+0.02,0.06,0.12,5000,'bandpass'); // 冰块质感
+  // 冰晶碎片散射（多个高频短促音）
+  for(let i=0;i<5;i++){
+    osc('sine',2200+i*600+Math.random()*400,t+0.04+i*0.025,0.04,0.05);
   }
-  sweep('sine',3000,800,t+0.05,0.15,0.06);
-  // 低频冲击
-  osc('sine',100,t,0.15,0.08);
+  // 冰面滑移扩散声（下降sweep模拟冰面蔓延）
+  sweep('sine',4000,600,t+0.03,0.18,0.06);
+  // 冰块撞击（短促钝响）
+  osc('triangle',300,t+0.01,0.05,0.08);
+  osc('triangle',180,t+0.03,0.06,0.06);
 }
 
-// ⚡ 雷霆一击 — 电击噼啪
+// ⚡ 雷霆一击 — 霹雳电弧+雷鸣轰响
 function sfxThunder(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.03,0.2,8000,'highpass');
-  osc('sawtooth',100,t,0.08,0.15);
-  osc('square',2000,t,0.02,0.1);
-  // 电弧噼啪
-  for(let i=0;i<3;i++){
-    noiseBurst(t+0.04+i*0.03,0.02,0.08,5000+Math.random()*3000,'highpass');
+  // 初始闪电冲击（极短高频白噪声 = 电弧音）
+  noiseBurst(t,0.02,0.25,9000,'highpass');
+  // 雷鸣低频冲击
+  osc('sawtooth',80,t,0.12,0.18);
+  osc('sine',50,t+0.02,0.15,0.12);
+  // 电弧噼啪（快速高频方波脉冲）
+  osc('square',2500,t,0.015,0.12);
+  osc('square',3200,t+0.008,0.012,0.08);
+  for(let i=0;i<4;i++){
+    noiseBurst(t+0.03+i*0.025,0.015,0.1,6000+Math.random()*4000,'highpass');
   }
-  sweep('sawtooth',3000,100,t,0.1,0.08);
+  // 电流嗡鸣尾音
+  sweep('sawtooth',4000,80,t+0.02,0.12,0.06);
+  osc('sawtooth',120,t+0.1,0.08,0.04);
 }
 
 // 💚 治疗之泉 — 温暖治愈
@@ -324,29 +333,38 @@ function sfxLivingBomb(){
   sweep('sawtooth',500,50,t+0.08,0.15,0.1);
 }
 
-// 🌨️ 暴风雪 — 风雪呼啸
+// 🌨️ 暴风雪 — 寒风呼啸+冰粒碰撞+冰面碎裂
 function sfxBlizzard(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.4,0.08,3000,'bandpass');
-  noiseBurst(t+0.05,0.35,0.06,5000,'highpass');
-  sweep('sine',1000,400,t,0.3,0.04);
-  // 冰片碰撞
-  for(let i=0;i<3;i++){
-    osc('sine',1800+Math.random()*1000,t+i*0.1,0.05,0.03);
+  // 风声（持续噪声）
+  noiseBurst(t,0.45,0.07,2500,'bandpass');
+  noiseBurst(t+0.05,0.4,0.05,4000,'highpass');
+  // 寒风呼啸sweep
+  sweep('sine',1200,300,t,0.35,0.04);
+  sweep('triangle',800,200,t+0.1,0.25,0.03);
+  // 冰粒碰撞（密集的高频短促音）
+  for(let i=0;i<5;i++){
+    osc('sine',2000+Math.random()*1500,t+i*0.08,0.04,0.03);
+    noiseBurst(t+i*0.08+0.02,0.02,0.04,7000,'highpass'); // 冰碎片
   }
+  // 冰面质感
+  osc('triangle',400,t+0.15,0.1,0.03);
 }
 
-// ⛓️ 闪电链 — 连锁电弧
+// ⛓️ 闪电链 — 连锁电弧跳跃
 function sfxChainLightning(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  // 初始电击
-  noiseBurst(t,0.04,0.18,7000,'highpass');
-  osc('sawtooth',150,t,0.06,0.12);
-  // 链式跳跃
+  // 初始电击爆发
+  noiseBurst(t,0.03,0.2,8000,'highpass');
+  osc('sawtooth',120,t,0.05,0.14);
+  osc('square',2800,t,0.02,0.1);
+  // 链式跳跃电弧（每次音高上升+音量递减，模拟跳跃感）
   for(let i=0;i<4;i++){
-    const dt2=0.06+i*0.08;
-    noiseBurst(t+dt2,0.03,0.1-i*0.02,6000+i*1000,'highpass');
-    osc('square',1500+i*400,t+dt2,0.03,0.05-i*0.01);
+    const dt2=0.05+i*0.07;
+    noiseBurst(t+dt2,0.025,0.12-i*0.02,7000+i*1000,'highpass');
+    osc('square',1800+i*500,t+dt2,0.025,0.06-i*0.01);
+    // 每次跳跃之间的电流嗡鸣
+    osc('sawtooth',200+i*60,t+dt2,0.03,0.03);
   }
 }
 
@@ -367,29 +385,42 @@ function sfxNatureWrath(){
   osc('triangle',1000,t+0.06,0.05,0.03);
 }
 
-// 🌩️ 连锁闪电 — 更强电弧风暴
+// 🌩️ 连锁闪电 — 暴怒电弧风暴
 function sfxChainStorm(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.06,0.22,8000,'highpass');
-  osc('sawtooth',80,t,0.1,0.18);
-  osc('square',3000,t,0.03,0.1);
+  // 初始霹雳（极强冲击）
+  noiseBurst(t,0.05,0.25,9000,'highpass');
+  osc('sawtooth',60,t,0.12,0.2);
+  osc('square',3500,t,0.02,0.12);
+  // 连锁电弧疯狂跳跃
   for(let i=0;i<6;i++){
-    noiseBurst(t+0.04+i*0.06,0.03,0.12-i*0.015,5000+i*800,'highpass');
-    osc('sawtooth',1000+i*300,t+0.04+i*0.06,0.03,0.04);
+    noiseBurst(t+0.03+i*0.05,0.025,0.14-i*0.015,6000+i*800,'highpass');
+    osc('sawtooth',1200+i*350,t+0.03+i*0.05,0.025,0.05);
+    // 电流尾音
+    osc('square',100+i*30,t+0.04+i*0.05,0.02,0.02);
   }
-  sweep('square',4000,100,t,0.2,0.06);
+  // 雷鸣余音
+  sweep('square',5000,60,t+0.02,0.22,0.05);
+  osc('sine',40,t+0.15,0.15,0.06);
 }
 
-// 🔱 叉状闪电
+// 🔱 叉状闪电 — 三叉电弧分裂
 function sfxForkedLight(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.05,0.2,7000,'highpass');
-  // 三叉同时
-  osc('sawtooth',120,t,0.08,0.15);
-  osc('square',2000,t,0.03,0.08);
-  osc('square',2500,t+0.01,0.03,0.06);
-  osc('square',3000,t+0.02,0.03,0.05);
-  for(let i=0;i<3;i++) noiseBurst(t+0.05+i*0.04,0.03,0.08,6000,'highpass');
+  // 主干电弧
+  noiseBurst(t,0.04,0.22,8000,'highpass');
+  osc('sawtooth',100,t,0.08,0.16);
+  // 三叉分裂（三个方向同时放电）
+  osc('square',2200,t,0.025,0.1);
+  osc('square',2800,t+0.01,0.025,0.08);
+  osc('square',3400,t+0.02,0.025,0.06);
+  // 分支电弧噼啪
+  for(let i=0;i<3;i++){
+    noiseBurst(t+0.04+i*0.035,0.025,0.09,7000,'highpass');
+    osc('sawtooth',150+i*40,t+0.04+i*0.035,0.03,0.04);
+  }
+  // 电流消散
+  sweep('sawtooth',3000,200,t+0.08,0.1,0.04);
 }
 
 // 🗡️ 灰烬使者 — 圣光旋转割草
@@ -406,18 +437,26 @@ function sfxAshbringer(){
   osc('sawtooth',200,t+0.1,0.3,0.05);
 }
 
-// 🥶 霜之哀伤 — 全屏冰封
+// 🥶 霜之哀伤 — 拔剑寒气+全屏冰封碎裂
 function sfxFrostmourne(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  // 拔剑寒气
-  sweep('sine',2000,100,t,0.3,0.15);
-  noiseBurst(t,0.2,0.12,2000,'bandpass');
-  // 冰封扩散
-  osc('sine',80,t+0.15,0.4,0.15);
-  for(let i=0;i<6;i++) osc('sine',1500+i*400,t+0.2+i*0.04,0.06,0.04);
-  noiseBurst(t+0.2,0.3,0.08,8000,'highpass');
-  // 深沉共鸣
-  osc('sine',50,t+0.3,0.5,0.1);
+  // 拔剑寒气（下行sweep = 冷气蔓延）
+  sweep('sine',2500,80,t,0.35,0.15);
+  noiseBurst(t,0.15,0.1,2500,'bandpass'); // 风声
+  // 冰面碎裂（密集高频脉冲）
+  noiseBurst(t+0.1,0.06,0.15,8000,'highpass');
+  for(let i=0;i<4;i++){
+    osc('sine',1800+i*500+Math.random()*300,t+0.15+i*0.04,0.05,0.05);
+  }
+  // 冰封扩散低频冲击
+  osc('sine',50,t+0.15,0.5,0.15);
+  osc('sine',80,t+0.2,0.4,0.12);
+  // 冰块大量碎裂声
+  noiseBurst(t+0.2,0.25,0.1,6000,'highpass');
+  noiseBurst(t+0.25,0.15,0.06,3000,'bandpass');
+  // 深沉共鸣（神器级冰剑的威严感）
+  osc('sine',40,t+0.35,0.5,0.1);
+  osc('triangle',120,t+0.3,0.3,0.04);
 }
 
 // 👁️ 萨格拉斯之眼 — 天空射线轰炸
@@ -514,23 +553,40 @@ function sfxShadowDance(){
   noiseBurst(t+0.08,0.03,0.1,6000,'highpass');
 }
 
-// 萨满·图腾风暴
+// 萨满·图腾风暴 — 图腾落地+元素爆发+闪电
 function sfxTotemStorm(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
+  // 图腾落地冲击
   osc('square',100,t,0.1,0.12);
   osc('square',150,t+0.05,0.08,0.08);
   noiseBurst(t,0.08,0.1,3000,'bandpass');
-  sweep('sawtooth',500,2000,t+0.1,0.08,0.06);
-  noiseBurst(t+0.1,0.04,0.08,6000,'highpass');
+  // 闪电电弧（图腾释放闪电）
+  noiseBurst(t+0.1,0.03,0.1,7000,'highpass');
+  osc('square',2000,t+0.1,0.02,0.06);
+  sweep('sawtooth',600,2500,t+0.1,0.06,0.05);
+  // 元素共鸣
+  noiseBurst(t+0.15,0.04,0.06,5000,'highpass');
 }
 
-// 死骑·凛冬将至
+// 死骑·凛冬将至 — 冰刺裂地+冰面碎裂风暴
 function sfxRemorselessWinter(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.5,0.1,2000,'bandpass');
-  sweep('sine',1500,200,t,0.4,0.1);
-  osc('sine',60,t,0.3,0.12);
-  for(let i=0;i<5;i++) osc('sine',1800+i*300,t+0.1+i*0.05,0.04,0.03);
+  // 冰面开裂（低频冲击+地面碎裂声）
+  osc('sine',40,t,0.15,0.15);
+  noiseBurst(t,0.08,0.12,3000,'bandpass'); // 冰面碎裂质感
+  noiseBurst(t+0.03,0.06,0.1,7000,'highpass'); // 冰碎片飞溅
+  // 冰刺从地面刺出（上行sweep）
+  sweep('sine',200,2000,t+0.05,0.2,0.08);
+  // 寒气扩散
+  noiseBurst(t+0.1,0.4,0.08,2000,'bandpass');
+  sweep('triangle',1500,300,t+0.1,0.35,0.06);
+  // 多根冰锥碎裂声
+  for(let i=0;i<5;i++){
+    osc('sine',2000+i*400+Math.random()*300,t+0.1+i*0.05,0.035,0.04);
+    noiseBurst(t+0.12+i*0.05,0.02,0.03,6000+i*500,'highpass');
+  }
+  // 冰封低频余音
+  osc('sine',60,t+0.3,0.3,0.08);
 }
 
 // 德鲁伊·星辰坠落
@@ -577,19 +633,327 @@ function sfxTitanGrip(){
 }
 function sfxIceFire(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  // 冰
-  noiseBurst(t,0.1,0.1,6000,'highpass');
-  osc('sine',1500,t,0.08,0.08);
+  // 冰（冰面碎裂声）
+  noiseBurst(t,0.08,0.12,7000,'highpass');
+  osc('sine',1800,t,0.06,0.08);
+  osc('sine',2400,t+0.02,0.04,0.06);
+  sweep('sine',3000,500,t,0.1,0.06);
   // 火
-  noiseBurst(t+0.1,0.15,0.15,2500,'bandpass');
-  sweep('sawtooth',300,1000,t+0.1,0.12,0.1);
-  osc('sawtooth',80,t+0.2,0.15,0.12);
+  noiseBurst(t+0.12,0.15,0.15,2500,'bandpass');
+  sweep('sawtooth',300,1000,t+0.12,0.12,0.1);
+  osc('sawtooth',80,t+0.22,0.15,0.12);
 }
 function sfxSoulReap(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
   sweep('sine',300,800,t,0.15,0.08);
   osc('sine',200,t+0.05,0.15,0.06);
   osc('triangle',500,t+0.1,0.1,0.05);
+}
+
+// ==================== 职业专属技能音效（补全） ====================
+
+// ❄️ 凛冬将至（sig_wintercoming）— 冰刺裂地
+function sfxWinterComing(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  // 大地开裂
+  osc('sine',35,t,0.2,0.18);
+  noiseBurst(t,0.06,0.15,4000,'bandpass');
+  // 冰刺从地面升起
+  sweep('sine',150,2200,t+0.05,0.15,0.1);
+  noiseBurst(t+0.08,0.05,0.12,8000,'highpass'); // 冰碎裂
+  // 冰面蔓延
+  noiseBurst(t+0.12,0.3,0.08,2500,'bandpass');
+  sweep('triangle',2000,300,t+0.12,0.3,0.05);
+  // 多根冰刺碎裂
+  for(let i=0;i<4;i++){
+    osc('sine',2500+i*400,t+0.1+i*0.04,0.03,0.04);
+    noiseBurst(t+0.12+i*0.04,0.02,0.03,7000,'highpass');
+  }
+  osc('sine',50,t+0.25,0.3,0.08);
+}
+
+// 🧊 寒冰屏障 — 冰盾激活
+function sfxIceBarrier(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  // 冰盾凝聚
+  sweep('sine',500,2000,t,0.15,0.08);
+  osc('sine',1200,t+0.05,0.1,0.06);
+  osc('sine',1600,t+0.08,0.08,0.05);
+  // 冰面形成声
+  noiseBurst(t+0.05,0.08,0.06,5000,'highpass');
+  osc('triangle',800,t+0.1,0.12,0.04);
+  // 低频冰盾稳定嗡鸣
+  osc('sine',200,t+0.12,0.2,0.03);
+}
+
+// 🌍 地震术 — 大地震动+雷鸣
+function sfxEarthquake(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  // 地面震动（极低频）
+  osc('sine',25,t,0.4,0.2);
+  osc('sine',40,t,0.35,0.15);
+  // 岩石碎裂
+  noiseBurst(t,0.15,0.12,1500,'lowpass');
+  noiseBurst(t+0.05,0.1,0.08,3000,'bandpass');
+  // 闪电增强（萨满元素电系）
+  noiseBurst(t+0.1,0.03,0.06,7000,'highpass');
+  osc('square',1500,t+0.1,0.02,0.04);
+  // 持续震动
+  for(let i=0;i<3;i++){
+    osc('sine',30+i*10,t+0.1+i*0.08,0.1,0.06);
+    noiseBurst(t+0.15+i*0.08,0.05,0.04,2000,'bandpass');
+  }
+}
+
+// 💫 英勇飞跃 — 跳跃+落地冲击
+function sfxHeroicLeap(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  // 起跳
+  sweep('sine',200,800,t,0.1,0.08);
+  // 落地冲击
+  osc('sine',50,t+0.12,0.15,0.2);
+  noiseBurst(t+0.12,0.1,0.15,2000,'bandpass');
+  osc('sawtooth',100,t+0.14,0.08,0.1);
+  noiseBurst(t+0.15,0.06,0.06,4000,'highpass');
+}
+
+// 🪓 斩杀 — 重斧劈砍
+function sfxExecuteStrike(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('sawtooth',300,80,t,0.08,0.18);
+  noiseBurst(t,0.05,0.2,3000,'bandpass');
+  osc('square',80,t+0.02,0.08,0.12);
+  osc('sine',60,t+0.05,0.1,0.08);
+}
+
+// 🛡️ 盾墙 — 金属盾牌激活
+function sfxShieldWall(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',300,t,0.1,0.08);
+  osc('sine',500,t+0.03,0.08,0.06);
+  noiseBurst(t,0.06,0.08,3000,'bandpass');
+  osc('triangle',200,t+0.08,0.15,0.04);
+}
+
+// ☄️ 炎爆术 — 蓄力大火球
+function sfxPyroblast(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('sawtooth',200,1200,t,0.15,0.15);
+  noiseBurst(t+0.05,0.12,0.12,3000,'bandpass');
+  osc('sawtooth',100,t+0.08,0.12,0.1);
+  osc('triangle',600,t+0.1,0.08,0.06);
+  // 爆炸
+  osc('sine',60,t+0.15,0.15,0.12);
+  noiseBurst(t+0.15,0.1,0.1,2000,'lowpass');
+}
+
+// 🔮 奥术冲击 — 奥术能量脉冲
+function sfxArcaneBlast(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',400,t,0.08,0.08);
+  osc('sine',600,t+0.02,0.06,0.06);
+  sweep('triangle',800,300,t,0.1,0.06);
+  noiseBurst(t+0.03,0.04,0.05,4000,'bandpass');
+}
+
+// 💣 爆炸陷阱
+function sfxExplosiveTrap(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',800,t,0.04,0.05); // 放置音
+  osc('sine',50,t+0.06,0.12,0.15);
+  noiseBurst(t+0.06,0.1,0.12,2000,'bandpass');
+}
+
+// 🎯 瞄准射击
+function sfxAimedShot(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('triangle',2000,400,t,0.05,0.1);
+  noiseBurst(t,0.03,0.12,7000,'highpass');
+  osc('sine',1000,t+0.03,0.04,0.05);
+}
+
+// 🧠 心灵震爆
+function sfxMindBlast(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',150,t,0.15,0.1);
+  osc('sine',160,t,0.15,0.08);
+  sweep('sawtooth',300,80,t+0.05,0.15,0.06);
+  noiseBurst(t+0.08,0.08,0.06,2000,'bandpass');
+}
+
+// 💀 剔骨
+function sfxEviscerate(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  noiseBurst(t,0.03,0.15,6000,'highpass');
+  sweep('sawtooth',1500,300,t,0.05,0.1);
+  osc('square',100,t+0.02,0.05,0.08);
+}
+
+// 🌀 刃舞
+function sfxBladeDance(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  for(let i=0;i<3;i++){
+    sweep('sawtooth',1200,400,t+i*0.05,0.04,0.06);
+    noiseBurst(t+i*0.05,0.02,0.05,5000,'highpass');
+  }
+}
+
+// 🌋 熔岩爆裂
+function sfxLavaBurst(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sawtooth',100,t,0.1,0.12);
+  sweep('sawtooth',200,800,t,0.1,0.1);
+  noiseBurst(t+0.03,0.08,0.1,2500,'bandpass');
+  osc('sine',60,t+0.08,0.1,0.08);
+}
+
+// 🌧️ 治疗之雨
+function sfxHealingRain(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  noiseBurst(t,0.3,0.05,4000,'highpass'); // 雨声
+  osc('sine',500,t,0.15,0.05);
+  osc('sine',700,t+0.08,0.12,0.04);
+  sweep('triangle',300,800,t,0.2,0.03);
+}
+
+// 💀 灭杀打击 — 冰霜重击吸血
+function sfxDeathStrike(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sawtooth',80,t,0.08,0.14);
+  noiseBurst(t,0.05,0.1,2500,'bandpass');
+  // 冰霜质感
+  osc('sine',1800,t+0.03,0.03,0.04);
+  noiseBurst(t+0.04,0.03,0.05,6000,'highpass');
+  // 吸血回音
+  sweep('sine',400,200,t+0.06,0.1,0.04);
+}
+
+// ☠️ 亡者大军 — 召唤亡灵
+function sfxArmyOfDead(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sawtooth',60,t,0.3,0.12);
+  osc('sawtooth',65,t,0.3,0.1);
+  sweep('sine',100,300,t+0.1,0.2,0.06);
+  noiseBurst(t+0.15,0.15,0.06,1500,'lowpass');
+  // 骨骼碎裂
+  for(let i=0;i<3;i++) noiseBurst(t+0.1+i*0.06,0.03,0.04,4000,'bandpass');
+}
+
+// 🔵 反魔法护罩 — 冰霜护盾
+function sfxAntiMagicShell(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('sine',300,1500,t,0.12,0.06);
+  osc('sine',800,t+0.05,0.1,0.05);
+  // 冰霜质感
+  noiseBurst(t+0.06,0.06,0.04,6000,'highpass');
+  osc('triangle',600,t+0.08,0.15,0.03);
+}
+
+// 🌙 月火术
+function sfxMoonfire(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',700,t,0.08,0.06);
+  osc('sine',1000,t+0.03,0.06,0.05);
+  sweep('triangle',600,1400,t,0.06,0.05);
+  noiseBurst(t+0.04,0.04,0.03,3000,'highpass');
+}
+
+// 🐱 凶猛撕咬
+function sfxFerociousBite(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  noiseBurst(t,0.04,0.15,4000,'bandpass');
+  osc('sawtooth',150,t,0.06,0.12);
+  sweep('sawtooth',800,200,t,0.05,0.08);
+}
+
+// 🦠 腐蚀术
+function sfxCorruption(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',180,t,0.12,0.08);
+  osc('sine',190,t,0.12,0.06);
+  sweep('sawtooth',200,80,t+0.04,0.1,0.05);
+  noiseBurst(t+0.06,0.06,0.04,1500,'lowpass');
+}
+
+// 🔥 火焰之雨
+function sfxRainOfFire(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  noiseBurst(t,0.25,0.08,2500,'bandpass');
+  sweep('sawtooth',300,800,t,0.2,0.06);
+  for(let i=0;i<3;i++){
+    osc('sawtooth',80,t+0.08+i*0.06,0.06,0.06);
+    noiseBurst(t+0.1+i*0.06,0.04,0.04,3000,'bandpass');
+  }
+}
+
+// ✨ 奉献
+function sfxConsecration(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',350,t,0.1,0.08);
+  osc('sine',550,t+0.03,0.08,0.06);
+  osc('triangle',450,t+0.06,0.1,0.04);
+  noiseBurst(t+0.03,0.06,0.04,3000,'bandpass');
+}
+
+// 🔨 愤怒之锤
+function sfxHammerOfWrath(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',400,t,0.08,0.1);
+  sweep('triangle',800,300,t,0.06,0.08);
+  noiseBurst(t+0.02,0.04,0.08,4000,'bandpass');
+  osc('sine',600,t+0.04,0.06,0.05);
+}
+
+// 🙌 圣疗术
+function sfxLayOnHands(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  [400,600,800,1000].forEach((f,i)=>osc('sine',f,t+i*0.06,0.15,0.08));
+  osc('triangle',500,t,0.3,0.04);
+  sweep('sine',300,1000,t,0.3,0.05);
+}
+
+// 🙏 愈合祷言
+function sfxPrayerOfMending(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',500,t,0.2,0.06);
+  osc('sine',700,t+0.08,0.15,0.05);
+  osc('triangle',400,t+0.04,0.18,0.03);
+}
+
+// 👤 暗影形态（被动，无CD触发时不会播放，但保留以防）
+// 🧥 暗影斗篷
+function sfxCloakOfShadows(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('sine',1000,200,t,0.1,0.06);
+  noiseBurst(t,0.05,0.06,6000,'highpass');
+  osc('sine',300,t+0.05,0.1,0.04);
+}
+
+// 🦁 狂野怒火
+function sfxBestialWrath(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sawtooth',100,t,0.15,0.1);
+  osc('sawtooth',150,t+0.05,0.1,0.08);
+  sweep('square',200,600,t,0.12,0.06);
+  noiseBurst(t+0.08,0.06,0.05,3000,'bandpass');
+}
+
+// 🩸 黑暗契约
+function sfxDarkPact(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  sweep('sine',400,100,t,0.15,0.08);
+  osc('sawtooth',120,t+0.05,0.12,0.06);
+  noiseBurst(t+0.08,0.08,0.05,1500,'lowpass');
+  osc('sine',250,t+0.1,0.1,0.04);
+}
+
+// 🌱 野性成长
+function sfxWildGrowth(){
+  ensureCtx();if(!ctx||_muted)return;const t=now();
+  osc('sine',400,t,0.2,0.06);
+  osc('sine',550,t+0.06,0.18,0.05);
+  osc('triangle',350,t+0.03,0.2,0.03);
+  sweep('sine',300,700,t,0.2,0.03);
 }
 
 // ==================== 游戏事件音效 ====================
@@ -800,6 +1164,7 @@ function getBgmVol(){return _bgmVol}
 
 // ==================== 技能ID → 音效映射 ====================
 const SKILL_SFX_MAP={
+  // 通用技能
   'fireball':sfxFireball, 'frostnova':sfxFrostNova, 'thunder':sfxThunder,
   'heal':sfxHeal,
   'livingbomb':sfxLivingBomb, 'blizzard':sfxBlizzard, 'chainlight':sfxChainLightning,
@@ -812,8 +1177,29 @@ const SKILL_SFX_MAP={
   'sig_shadowword':sfxShadowWord, 'sig_shadowdance':sfxShadowDance,
   'sig_totemstorm':sfxTotemStorm, 'sig_remorseless':sfxRemorselessWinter,
   'sig_starfall':sfxStarfall, 'sig_doomguard':sfxDoomguard, 'sig_avenger':sfxAvengerShield,
+  'sig_wintercoming':sfxWinterComing, // 凛冬将至
   // 合成技
   'titangrip':sfxTitanGrip, 'icefire':sfxIceFire, 'soulreap':sfxSoulReap,
+  // 职业专属技能 — 战士
+  'heroic_leap':sfxHeroicLeap, 'execute_strike':sfxExecuteStrike, 'shield_wall':sfxShieldWall,
+  // 职业专属技能 — 法师
+  'pyroblast':sfxPyroblast, 'arcane_blast':sfxArcaneBlast, 'ice_barrier':sfxIceBarrier,
+  // 职业专属技能 — 猎人
+  'explosive_trap':sfxExplosiveTrap, 'aimed_shot':sfxAimedShot, 'bestial_wrath':sfxBestialWrath,
+  // 职业专属技能 — 牧师
+  'mind_blast':sfxMindBlast, 'prayer_of_mending':sfxPrayerOfMending,
+  // 职业专属技能 — 盗贼
+  'eviscerate':sfxEviscerate, 'cloak_of_shadows':sfxCloakOfShadows, 'blade_dance':sfxBladeDance,
+  // 职业专属技能 — 萨满
+  'lava_burst':sfxLavaBurst, 'healing_rain':sfxHealingRain, 'earthquake':sfxEarthquake,
+  // 职业专属技能 — 死骑
+  'death_strike':sfxDeathStrike, 'army_of_dead':sfxArmyOfDead, 'anti_magic_shell':sfxAntiMagicShell,
+  // 职业专属技能 — 德鲁伊
+  'moonfire':sfxMoonfire, 'wild_growth':sfxWildGrowth, 'ferocious_bite':sfxFerociousBite,
+  // 职业专属技能 — 术士
+  'corruption':sfxCorruption, 'rain_of_fire':sfxRainOfFire, 'dark_pact':sfxDarkPact,
+  // 职业专属技能 — 圣骑士
+  'consecration':sfxConsecration, 'lay_on_hands':sfxLayOnHands, 'hammer_of_wrath':sfxHammerOfWrath,
 };
 // 注意：thorns/bloodthirst/timewarp 等被动技能（cd=0）不在映射中，不播放音效
 
@@ -840,6 +1226,15 @@ const SKILL_SFX_LIMITS={
   'sig_firestorm':{minGap:500,skipChance:0.1,volScale:0.8},
   'sig_multishot':{minGap:500,skipChance:0.1,volScale:0.8},
   'sig_avenger':{minGap:500,skipChance:0.1,volScale:0.8},
+  // 职业专属短CD技能
+  'arcane_blast':{minGap:600,skipChance:0.35,volScale:0.5},
+  'moonfire':{minGap:700,skipChance:0.3,volScale:0.55},
+  'corruption':{minGap:700,skipChance:0.3,volScale:0.55},
+  'eviscerate':{minGap:600,skipChance:0.2,volScale:0.65},
+  'blade_dance':{minGap:600,skipChance:0.2,volScale:0.65},
+  'lava_burst':{minGap:600,skipChance:0.2,volScale:0.65},
+  'death_strike':{minGap:600,skipChance:0.2,volScale:0.65},
+  'ferocious_bite':{minGap:500,skipChance:0.15,volScale:0.7},
 };
 
 // 职业攻击音效映射

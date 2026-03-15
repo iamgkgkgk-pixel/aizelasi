@@ -1440,7 +1440,7 @@ deathknight(g){
   const frostAura=new THREE.Mesh(new THREE.SphereGeometry(.75,12,12),_b(0x4488cc,{transparent:true,opacity:.04}));
   frostAura.position.y=.9;g.add(frostAura);
   const frostRing=new THREE.Mesh(new THREE.RingGeometry(.15,.85,16),_b(0x88ccff,{side:THREE.DoubleSide,transparent:true,opacity:.1}));
-  frostRing.rotation.x=-Math.PI/2;frostRing.position.y=.02;g.add(frostRing);
+  frostRing.rotation.x=-Math.PI/2;frostRing.position.y=.15;g.add(frostRing);
 },
 druid(g){
   _body(g,1,0x336633,0xddccaa,{lc:0x5a4a2a,ac:0x447744,bootC:0x4a3a2a,beltC:0x5a4a2a});
@@ -1636,11 +1636,11 @@ function createHero(type){
   // 初始化动画系统
   initAnim(g,type);
   // 脚底主环（亮色、旋转）
-  const ring=new THREE.Mesh(new THREE.RingGeometry(.55,.7,32),_b(c.color,{side:THREE.DoubleSide,transparent:true,opacity:.4}));ring.rotation.x=-Math.PI/2;ring.position.y=.03;g.add(ring);g.userData.ring=ring;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.55,.7,32),_b(c.color,{side:THREE.DoubleSide,transparent:true,opacity:.4,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));ring.rotation.x=-Math.PI/2;ring.position.y=.1;g.add(ring);g.userData.ring=ring;
   // 脚底外扩散光环
-  const ringOuter=new THREE.Mesh(new THREE.RingGeometry(.7,1.0,32),_b(c.color,{side:THREE.DoubleSide,transparent:true,opacity:.1}));ringOuter.rotation.x=-Math.PI/2;ringOuter.position.y=.02;g.add(ringOuter);g.userData.ringOuter=ringOuter;
+  const ringOuter=new THREE.Mesh(new THREE.RingGeometry(.7,1.0,32),_b(c.color,{side:THREE.DoubleSide,transparent:true,opacity:.1,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));ringOuter.rotation.x=-Math.PI/2;ringOuter.position.y=.08;g.add(ringOuter);g.userData.ringOuter=ringOuter;
   // 脚底光斑（贴地圆形光）
-  const groundGlow=new THREE.Mesh(new THREE.CircleGeometry(1.2,24),_b(c.color,{transparent:true,opacity:.06}));groundGlow.rotation.x=-Math.PI/2;groundGlow.position.y=.01;g.add(groundGlow);g.userData.groundGlow=groundGlow;
+  const groundGlow=new THREE.Mesh(new THREE.CircleGeometry(1.2,24),_b(c.color,{transparent:true,opacity:.06,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));groundGlow.rotation.x=-Math.PI/2;groundGlow.position.y=.06;g.add(groundGlow);g.userData.groundGlow=groundGlow;
   // 身体光环
   const glow=new THREE.Mesh(new THREE.SphereGeometry(.5,12,12),_b(c.color,{transparent:true,opacity:.06}));glow.position.y=1;glow.scale.setScalar(1.8);g.add(glow);g.userData.glow=glow;
   scene.add(g);return g;
@@ -1849,7 +1849,7 @@ function spawnEnemy(){
     mesh.scale.multiplyScalar(NUM.ELITE_SIZE_MULT);
     // 精英怪添加金色光环
     const eliteRing=new THREE.Mesh(new THREE.RingGeometry(t.sz*.8,t.sz*1.0,16),_b(0xffaa00,{side:THREE.DoubleSide,transparent:true,opacity:.4}));
-    eliteRing.rotation.x=-Math.PI/2;eliteRing.position.y=.05;mesh.add(eliteRing);
+    eliteRing.rotation.x=-Math.PI/2;eliteRing.position.y=.12;mesh.add(eliteRing);
     mesh.userData.eliteRing=eliteRing;
   }
   S.enemies.push({mesh,type:t,hp:eHp,maxHp:eHp,atk:eAtk,speed:scaled.spd+Math.random()*.3,xp:eXp,
@@ -1893,7 +1893,7 @@ const BB={
   const aM=_b(0xff4400,{transparent:true,opacity:.7});const a1=new THREE.Mesh(new THREE.ConeGeometry(s*.1,s*.6,5),aM);a1.position.set(-s*.45,s*.8,0);a1.rotation.z=.8;g.add(a1);const a2=a1.clone();a2.position.set(s*.45,s*.8,0);a2.rotation.z=-.8;g.add(a2);
   g.add(_p(new THREE.Mesh(new THREE.CylinderGeometry(s*.05,s*.05,s*1.2,6),_m(0x555555,{m:.5})),{position:new THREE.Vector3(s*.5,s*.8,s*.15),rotation:new THREE.Euler(0,0,-.3)}));
   g.add(_p(new THREE.Mesh(new THREE.BoxGeometry(s*.2,s*.15,s*.08),_m(0x888888,{m:.6})),{position:new THREE.Vector3(s*.5,s*1.45,s*.15)}));
-  const fr=new THREE.Mesh(new THREE.RingGeometry(s*.2,s*1.2,16),_b(0xff4400,{side:THREE.DoubleSide,transparent:true,opacity:.15}));fr.rotation.x=-Math.PI/2;fr.position.y=.05;g.add(fr);
+  const fr=new THREE.Mesh(new THREE.RingGeometry(s*.2,s*1.2,16),_b(0xff4400,{side:THREE.DoubleSide,transparent:true,opacity:.15,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));fr.rotation.x=-Math.PI/2;fr.position.y=.12;g.add(fr);
 },
 '克尔苏加德之影'(g,c){const s=c.sz;
   g.add(_p(new THREE.Mesh(new THREE.CylinderGeometry(s*.15,s*.35,s*1.0,8),_m(0x3a2255)),{position:new THREE.Vector3(0,s*.6,0)}));
@@ -1928,7 +1928,7 @@ const BB={
   const bl=new THREE.Mesh(new THREE.BoxGeometry(s*.1,s*1.1,s*.03),_m(0x6688aa,{m:.7,r:.2}));bl.position.set(s*.42,s*.9,s*.15);bl.rotation.z=-.1;bl.castShadow=true;g.add(bl);
   [.5,.7,.9,1.1].forEach(y=>{g.add(_p(new THREE.Mesh(new THREE.BoxGeometry(s*.05,s*.05,s*.04),_b(0x44ccff,{transparent:true,opacity:.8})),{position:new THREE.Vector3(s*.42,y,s*.16)}))});
   g.add(_p(new THREE.Mesh(new THREE.BoxGeometry(s*.18,s*.08,s*.08),_m(0x334455)),{position:new THREE.Vector3(s*.42,s*.32,s*.15)}));
-  const fr=new THREE.Mesh(new THREE.RingGeometry(s*.2,s*1.2,20),_b(0x88ccff,{side:THREE.DoubleSide,transparent:true,opacity:.12}));fr.rotation.x=-Math.PI/2;fr.position.y=.03;g.add(fr);
+  const fr=new THREE.Mesh(new THREE.RingGeometry(s*.2,s*1.2,20),_b(0x88ccff,{side:THREE.DoubleSide,transparent:true,opacity:.12,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));fr.rotation.x=-Math.PI/2;fr.position.y=.12;g.add(fr);
   g.add(_p(new THREE.Mesh(new THREE.SphereGeometry(s*1.0,12,12),_b(0x4488cc,{transparent:true,opacity:.04})),{position:new THREE.Vector3(0,s*1,0)}));
   g.add(_p(new THREE.Mesh(new THREE.PlaneGeometry(s*.5,s*.6),_m(0x2a3a55,{side:THREE.DoubleSide})),{position:new THREE.Vector3(0,s*.85,-s*.2)}));
 },
@@ -2014,15 +2014,18 @@ function aoeEffect(pos,r,color,dur=.5,opts={}){
   const g=new THREE.Group();
   // 着色器冲击波环
   const swMat=makeShockwaveShaderMat(color);
+  swMat.depthWrite=false;swMat.polygonOffset=true;swMat.polygonOffsetFactor=-4;swMat.polygonOffsetUnits=-4;
   const sw=new THREE.Mesh(new THREE.PlaneGeometry(r*2.2,r*2.2),swMat);
   sw.rotation.x=-Math.PI/2;g.add(sw);
   // 内环光晕
-  const inner=new THREE.Mesh(new THREE.RingGeometry(.05,r*.4,24),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+  const innerMat=new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
+  const inner=new THREE.Mesh(new THREE.RingGeometry(.05,r*.4,24),innerMat);
   inner.rotation.x=-Math.PI/2;g.add(inner);
   // 外环
-  const outer=new THREE.Mesh(new THREE.RingGeometry(r*.6,r,24),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));
+  const outerMat=new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
+  const outer=new THREE.Mesh(new THREE.RingGeometry(r*.6,r,24),outerMat);
   outer.rotation.x=-Math.PI/2;g.add(outer);
-  g.position.set(pos.x,.15,pos.z);scene.add(g);
+  g.position.set(pos.x,.35,pos.z);scene.add(g);
   // 动态光源
   addDynLight(pos,color,1.5,r*1.5,dur*.6);
   S.particles.push({mesh:g,life:dur,maxLife:dur,type:'aoe',radius:r,shaderMat:swMat,...opts})
@@ -2153,8 +2156,9 @@ function forkedLightningFx(origin,targets,color=0xaaddff,width=.08){
 function electricImpact(pos,r=1.5,color=0x44ccff){
   // 着色器冲击波
   const swMat=makeShockwaveShaderMat(color);
+  swMat.depthWrite=false;swMat.polygonOffset=true;swMat.polygonOffsetFactor=-4;swMat.polygonOffsetUnits=-4;
   const sw=new THREE.Mesh(new THREE.PlaneGeometry(r*2,r*2),swMat);
-  sw.rotation.x=-Math.PI/2;sw.position.set(pos.x,1.1,pos.z);scene.add(sw);
+  sw.rotation.x=-Math.PI/2;sw.position.set(pos.x,.35,pos.z);scene.add(sw);
   S.particles.push({mesh:sw,life:.3,maxLife:.3,type:'shockwave',speed:6,shaderMat:swMat});
   // GPU电火花
   emitGpuBurst({x:pos.x,y:1,z:pos.z},color,8,5,3,.35,{gravity:8});
@@ -2952,9 +2956,9 @@ function processSkills(dt){
         vel:new THREE.Vector3(Math.cos(ang)*2,3+Math.random()*2,Math.sin(ang)*2)});
     }
     // 冰环地面纹理
-    const ringMat=new THREE.MeshBasicMaterial({color:0x66ddff,transparent:true,opacity:.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
+    const ringMat=new THREE.MeshBasicMaterial({color:0x66ddff,transparent:true,opacity:.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
     const ring=new THREE.Mesh(new THREE.RingGeometry(r*.2,r,24),ringMat);
-    ring.rotation.x=-Math.PI/2;ring.position.set(hp.x,.1,hp.z);scene.add(ring);
+    ring.rotation.x=-Math.PI/2;ring.position.set(hp.x,.35,hp.z);scene.add(ring);
     S.particles.push({mesh:ring,life:.7,maxLife:.7,type:'aoe',radius:r});
     iceShatter(hp,r*.5,4+l);screenShake(.08,.15);
     // 冰霜地面碎片GPU粒子向外辐射
@@ -3020,14 +3024,14 @@ function processSkills(dt){
     const t=nearest(hp,15);if(t){const p=t.mesh.position.clone();
     // 独特视觉：暴风雪旋转雪暴圈
     const stormG=new THREE.Group();
-    const stormRing=new THREE.Mesh(new THREE.RingGeometry(r*.3,r,24),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:.25,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const stormRing=new THREE.Mesh(new THREE.RingGeometry(r*.3,r,24),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:.25,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
     stormRing.rotation.x=-Math.PI/2;stormG.add(stormRing);
     for(let si=0;si<3;si++){
       const arc=new THREE.Mesh(new THREE.TorusGeometry(r*(.5+si*.2),.03,4,32,Math.PI*.8),
         new THREE.MeshBasicMaterial({color:0x88ddff,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false}));
       arc.rotation.x=-Math.PI/2;arc.rotation.z=si*Math.PI*2/3;stormG.add(arc);
     }
-    stormG.position.set(p.x,.2,p.z);scene.add(stormG);
+    stormG.position.set(p.x,.4,p.z);scene.add(stormG);
     S.particles.push({mesh:stormG,life:dur+.3,maxLife:dur+.3,type:'blizzardStorm',speed:3});
     // 天降冰柱
     for(let i=0;i<ticks;i++)setTimeout(()=>{if(!gameActive)return;
@@ -3188,8 +3192,8 @@ function processSkills(dt){
     screenFlash('#88ccff',.25,200);screenShake(.2,.3);
     // 扩散冰环（比aoeEffect更大更慢）
     const bigRing=new THREE.Mesh(new THREE.RingGeometry(.5,1,32),
-      new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
-    bigRing.rotation.x=-Math.PI/2;bigRing.position.set(hp.x,.2,hp.z);scene.add(bigRing);
+      new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+    bigRing.rotation.x=-Math.PI/2;bigRing.position.set(hp.x,.35,hp.z);scene.add(bigRing);
     S.particles.push({mesh:bigRing,life:.8,maxLife:.8,type:'shockwave',speed:sk.radius*1.5});
     iceShatter(hp,3,8);
     addDynLight(hp,0x4488ff,4,15,.8);
@@ -3269,8 +3273,9 @@ function processSkills(dt){
       aoeEffect(p,impactR,0xff8800,.8);
       // 地面灼烧持续AOE
       const burnMat=makeFireShaderMat(0xff4400,0x661100,{opacity:0.3});
+      burnMat.depthWrite=false;burnMat.polygonOffset=true;burnMat.polygonOffsetFactor=-4;burnMat.polygonOffsetUnits=-4;
       const burnPlane=new THREE.Mesh(new THREE.PlaneGeometry(impactR*1.5,impactR*1.5),burnMat);
-      burnPlane.rotation.x=-Math.PI/2;burnPlane.position.set(p.x,.2,p.z);scene.add(burnPlane);
+      burnPlane.rotation.x=-Math.PI/2;burnPlane.position.set(p.x,.35,p.z);scene.add(burnPlane);
       S.particles.push({mesh:burnPlane,life:sk.groundBurnDur,maxLife:sk.groundBurnDur,type:'groundfire',shaderMat:burnMat,
         burnDmg:sk.groundBurnDmg+effectiveAtk*0.3,burnPos:p.clone(),burnRadius:impactR});
       lightBeam(p,0xff4400,3,.6);explosion(p,0xff6600,20);
@@ -3358,8 +3363,8 @@ function processSkills(dt){
     }
     // 地面灼烧圈
     const burnRing=new THREE.Mesh(new THREE.RingGeometry(0.3,r,20),
-      new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
-    burnRing.rotation.x=-Math.PI/2;burnRing.position.set(center.x,0.05,center.z);scene.add(burnRing);
+      new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+    burnRing.rotation.x=-Math.PI/2;burnRing.position.set(center.x,0.3,center.z);scene.add(burnRing);
     addDynLight(center,0xff4400,3,8,dur);
     screenFlash('#ff440022',.08,100);
     // 持续tick伤害 + 火焰柱动画
@@ -3565,9 +3570,9 @@ function processSkills(dt){
       const haloMat=new THREE.SpriteMaterial({color:totemColors[c],transparent:true,opacity:0.3,blending:THREE.AdditiveBlending});
       const halo=new THREE.Sprite(haloMat);halo.scale.set(1.2,1.2,1);halo.position.y=1;pillar.add(halo);
       // 底座圆环
-      const baseMat=new THREE.MeshBasicMaterial({color:totemColors[c],transparent:true,opacity:0.15,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+      const baseMat=new THREE.MeshBasicMaterial({color:totemColors[c],transparent:true,opacity:0.15,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
       const base=new THREE.Mesh(new THREE.RingGeometry(0.3,r*0.6,16),baseMat);
-      base.rotation.x=-Math.PI/2;base.position.set(tx,0.05,tz);totemGroup.add(base);
+      base.rotation.x=-Math.PI/2;base.position.set(tx,0.3,tz);totemGroup.add(base);
       totems.push({pillar,orb,halo,base,x:tx,z:tz,type:c});
       // 升起动画
       pillar.scale.y=0;pillar.position.y=0;
@@ -3620,19 +3625,19 @@ function processSkills(dt){
     const iceGroup=new THREE.Group();scene.add(iceGroup);
     const spikeCount=8+l*2;
     // 地面冰裂纹（从中心向外的裂缝线条）
-    const crackMat=new THREE.MeshBasicMaterial({color:0x88ddff,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const crackMat=new THREE.MeshBasicMaterial({color:0x88ddff,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
     for(let ci=0;ci<6;ci++){
       const cAng=ci/6*Math.PI*2+Math.random()*0.3;
       const crackLen=r*0.6+Math.random()*r*0.3;
       const crack=new THREE.Mesh(new THREE.PlaneGeometry(0.06,crackLen),crackMat.clone());
       crack.rotation.x=-Math.PI/2;crack.rotation.z=cAng;
-      crack.position.set(hp.x+Math.cos(cAng)*crackLen*0.5,0.06,hp.z+Math.sin(cAng)*crackLen*0.5);
+      crack.position.set(hp.x+Math.cos(cAng)*crackLen*0.5,0.3,hp.z+Math.sin(cAng)*crackLen*0.5);
       iceGroup.add(crack);
     }
     // 中心冰霜冲击圆（向外扩散）
-    const waveMat=new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const waveMat=new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
     const wave=new THREE.Mesh(new THREE.RingGeometry(0.2,0.5,20),waveMat);
-    wave.rotation.x=-Math.PI/2;wave.position.set(hp.x,0.08,hp.z);iceGroup.add(wave);
+    wave.rotation.x=-Math.PI/2;wave.position.set(hp.x,0.35,hp.z);iceGroup.add(wave);
     // 冰刺依次从地面刺出（ConeGeometry尖锥）
     const spikes=[];
     for(let si=0;si<spikeCount;si++){
@@ -3779,8 +3784,8 @@ function processSkills(dt){
     const wing1=new THREE.Mesh(wingGeo,wingMat);wing1.position.set(-0.3,1.5,-0.15);demonGroup.add(wing1);
     const wing2=new THREE.Mesh(wingGeo,wingMat.clone());wing2.position.set(0.3,1.5,-0.15);wing2.scale.x=-1;demonGroup.add(wing2);
     // 脚下邪能圈
-    const circleMat=new THREE.MeshBasicMaterial({color:0x9944cc,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
-    const circle=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),circleMat);circle.rotation.x=-Math.PI/2;circle.position.y=0.05;demonGroup.add(circle);
+    const circleMat=new THREE.MeshBasicMaterial({color:0x9944cc,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
+    const circle=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),circleMat);circle.rotation.x=-Math.PI/2;circle.position.y=0.35;demonGroup.add(circle);
     scene.add(demonGroup);
     addDynLight({x:demonX,y:2,z:demonZ},0x9944cc,2,6,dur);
     // 召唤公告
@@ -3918,9 +3923,9 @@ function processSkills(dt){
     let bestPos=hp.clone();let bestCnt=0;
     S.enemies.forEach(e=>{if(e.hp>0){let cnt=0;S.enemies.forEach(e2=>{if(e2.hp>0&&e2.mesh.position.distanceTo(e.mesh.position)<r)cnt++});if(cnt>bestCnt){bestCnt=cnt;bestPos=e.mesh.position.clone()}}});
     const impG=new THREE.Group();
-    for(let i=0;i<6;i++){const a=i*Math.PI/3;const cr=new THREE.Mesh(new THREE.PlaneGeometry(r*0.8,0.15),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));cr.rotation.x=-Math.PI/2;cr.rotation.z=a;cr.position.y=0.12;impG.add(cr)}
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;const cr=new THREE.Mesh(new THREE.PlaneGeometry(r*0.8,0.15),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));cr.rotation.x=-Math.PI/2;cr.rotation.z=a;cr.position.y=0.35;impG.add(cr)}
     for(let i=0;i<8;i++){const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.2+Math.random()*0.3,0),new THREE.MeshStandardMaterial({color:0x665544,roughness:0.8}));const ag=Math.random()*Math.PI*2;rk.position.set(Math.cos(ag)*Math.random()*r*0.6,0.3+Math.random()*2,Math.sin(ag)*Math.random()*r*0.6);rk.userData={vy:3+Math.random()*4,vx:Math.cos(ag)*(2+Math.random()*3),vz:Math.sin(ag)*(2+Math.random()*3)};impG.add(rk)}
-    const dustR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xaa8844,transparent:true,opacity:0.6,side:THREE.DoubleSide,depthWrite:false}));dustR.rotation.x=-Math.PI/2;dustR.position.y=0.2;impG.add(dustR);
+    const dustR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xaa8844,transparent:true,opacity:0.6,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));dustR.rotation.x=-Math.PI/2;dustR.position.y=0.35;impG.add(dustR);
     impG.position.copy(bestPos);scene.add(impG);
     let t0=0;const la=()=>{t0+=0.016;impG.children.forEach(c=>{if(c.userData&&c.userData.vy!==undefined){c.userData.vy-=15*0.016;c.position.x+=c.userData.vx*0.016;c.position.y+=c.userData.vy*0.016;c.position.z+=c.userData.vz*0.016;if(c.material&&c.material.opacity)c.material.opacity=Math.max(0,1-t0/0.8)}else if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.016*2)});if(t0>=1){scene.remove(impG);return}requestAnimationFrame(la)};requestAnimationFrame(la);
     emitGpuBurst(bestPos,0xaa6633,15,6,4,0.6,{gravity:8});addDynLight(bestPos,0xff6600,2,r*1.5,0.5);screenShake(0.12,0.2);
@@ -3995,8 +4000,8 @@ function processSkills(dt){
     if(S.passiveStacks.traps.length<(sk.trapMax||3)){
     const tp=hp.clone();tp.y=0.1;const tG=new THREE.Group();
     tG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.15,8),new THREE.MeshStandardMaterial({color:0x666666,metalness:0.8,roughness:0.3})));
-    const dr=new THREE.Mesh(new THREE.RingGeometry(0.3,0.45,16),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));dr.rotation.x=-Math.PI/2;dr.position.y=0.1;tG.add(dr);
-    const det=new THREE.Mesh(new THREE.RingGeometry(r-0.1,r,32),new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.15,side:THREE.DoubleSide,depthWrite:false}));det.rotation.x=-Math.PI/2;det.position.y=0.05;tG.add(det);
+    const dr=new THREE.Mesh(new THREE.RingGeometry(0.3,0.45,16),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));dr.rotation.x=-Math.PI/2;dr.position.y=0.3;tG.add(dr);
+    const det=new THREE.Mesh(new THREE.RingGeometry(r-0.1,r,32),new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.15,side:THREE.DoubleSide,depthWrite:false}));det.rotation.x=-Math.PI/2;det.position.y=0.3;tG.add(det);
     tG.position.copy(tp);scene.add(tG);S.passiveStacks.traps.push({mesh:tG,pos:tp,life:sk.trapDur||15,r,dmg,triggered:false})}}}
   if(S.passiveStacks.traps&&S.passiveStacks.traps.length>0){
     S.passiveStacks.traps.forEach(trap=>{if(trap.triggered)return;trap.life-=dt;if(trap.mesh&&trap.mesh.children[1])trap.mesh.children[1].material.opacity=0.3+Math.sin(gameTime*4)*0.2;
@@ -4056,7 +4061,7 @@ function processSkills(dt){
     S.hp=Math.min(S.maxHp,S.hp+(isLow?hAmt*2:hAmt));
     const hG=new THREE.Group();
     hG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.8,4,8,1,true),new THREE.MeshBasicMaterial({color:isLow?0xffff00:0xffdd88,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false})));
-    const c1=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.15),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));c1.rotation.x=-Math.PI/2;c1.position.y=0.15;hG.add(c1);
+    const c1=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.15),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));c1.rotation.x=-Math.PI/2;c1.position.y=0.35;hG.add(c1);
     const c2=c1.clone();c2.rotation.z=Math.PI/2;hG.add(c2);
     hG.position.copy(hp);hG.children[0].position.y=2;scene.add(hG);
     emitGpuBurst(hp,isLow?0xffff00:0xffdd88,12,3,2,0.5,{gravity:-1});addDynLight(hp,0xffdd44,1.5,5,0.5);
@@ -4106,9 +4111,9 @@ function processSkills(dt){
     const rP=hp.clone();S.armor+=aB;const rainR=3.5;
     const rnG=new THREE.Group();
     // 地面水圈 —— 半透明蓝色区域
-    const pl=new THREE.Mesh(new THREE.CircleGeometry(rainR,32),new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.15,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));pl.rotation.x=-Math.PI/2;pl.position.y=0.12;rnG.add(pl);
+    const pl=new THREE.Mesh(new THREE.CircleGeometry(rainR,32),new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.15,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));pl.rotation.x=-Math.PI/2;pl.position.y=0.35;rnG.add(pl);
     // 外圈发光环
-    const outerRing=new THREE.Mesh(new THREE.RingGeometry(rainR-0.1,rainR+0.05,48),new THREE.MeshBasicMaterial({color:0x66aaff,transparent:true,opacity:0.35,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));outerRing.rotation.x=-Math.PI/2;outerRing.position.y=0.13;rnG.add(outerRing);
+    const outerRing=new THREE.Mesh(new THREE.RingGeometry(rainR-0.1,rainR+0.05,48),new THREE.MeshBasicMaterial({color:0x66aaff,transparent:true,opacity:0.35,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));outerRing.rotation.x=-Math.PI/2;outerRing.position.y=0.36;rnG.add(outerRing);
     // 顶部云雾层 —— 多个半透明sprite组成雨云
     const cloudSprites=[];for(let ci=0;ci<5;ci++){
       const cMat=new THREE.SpriteMaterial({map:glowTex,color:0x6699cc,transparent:true,opacity:0.2+Math.random()*0.1,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -4167,7 +4172,7 @@ function processSkills(dt){
     for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2;const len=1+Math.random()*r*0.7;
     const pts=[new THREE.Vector3(0,0.12,0)];for(let j=1;j<=4;j++){const t=j/4;pts.push(new THREE.Vector3(Math.cos(a)*len*t+(Math.random()-0.5)*0.5,0.12,Math.sin(a)*len*t+(Math.random()-0.5)*0.5))}
     qG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),8,0.06,3,false),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false})))}
-    const qR=new THREE.Mesh(new THREE.RingGeometry(r-0.2,r,32),new THREE.MeshBasicMaterial({color:0xaa6633,transparent:true,opacity:0.3,side:THREE.DoubleSide,depthWrite:false}));qR.rotation.x=-Math.PI/2;qR.position.y=0.1;qG.add(qR);
+    const qR=new THREE.Mesh(new THREE.RingGeometry(r-0.2,r,32),new THREE.MeshBasicMaterial({color:0xaa6633,transparent:true,opacity:0.3,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));qR.rotation.x=-Math.PI/2;qR.position.y=0.35;qG.add(qR);
     qG.position.copy(qP);scene.add(qG);addDynLight(qP,0xff6600,2,r,dur);
     let eq=0,lTk=0;const ql=()=>{eq+=0.016;if(eq<dur)screenShake(0.02,0.04);
     qG.children.forEach(c=>{if(c.material)c.material.opacity=0.7*Math.max(0,1-eq/dur)*(0.7+Math.sin(eq*8)*0.3)});
@@ -4181,7 +4186,7 @@ function processSkills(dt){
     if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const lch=(sk.leechPct||0.25)+(l-1)*(sk.leechPctPerLv||0.05);
     const dG=new THREE.Group();const sl1=new THREE.Mesh(new THREE.PlaneGeometry(2.5,0.15),new THREE.MeshBasicMaterial({color:0xcc0000,transparent:true,opacity:0.9,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));sl1.position.y=1;sl1.rotation.z=Math.PI/4;dG.add(sl1);
     const sl2=sl1.clone();sl2.rotation.z=-Math.PI/4;dG.add(sl2);
-    const br=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),new THREE.MeshBasicMaterial({color:0x880000,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));br.rotation.x=-Math.PI/2;br.position.y=0.2;dG.add(br);
+    const br=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),new THREE.MeshBasicMaterial({color:0x880000,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));br.rotation.x=-Math.PI/2;br.position.y=0.35;dG.add(br);
     dG.position.copy(tg.mesh.position);scene.add(dG);emitGpuBurst(tg.mesh.position,0xcc0000,12,4,3,0.4,{gravity:5});addDynLight(tg.mesh.position,0xcc0000,2,6,0.3);
     let ds=0;const df=()=>{ds+=0.016;dG.children.forEach(c=>{if(c.material)c.material.opacity*=0.92;c.scale.setScalar(1+ds*2)});if(ds>=0.4){scene.remove(dG);return}requestAnimationFrame(df)};requestAnimationFrame(df);
     dmgEnemy(tg,dmg,{isSkill:true,skillName:'灭杀打击'});S.hp=Math.min(S.maxHp,S.hp+dmg*lch);
@@ -4219,7 +4224,7 @@ function processSkills(dt){
     const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,12);
     if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const dDmg=dmg*(sk.dotDmgPct||0.30);const dDur=sk.dotDur||4;
     const mG=new THREE.Group();mG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.6,1.2,8,8,1,true),new THREE.MeshBasicMaterial({color:0xccccff,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false})));mG.children[0].position.y=4;
-    const mp=new THREE.Mesh(new THREE.CircleGeometry(1.5,16),new THREE.MeshBasicMaterial({color:0xaaaaff,transparent:true,opacity:0.3,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));mp.rotation.x=-Math.PI/2;mp.position.y=0.12;mG.add(mp);
+    const mp=new THREE.Mesh(new THREE.CircleGeometry(1.5,16),new THREE.MeshBasicMaterial({color:0xaaaaff,transparent:true,opacity:0.3,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));mp.rotation.x=-Math.PI/2;mp.position.y=0.35;mG.add(mp);
     mG.position.copy(tg.mesh.position);scene.add(mG);emitGpuBurst(tg.mesh.position,0xccccff,12,3,2,0.4,{gravity:-0.5});addDynLight(tg.mesh.position,0xccccff,2,6,0.5);
     let mf2=0;const mfa=()=>{mf2+=0.016;mG.children.forEach(c=>{if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.012)});mG.children[0].position.y=4-mf2*3;if(mf2>=0.6){scene.remove(mG);return}requestAnimationFrame(mfa)};requestAnimationFrame(mfa);
     dmgEnemy(tg,dmg,{isSkill:true,skillName:'月火术'});
@@ -4265,7 +4270,7 @@ function processSkills(dt){
     const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const r=(sk.radius||5)+(l-1)*(sk.radiusPerLv||0.4);const dur=sk.duration||3;const tR=sk.tickRate||0.3;
     const rfP=nearest(hp,12)?nearest(hp,12).mesh.position.clone():hp.clone();
-    const rfG=new THREE.Group();const burnR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.25,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));burnR.rotation.x=-Math.PI/2;burnR.position.y=0.12;rfG.add(burnR);
+    const rfG=new THREE.Group();const burnR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.25,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));burnR.rotation.x=-Math.PI/2;burnR.position.y=0.35;rfG.add(burnR);
     rfG.position.copy(rfP);scene.add(rfG);addDynLight(rfP,0xff4400,2,r,dur);
     let rf=0,lTk2=0;const rfl=()=>{rf+=0.016;
     if(Math.random()<0.4&&rf<dur){const fx=rfP.x+(Math.random()-0.5)*r*1.5;const fz=rfP.z+(Math.random()-0.5)*r*1.5;
@@ -4291,10 +4296,10 @@ function processSkills(dt){
     const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
     const r=(sk.radius||4)+(l-1)*(sk.radiusPerLv||0.3);const dur=sk.duration||4;const tR=sk.tickRate||0.5;const cP=hp.clone();
     const csG=new THREE.Group();
-    const holyGround=new THREE.Mesh(new THREE.CircleGeometry(r,24),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.2,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));holyGround.rotation.x=-Math.PI/2;holyGround.position.y=0.12;csG.add(holyGround);
-    const holyRing=new THREE.Mesh(new THREE.RingGeometry(r-0.15,r,32),new THREE.MeshBasicMaterial({color:0xffaa33,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));holyRing.rotation.x=-Math.PI/2;holyRing.position.y=0.13;csG.add(holyRing);
+    const holyGround=new THREE.Mesh(new THREE.CircleGeometry(r,24),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.2,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));holyGround.rotation.x=-Math.PI/2;holyGround.position.y=0.35;csG.add(holyGround);
+    const holyRing=new THREE.Mesh(new THREE.RingGeometry(r-0.15,r,32),new THREE.MeshBasicMaterial({color:0xffaa33,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));holyRing.rotation.x=-Math.PI/2;holyRing.position.y=0.36;csG.add(holyRing);
     // 十字圣纹
-    const cx1=new THREE.Mesh(new THREE.PlaneGeometry(r*1.5,0.1),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));cx1.rotation.x=-Math.PI/2;cx1.position.y=0.14;csG.add(cx1);
+    const cx1=new THREE.Mesh(new THREE.PlaneGeometry(r*1.5,0.1),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));cx1.rotation.x=-Math.PI/2;cx1.position.y=0.37;csG.add(cx1);
     const cx2=cx1.clone();cx2.rotation.z=Math.PI/2;csG.add(cx2);
     csG.position.copy(cP);scene.add(csG);addDynLight(cP,0xffdd44,2,r*1.2,dur);
     let cs=0,lTk3=0;const csl=()=>{cs+=0.016;
