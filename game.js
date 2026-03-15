@@ -1123,7 +1123,7 @@ warrior(g){
   const cp=new THREE.Mesh(new THREE.PlaneGeometry(.5,.55),_m(0xaa1111,{side:THREE.DoubleSide}));
   cp.position.set(0,.82,-.22);g.add(cp);
   // === 腰带扣（骷髅装饰）===
-  const bkl=new THREE.Mesh(new THREE.BoxGeometry(.12,.1,.04),_m(0xffd700,{m:.8}));
+  const bkl=new THREE.Mesh(new THREE.BoxGeometry(.12,.1,.04),_m(0xc9a44a,{m:.8}));
   bkl.position.set(0,.68,.2);g.add(bkl);
   // 骷髅标志
   const skull=new THREE.Mesh(new THREE.SphereGeometry(.03,6,6),_m(0xeeeecc));
@@ -1575,16 +1575,16 @@ paladin(g){
   if(j.leftArm){
     const sp1=new THREE.Mesh(new THREE.BoxGeometry(.28,.16,.28),sM);sp1.position.set(0,.08,0);j.leftArm.add(sp1);
     // 翼状装饰
-    const wing1=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.12),_m(0xffd700,{m:.5}));
+    const wing1=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.12),_m(0xc9a44a,{m:.5}));
     wing1.position.set(-.1,.2,0);wing1.rotation.z=.3;j.leftArm.add(wing1);
     // === 盾牌（挂到左臂）===
     // 盾面
     const shield=new THREE.Mesh(new THREE.BoxGeometry(.06,.45,.35),_m(0xddaa22,{m:.5,r:.3}));
     shield.position.set(-.02,-.2,.1);shield.castShadow=true;j.leftArm.add(shield);
     // 盾牌金色十字
-    const crossV=new THREE.Mesh(new THREE.BoxGeometry(.065,.35,.02),_b(0xffd700));
+    const crossV=new THREE.Mesh(new THREE.BoxGeometry(.065,.35,.02),_b(0xc9a44a));
     crossV.position.set(-.02,-.2,.28);j.leftArm.add(crossV);
-    const crossH=new THREE.Mesh(new THREE.BoxGeometry(.065,.02,.22),_b(0xffd700));
+    const crossH=new THREE.Mesh(new THREE.BoxGeometry(.065,.02,.22),_b(0xc9a44a));
     crossH.position.set(-.02,-.2,.28);j.leftArm.add(crossH);
     // 盾牌边框
     const rim=new THREE.Mesh(new THREE.BoxGeometry(.065,.48,.38),_m(0xaa8822,{m:.4}));
@@ -1592,7 +1592,7 @@ paladin(g){
   }
   if(j.rightArm){
     const sp2=new THREE.Mesh(new THREE.BoxGeometry(.28,.16,.28),sM);sp2.position.set(0,.08,0);j.rightArm.add(sp2);
-    const wing2=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.12),_m(0xffd700,{m:.5}));
+    const wing2=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.12),_m(0xc9a44a,{m:.5}));
     wing2.position.set(.1,.2,0);wing2.rotation.z=-.3;j.rightArm.add(wing2);
     // === 圣光锤 ===
     // 锤柄
@@ -1615,11 +1615,11 @@ paladin(g){
     const visorV=new THREE.Mesh(new THREE.BoxGeometry(.03,.1,.04),_b(0x222222));
     visorV.position.set(0,.18,.16);j.head.add(visorV);
     // 头盔顶部脊
-    const crest=new THREE.Mesh(new THREE.BoxGeometry(.04,.08,.2),_m(0xffd700,{m:.6}));
+    const crest=new THREE.Mesh(new THREE.BoxGeometry(.04,.08,.2),_m(0xc9a44a,{m:.6}));
     crest.position.set(0,.34,-.02);j.head.add(crest);
   }
   // === 胸甲圣光徽章 ===
-  const emblem=new THREE.Mesh(new THREE.OctahedronGeometry(.06,0),_b(0xffd700,{transparent:true,opacity:.8}));
+  const emblem=new THREE.Mesh(new THREE.OctahedronGeometry(.06,0),_b(0xc9a44a,{transparent:true,opacity:.8}));
   emblem.position.set(0,1.05,.2);g.add(emblem);
   // 圣光光环
   const holyAura=new THREE.Mesh(new THREE.SphereGeometry(.7,12,12),_b(0xffdd44,{transparent:true,opacity:.04}));
@@ -2233,7 +2233,7 @@ function fireTrail(pos,color=0xff4400){
   // 偶尔加个白色热点
   if(Math.random()<.3)emitGpuP({x:pos.x,y:pos.y||1,z:pos.z},0xffffaa,{x:0,y:2,z:0},2,.15,{gravity:1,fadeStyle:'flash'});
 }
-function spawnPickup(pos,type='xp'){let g,mt;if(type==='xp'){g=new THREE.OctahedronGeometry(.15,0);mt=new THREE.MeshBasicMaterial({color:0x44aaff,transparent:true,opacity:.8})}else if(type==='gold'){g=new THREE.CylinderGeometry(.12,.12,.05,12);mt=new THREE.MeshStandardMaterial({color:0xffd700,metalness:.8})}else{g=new THREE.SphereGeometry(.15,8,8);mt=new THREE.MeshBasicMaterial({color:0x44ff44,transparent:true,opacity:.8})}const m=new THREE.Mesh(g,mt);m.position.set(pos.x+(Math.random()-.5),.5,pos.z+(Math.random()-.5));scene.add(m);S.pickups.push({mesh:m,type,life:15})}
+function spawnPickup(pos,type='xp'){let g,mt;if(type==='xp'){g=new THREE.OctahedronGeometry(.15,0);mt=new THREE.MeshBasicMaterial({color:0x44aaff,transparent:true,opacity:.8})}else if(type==='gold'){g=new THREE.CylinderGeometry(.12,.12,.05,12);mt=new THREE.MeshStandardMaterial({color:0xc9a44a,metalness:.8})}else{g=new THREE.SphereGeometry(.15,8,8);mt=new THREE.MeshBasicMaterial({color:0x44ff44,transparent:true,opacity:.8})}const m=new THREE.Mesh(g,mt);m.position.set(pos.x+(Math.random()-.5),.5,pos.z+(Math.random()-.5));scene.add(m);S.pickups.push({mesh:m,type,life:15})}
 
 // ==================== 伤害 ====================
 function nearest(pos,max){let b=null,d=max;for(const e of S.enemies){const dd=e.mesh.position.distanceTo(pos);if(dd<d){d=dd;b=e}}return b}
@@ -2242,6 +2242,7 @@ function hasSkill(id){return S.skills.some(s=>s.id===id)}
 function sklLv(id){const s=S.skills.find(s=>s.id===id);return s?s.level:0}
 function dmgEnemy(e,d,opts={}){
   if(!e||e.hp<=0)return;
+  if(!isFinite(d)||d!==d){d=1}
   const tb=S.talentBonus||{};
   // 暴击判定
   const cr=opts.noCrit?false:rollCrit(S.critRate+(opts.bonusCrit||0));
@@ -2252,9 +2253,15 @@ function dmgEnemy(e,d,opts={}){
   }
   let finalD=cr?d*(S.critDmg+(opts.bonusCritDmg||0)):d;
   // 盗贼被动：暴击后标记下次必暴击+伤害提升
-  if(hero==='rogue'&&cr){S.passiveStacks.shadowNextCrit=true;finalD*=1.5}
+  if(hero==='rogue'&&cr){S.passiveStacks.shadowNextCrit=true;finalD*=1.5;
+    // 盗贼攻击叠加连击点
+    if(S.passiveStacks.comboPoints!==undefined)S.passiveStacks.comboPoints=Math.min(5,(S.passiveStacks.comboPoints||0)+1)}
   // 暗牧被动：DOT伤害回血
   if(hero==='priest'&&opts.isDot){S.hp=Math.min(S.maxHp,S.hp+finalD*0.15)}
+  // ===== 暗影形态DOT伤害加成 =====
+  if(S.passiveStacks.shadowFormActive&&opts.isDot&&S.passiveStacks.shadowFormDotBonus>0){finalD*=(1+S.passiveStacks.shadowFormDotBonus)}
+  // ===== 黑暗契约技能伤害加成 =====
+  if(S.passiveStacks.darkPactActive>0&&opts.isSkill&&S.passiveStacks.darkPactSkillDmg>0){finalD*=(1+S.passiveStacks.darkPactSkillDmg)}
   // ===== 天赋攻击效果 =====
   // 狂暴: 低血量(<30%)时攻击力额外加成
   if(tb.berserker>0&&S.hp<S.maxHp*0.30){finalD*=(1+tb.berserker)}
@@ -2281,6 +2288,10 @@ function dmgEnemy(e,d,opts={}){
   // 装备特效：风暴之戒（技能伤害+12%）
   if(S.equipEffects.storm&&opts.isSkill){finalD*=1.12}
   finalD=Math.max(1,Math.round(finalD));
+  // NaN防护：如果经过各种加成后变成NaN，兜底为1
+  if(!isFinite(finalD)||finalD!==finalD)finalD=1;
+  // 修复已处于NaN状态的怪物hp（补救之前的bug残留）
+  if(e.hp!==e.hp)e.hp=0;
   e.hp-=finalD;e.hitFlash=.12;showDmg(e.mesh.position,finalD,cr,opts.skillName||null);
   // 音效：暴击用重音，普通命中用轻音（节流：每60ms最多一次）
   if(SFX.hit){const _nt=Date.now();if(!dmgEnemy._lastSfx||_nt-dmgEnemy._lastSfx>60){dmgEnemy._lastSfx=_nt;if(cr&&SFX.crit)SFX.crit();else SFX.hit()}}
@@ -2488,14 +2499,14 @@ function showMilestone(title,desc,tier){
   el.innerHTML=`<div class="milestone-title">⚔ 里程碑 ⚔</div><div class="milestone-name">${title}</div><div class="milestone-desc">${desc}</div>`;
   gs.appendChild(el);setTimeout(()=>el.remove(),2500);
   // 视觉反馈根据tier
-  if(tier>=3){screenFlash('#ffd700',.2,200);screenShake(.15,.25);if(heroMesh)lightBeam(heroMesh.position,0xffd700,2,.6)}
+  if(tier>=3){screenFlash('#c9a44a',.2,200);screenShake(.15,.25);if(heroMesh)lightBeam(heroMesh.position,0xc9a44a,2,.6)}
   else if(tier>=2){screenFlash('#ff8800',.15,150);screenShake(.1,.15)}
   else if(tier>=1){screenFlash('#ff4444',.1,100);screenShake(.06,.1)}
   // GPU粒子庆祝
   if(heroMesh){
     const hp=heroMesh.position;
-    const colors=[0xffd700,0xff8800,0xff4444,0xff00ff];
-    emitGpuBurst(hp,colors[tier]||0xffd700,15+tier*10,4+tier*2,3+tier,.8,{gravity:5});
+    const colors=[0xc9a44a,0xff8800,0xff4444,0xff00ff];
+    emitGpuBurst(hp,colors[tier]||0xc9a44a,15+tier*10,4+tier*2,3+tier,.8,{gravity:5});
   }
 }
 
@@ -2540,10 +2551,10 @@ function announceWaveEnhanced(n){
   el.innerHTML=`<div class="wave-announce-num">第 ${n} 波</div><div class="wave-announce-label">WAVE ${n}</div><div class="wave-announce-difficulty ${diffClass}">${diffText}</div>`;
   gs.appendChild(el);setTimeout(()=>el.remove(),3000);
   // 屏幕闪光
-  screenFlash('#ffd700',.08,80);
+  screenFlash('#c9a44a',.08,80);
   // 每3波给一个小高光
   if(n%3===0&&n>1){
-    emitGpuBurst(heroMesh?heroMesh.position:{x:0,y:1,z:0},0xffd700,10,3,2,.5,{gravity:4});
+    emitGpuBurst(heroMesh?heroMesh.position:{x:0,y:1,z:0},0xc9a44a,10,3,2,.5,{gravity:4});
   }
 }
 
@@ -2570,12 +2581,12 @@ let pendingLoot=null;
 function spawnLootChest(pos,tier){
   // 在3D场景中生成宝箱拾取物
   const g=new THREE.BoxGeometry(.3,.25,.2);
-  const mt=new THREE.MeshStandardMaterial({color:tier==='boss'?0xffd700:0xcc8844,metalness:.6,roughness:.3});
+  const mt=new THREE.MeshStandardMaterial({color:tier==='boss'?0xc9a44a:0xcc8844,metalness:.6,roughness:.3});
   const m=new THREE.Mesh(g,mt);
   m.position.set(pos.x+(Math.random()-.5),0.2,pos.z+(Math.random()-.5));
   scene.add(m);
   // 发光效果
-  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:tier==='boss'?0xffd700:0xff8800,transparent:true,blending:THREE.AdditiveBlending,opacity:.5}));
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:tier==='boss'?0xc9a44a:0xff8800,transparent:true,blending:THREE.AdditiveBlending,opacity:.5}));
   glow.scale.set(2,2,1);glow.position.y=.3;m.add(glow);
   S.pickups.push({mesh:m,type:'chest',tier,life:20});
 }
@@ -2614,8 +2625,8 @@ function openLootChest(tier){
   const itemsHtml=rewards.map(r=>`<div class="loot-item ${r.rarity||''}""><div class="loot-item-icon">${r.icon}</div><div class="loot-item-text">${r.text}</div></div>`).join('');
   popup.innerHTML=`<div class="loot-chest-popup" onclick="closeLootPopup()"><div class="loot-chest-icon">👑</div><div class="loot-chest-title">BOSS 战利品</div><div class="loot-items">${itemsHtml}</div><div class="btn-gold loot-btn" style="padding:10px 30px;font-size:14px">收下战利品</div></div>`;
   popup.style.display='block';
-  if(heroMesh)emitGpuBurst(heroMesh.position,0xffd700,20,5,3,.8,{gravity:4});
-  screenFlash('#ffd700',.15,150);
+  if(heroMesh)emitGpuBurst(heroMesh.position,0xc9a44a,20,5,3,.8,{gravity:4});
+  screenFlash('#c9a44a',.15,150);
 }
 window.closeLootPopup=function(){
   document.getElementById('loot-popup').style.display='none';gamePaused=false;
@@ -2682,7 +2693,7 @@ function renderDpsChart(){
   });
   entries.sort((a,b)=>b.dmg-a.dmg);
   const maxDmg=entries[0]?entries[0].dmg:1;
-  const colors=['#ff8c00','#ffd700','#44ddff','#44ff88','#a335ee','#ff4444','#888'];
+  const colors=['#ff8c00','#c9a44a','#44ddff','#44ff88','#a335ee','#ff4444','#888'];
   let html='<div class="result-dps-chart"><div class="dps-chart-title">⚔️ 伤害分布</div>';
   entries.slice(0,6).forEach((e,i)=>{
     const pct=Math.max(2,e.dmg/maxDmg*100);
@@ -2880,7 +2891,14 @@ function updateEdgeWarnings(){
 }
 
 // ==================== 技能处理 ====================
-function checkCombos(){S.comboSkills=[];SKILL_COMBOS.forEach(c=>{if(c.req.every(r=>{const s=S.skills.find(sk=>sk.id===r);return s&&s.level>=c.reqLv}))S.comboSkills.push(c.id)})}
+function checkCombos(){const prev=new Set(S.comboSkills);S.comboSkills=[];const heroId=PD.selectedHero;SKILL_COMBOS.forEach(c=>{
+  // 职业限定合成只对对应英雄生效
+  if(c.heroOnly&&c.heroOnly!==heroId)return;
+  if(c.req.every(r=>{const s=S.skills.find(sk=>sk.id===r);return s&&s.level>=c.reqLv})){
+    S.comboSkills.push(c.id);
+    // 新解锁的合成技：初始化CD为完整值，防止立即触发（特别是ascendance会重置所有技能CD）
+    if(!prev.has(c.id)&&!skillTimers[c.id]){skillTimers[c.id]=c.cd||10}
+  }})}
 function processSkills(dt){
   if(!heroMesh)return;
   const hp=heroMesh.position;const heroAtk=S.attack;
@@ -3886,6 +3904,426 @@ function processSkills(dt){
       requestAnimationFrame(flyFn);
     }
     animateBounce();}}
+
+  // ===========================================================================================
+  //  30个职业专属技能 — 每个技能拥有独特3D特效
+  // ===========================================================================================
+  const heroId=PD.selectedHero;
+
+  // ⚔️ 战士 —— 英勇飞跃：跳向密集敌群，落地裂地冲击
+  if(hasSkill('heroic_leap')){const k='heroic_leap';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const r=sk.radius+(l-1)*(sk.radiusPerLv||0.3);
+    let bestPos=hp.clone();let bestCnt=0;
+    S.enemies.forEach(e=>{if(e.hp>0){let cnt=0;S.enemies.forEach(e2=>{if(e2.hp>0&&e2.mesh.position.distanceTo(e.mesh.position)<r)cnt++});if(cnt>bestCnt){bestCnt=cnt;bestPos=e.mesh.position.clone()}}});
+    const impG=new THREE.Group();
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;const cr=new THREE.Mesh(new THREE.PlaneGeometry(r*0.8,0.15),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));cr.rotation.x=-Math.PI/2;cr.rotation.z=a;cr.position.y=0.12;impG.add(cr)}
+    for(let i=0;i<8;i++){const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.2+Math.random()*0.3,0),new THREE.MeshStandardMaterial({color:0x665544,roughness:0.8}));const ag=Math.random()*Math.PI*2;rk.position.set(Math.cos(ag)*Math.random()*r*0.6,0.3+Math.random()*2,Math.sin(ag)*Math.random()*r*0.6);rk.userData={vy:3+Math.random()*4,vx:Math.cos(ag)*(2+Math.random()*3),vz:Math.sin(ag)*(2+Math.random()*3)};impG.add(rk)}
+    const dustR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xaa8844,transparent:true,opacity:0.6,side:THREE.DoubleSide,depthWrite:false}));dustR.rotation.x=-Math.PI/2;dustR.position.y=0.2;impG.add(dustR);
+    impG.position.copy(bestPos);scene.add(impG);
+    let t0=0;const la=()=>{t0+=0.016;impG.children.forEach(c=>{if(c.userData&&c.userData.vy!==undefined){c.userData.vy-=15*0.016;c.position.x+=c.userData.vx*0.016;c.position.y+=c.userData.vy*0.016;c.position.z+=c.userData.vz*0.016;if(c.material&&c.material.opacity)c.material.opacity=Math.max(0,1-t0/0.8)}else if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.016*2)});if(t0>=1){scene.remove(impG);return}requestAnimationFrame(la)};requestAnimationFrame(la);
+    emitGpuBurst(bestPos,0xaa6633,15,6,4,0.6,{gravity:8});addDynLight(bestPos,0xff6600,2,r*1.5,0.5);screenShake(0.12,0.2);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(bestPos)<r){dmgEnemy(e,dmg,{isSkill:true,skillName:'英勇飞跃'});e.frozen=(sk.slowDur||2)*0.5}})}}
+
+  // 🪓 战士 —— 斩杀：巨型血色弧形斩击
+  if(hasSkill('execute_strike')){const k='execute_strike';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,6);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);let dmg=calcSkillDmg(sk,l,effectiveAtk);const isExec=tg.hp/tg.maxHp<(sk.executePct||0.30);if(isExec)dmg*=(sk.bonusDmg||2.5);
+    const sG=new THREE.Group();const sc=new THREE.QuadraticBezierCurve3(new THREE.Vector3(-2,2.5,0),new THREE.Vector3(0,3.5,0),new THREE.Vector3(2,0.5,0));
+    sG.add(new THREE.Mesh(new THREE.TubeGeometry(sc,16,isExec?0.25:0.15,6,false),new THREE.MeshBasicMaterial({color:isExec?0xff0000:0xcc4400,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false})));
+    sG.add(new THREE.Mesh(new THREE.TubeGeometry(sc,16,isExec?0.5:0.3,4,false),new THREE.MeshBasicMaterial({color:isExec?0xff2200:0xff6633,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false})));
+    sG.position.copy(tg.mesh.position);sG.position.y+=0.5;sG.lookAt(hp);scene.add(sG);
+    emitGpuBurst(tg.mesh.position,isExec?0xff0000:0xcc4400,isExec?20:10,5,3,0.4,{gravity:6});
+    if(isExec){screenFlash('#ff0000',0.15,100);screenShake(0.1,0.15);addDynLight(tg.mesh.position,0xff0000,3,8,0.4)}
+    let st=0;const sf=()=>{st+=0.016;sG.children.forEach(c=>{if(c.material)c.material.opacity*=0.92});sG.scale.x+=0.05;if(st>=0.4){scene.remove(sG);return}requestAnimationFrame(sf)};requestAnimationFrame(sf);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'斩杀'});if(tg.hp<=0)S.hp=Math.min(S.maxHp,S.hp+S.maxHp*0.05)}}}
+
+  // 🛡️ 战士 —— 盾墙：六面体能量护盾
+  if(hasSkill('shield_wall')){const k='shield_wall';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const wDur=(sk.wallDur||3)+(l-1)*(sk.wallDurPerLv||0.3);const dRed=(sk.dmgReduction||0.50)+(l-1)*(sk.dmgRedPerLv||0.05);
+    S.passiveStacks.shieldWallActive=wDur;S.passiveStacks.shieldWallReduction=dRed;
+    const shG=new THREE.Group();shG.add(new THREE.Mesh(new THREE.IcosahedronGeometry(2,1),new THREE.MeshBasicMaterial({color:0xffaa33,transparent:true,opacity:0.25,wireframe:true,blending:THREE.AdditiveBlending,depthWrite:false})));
+    shG.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.8,1),new THREE.MeshBasicMaterial({color:0xffdd66,transparent:true,opacity:0.08,depthWrite:false})));
+    shG.position.copy(hp);shG.position.y=1;scene.add(shG);addDynLight(hp,0xffaa33,2,6,wDur);
+    let sw0=0;const sa=()=>{sw0+=0.016;if(heroMesh)shG.position.copy(heroMesh.position).add({x:0,y:1,z:0});shG.rotation.y+=0.02;
+    const f=sw0>wDur-0.5?Math.max(0,1-(sw0-(wDur-0.5))/0.5):1;shG.children.forEach(c=>{c.material.opacity=c.material.opacity>0.1?0.25*f:0.08*f});
+    if(sw0>=wDur){scene.remove(shG);return}requestAnimationFrame(sa)};requestAnimationFrame(sa)}}
+
+  // ☄️ 法师 —— 炎爆术：巨型蓄力火球（使用统一投射物系统，修复命中bug）
+  if(hasSkill('pyroblast')){const k='pyroblast';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,15);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const expR=sk.explosionR||2;
+    fireProjectile(hp,tg.mesh.position,0xff4400,dmg,0.6,sk.projSpeed||16,{
+      trail:'fire',trailColor:0xff6600,isFireDmg:true,isSkill:true,skillName:'炎爆术',
+      onHit:'explode',explodeR:expR,explodeDmgPct:1.0
+    })}}}
+
+  // 🔮 法师 —— 奥术冲击：叠层紫色弹+递增伤害（使用统一投射物系统，修复命中bug）
+  if(hasSkill('arcane_blast')){const k='arcane_blast';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    if(!S.passiveStacks.arcaneStacks)S.passiveStacks.arcaneStacks=0;
+    S.passiveStacks.arcaneStacks=Math.min(sk.maxStacks||4,S.passiveStacks.arcaneStacks+1);
+    const stk=S.passiveStacks.arcaneStacks;let dmg=calcSkillDmg(sk,l,effectiveAtk);dmg*=(1+stk*(sk.stackMult||0.20));
+    S.passiveTimers._arcaneDecay=5.0;
+    const tg=nearest(hp,12);if(tg&&tg.hp>0){
+    fireProjectile(hp,tg.mesh.position,0x8844ff,dmg,0.3+stk*0.1,20,{
+      trail:'holy',trailColor:0xaa66ff,isSkill:true,skillName:'奥术冲击',
+      onHit:'explode',explodeR:2,explodeDmgPct:0
+    })}}}
+  if(hasSkill('arcane_blast')&&S.passiveTimers._arcaneDecay!==undefined){S.passiveTimers._arcaneDecay-=dt;if(S.passiveTimers._arcaneDecay<=0){S.passiveStacks.arcaneStacks=Math.max(0,(S.passiveStacks.arcaneStacks||0)-1);S.passiveTimers._arcaneDecay=2}}
+
+  // 🧊 法师 —— 寒冰屏障：冰晶护盾
+  if(hasSkill('ice_barrier')){const k='ice_barrier';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const shAmt=S.maxHp*(sk.shieldPct+(l-1)*(sk.shieldPctPerLv||0.03));
+    S.passiveStacks.iceBarrier=(S.passiveStacks.iceBarrier||0)+shAmt;S.passiveStacks.iceBarrierCdBonus=sk.cdBonus||0.20;
+    const iG=new THREE.Group();
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;const sh=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.8,4),new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));sh.position.set(Math.cos(a)*1.5,1+Math.sin(i*0.5)*0.3,Math.sin(a)*1.5);sh.rotation.z=a;iG.add(sh)}
+    iG.position.copy(hp);scene.add(iG);emitGpuBurst(hp,0x66ccff,15,3,2,0.3,{gravity:1});addDynLight(hp,0x66ccff,1.5,5,0.5);
+    let ib=0;const ia=()=>{ib+=0.016;if(heroMesh)iG.position.copy(heroMesh.position);iG.rotation.y+=0.03;
+    iG.children.forEach((c,i)=>{c.position.y=1+Math.sin(ib*2+i*0.5)*0.2;c.material.opacity=Math.max(0,0.5*(1-ib/3))});
+    if(ib>=3||!S.passiveStacks.iceBarrier||S.passiveStacks.iceBarrier<=0){scene.remove(iG);return}requestAnimationFrame(ia)};requestAnimationFrame(ia)}}
+
+  // 💣 猎人 —— 爆炸陷阱：地面放置
+  if(hasSkill('explosive_trap')){const k='explosive_trap';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const dmg=calcSkillDmg(sk,l,effectiveAtk);const r=sk.trapRadius+(l-1)*(sk.trapRadPerLv||0.3);
+    if(!S.passiveStacks.traps)S.passiveStacks.traps=[];
+    S.passiveStacks.traps=S.passiveStacks.traps.filter(t=>t.life>0);
+    if(S.passiveStacks.traps.length<(sk.trapMax||3)){
+    const tp=hp.clone();tp.y=0.1;const tG=new THREE.Group();
+    tG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.15,8),new THREE.MeshStandardMaterial({color:0x666666,metalness:0.8,roughness:0.3})));
+    const dr=new THREE.Mesh(new THREE.RingGeometry(0.3,0.45,16),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));dr.rotation.x=-Math.PI/2;dr.position.y=0.1;tG.add(dr);
+    const det=new THREE.Mesh(new THREE.RingGeometry(r-0.1,r,32),new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.15,side:THREE.DoubleSide,depthWrite:false}));det.rotation.x=-Math.PI/2;det.position.y=0.05;tG.add(det);
+    tG.position.copy(tp);scene.add(tG);S.passiveStacks.traps.push({mesh:tG,pos:tp,life:sk.trapDur||15,r,dmg,triggered:false})}}}
+  if(S.passiveStacks.traps&&S.passiveStacks.traps.length>0){
+    S.passiveStacks.traps.forEach(trap=>{if(trap.triggered)return;trap.life-=dt;if(trap.mesh&&trap.mesh.children[1])trap.mesh.children[1].material.opacity=0.3+Math.sin(gameTime*4)*0.2;
+    if(trap.life<=0){scene.remove(trap.mesh);return}
+    S.enemies.forEach(e=>{if(e.hp>0&&!trap.triggered&&e.mesh.position.distanceTo(trap.pos)<trap.r*0.5){trap.triggered=true;
+    explosion(trap.pos,0xff4400,20);emitGpuBurst(trap.pos,0xff6600,25,7,4,0.5,{gravity:8});addDynLight(trap.pos,0xff4400,3,trap.r*2,0.5);screenShake(0.1,0.15);
+    S.enemies.forEach(e2=>{if(e2.hp>0&&e2.mesh.position.distanceTo(trap.pos)<trap.r)dmgEnemy(e2,trap.dmg,{isSkill:true,isFireDmg:true,skillName:'爆炸陷阱'})});scene.remove(trap.mesh)}})});
+    S.passiveStacks.traps=S.passiveStacks.traps.filter(t=>t.life>0&&!t.triggered)}
+
+  // 🎯 猎人 —— 瞄准射击：激光瞄准线+精准弹
+  if(hasSkill('aimed_shot')){const k='aimed_shot';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,18);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const aG=new THREE.Group();
+    const lp=[new THREE.Vector3(hp.x,1.2,hp.z),new THREE.Vector3(tg.mesh.position.x,1.2,tg.mesh.position.z)];
+    aG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lp),8,0.03,4,false),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false})));
+    const ch=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.06),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.8,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));ch.position.copy(tg.mesh.position);ch.position.y=2.5;ch.rotation.x=-Math.PI/2;aG.add(ch);
+    const cv=ch.clone();cv.rotation.z=Math.PI/2;aG.add(cv);
+    const hc=new THREE.Mesh(new THREE.RingGeometry(0.4,0.6,16),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));hc.position.copy(tg.mesh.position);hc.position.y=2.5;hc.rotation.x=-Math.PI/2;aG.add(hc);
+    scene.add(aG);
+    setTimeout(()=>{fireProjectile(hp,tg.mesh.position,0x44ff44,dmg,0.2,30,{trail:'sharp',trailColor:0x88ff88,bonusCrit:1.0,isSkill:true,skillName:'瞄准射击'});emitGpuBurst(tg.mesh.position,0xff4400,12,4,3,0.3,{gravity:5})},150);
+    let a0=0;const af2=()=>{a0+=0.016;aG.children.forEach(c=>{if(c.material)c.material.opacity*=0.93});if(a0>=0.5){scene.remove(aG);return}requestAnimationFrame(af2)};requestAnimationFrame(af2)}}}
+
+  // 🦁 猎人 —— 狂野怒火：宠物狂暴+爪击
+  if(hasSkill('bestial_wrath')){const k='bestial_wrath';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const rd=sk.rageDur||8;const rm=1+(sk.petRageMult||1)+(l-1)*(sk.petRagePerLv||0.2);const bd=effectiveAtk*0.8*rm;
+    const rG=new THREE.Group();const ra=new THREE.Mesh(new THREE.RingGeometry(1.5,2,24),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));ra.rotation.x=-Math.PI/2;rG.add(ra);
+    rG.position.copy(hp);scene.add(rG);emitGpuBurst(hp,0xff4400,15,5,3,0.3,{gravity:3});
+    for(let tk=0;tk<Math.floor(rd/1.5);tk++){setTimeout(()=>{if(!gameActive||!heroMesh)return;const t=nearest(heroMesh.position,12);
+    if(t&&t.hp>0){dmgEnemy(t,bd,{noCrit:false,isSkill:true,skillName:'狂野怒火'});
+    const cG=new THREE.Group();for(let c=0;c<3;c++){const cl=new THREE.Mesh(new THREE.PlaneGeometry(0.1,1.2),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.8,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));cl.position.set((c-1)*0.3,1,0);cG.add(cl)}
+    cG.position.copy(t.mesh.position);scene.add(cG);S.particles.push({mesh:cG,life:0.3,maxLife:0.3,type:'aoe'});
+    emitGpuBurst(t.mesh.position,0xff4400,6,3,2,0.2,{gravity:4});S.hp=Math.min(S.maxHp,S.hp+S.maxHp*(sk.healPctOnPetHit||0.01))}},tk*1500)}
+    let rg=0;const rf=()=>{rg+=0.016;if(heroMesh)rG.position.copy(heroMesh.position);rG.rotation.y+=0.05;ra.material.opacity=0.4*(1-rg/rd);if(rg>=rd){scene.remove(rG);return}requestAnimationFrame(rf)};requestAnimationFrame(rf)}}
+
+  // 🧠 牧师 —— 心灵震爆：暗影脑波锥+恐惧
+  if(hasSkill('mind_blast')){const k='mind_blast';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,10);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const fR=sk.fearRadius||4;const fD=(sk.fearDur||1.5)+(l-1)*(sk.fearDurPerLv||0.2);
+    const bG=new THREE.Group();const cn=new THREE.Mesh(new THREE.ConeGeometry(2,5,8,1,true),new THREE.MeshBasicMaterial({color:0x9944ff,transparent:true,opacity:0.5,wireframe:true,blending:THREE.AdditiveBlending,depthWrite:false}));cn.rotation.x=Math.PI/2;bG.add(cn);
+    for(let i=0;i<3;i++){const w=new THREE.Mesh(new THREE.RingGeometry(0.5+i*0.8,0.8+i*0.8,16),new THREE.MeshBasicMaterial({color:0x7722cc,transparent:true,opacity:0.4-i*0.1,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));w.rotation.x=Math.PI/2;w.position.z=-(1+i*1.5);bG.add(w)}
+    bG.position.copy(hp);bG.position.y=1.5;bG.lookAt(tg.mesh.position);scene.add(bG);
+    emitGpuBurst(tg.mesh.position,0x9944ff,15,5,3,0.4,{gravity:3});addDynLight(tg.mesh.position,0x9944ff,2,8,0.4);
+    let mb=0;const mf=()=>{mb+=0.016;bG.children.forEach(c=>{c.material.opacity*=0.94;if(c.geometry&&c.geometry.type==='RingGeometry')c.scale.setScalar(1+mb*2)});cn.scale.z=1+mb*3;if(mb>=0.5){scene.remove(bG);return}requestAnimationFrame(mf)};requestAnimationFrame(mf);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'心灵震爆'});
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(tg.mesh.position)<fR){e.frozen=fD;emitGpuP(e.mesh.position,0x9944ff,{vx:0,vy:2,vz:0},3,0.4,{gravity:1,shrink:true})}})}}}
+
+  // 👤 牧师 —— 暗影形态（被动BUFF标记）
+  if(hasSkill('shadow_form')){const sfL=sklLv('shadow_form');const sfS=skData('shadow_form');S.passiveStacks.shadowFormActive=true;S.passiveStacks.shadowFormDotBonus=(sfS.dotDmgBonus||0.35)+(sfL-1)*(sfS.dotDmgPerLv||0.08);S.passiveStacks.shadowFormDmgRed=(sfS.dmgReduction||0.15)+(sfL-1)*(sfS.dmgRedPerLv||0.03)}
+
+  // 🙏 牧师 —— 愈合祷言：金色祈祷光柱
+  if(hasSkill('prayer_of_mending')){const k='prayer_of_mending';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const hAmt=S.maxHp*((sk.healPct||0.10)+(l-1)*(sk.healPctPerLv||0.02));const isLow=S.hp/S.maxHp<(sk.lowHpThreshold||0.30);
+    S.hp=Math.min(S.maxHp,S.hp+(isLow?hAmt*2:hAmt));
+    const hG=new THREE.Group();
+    hG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.8,4,8,1,true),new THREE.MeshBasicMaterial({color:isLow?0xffff00:0xffdd88,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false})));
+    const c1=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.15),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));c1.rotation.x=-Math.PI/2;c1.position.y=0.15;hG.add(c1);
+    const c2=c1.clone();c2.rotation.z=Math.PI/2;hG.add(c2);
+    hG.position.copy(hp);hG.children[0].position.y=2;scene.add(hG);
+    emitGpuBurst(hp,isLow?0xffff00:0xffdd88,12,3,2,0.5,{gravity:-1});addDynLight(hp,0xffdd44,1.5,5,0.5);
+    let ph=0;const pf2=()=>{ph+=0.016;hG.children[0].position.y=2+ph*2;hG.children.forEach(c=>{if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.025)});if(ph>=0.6){scene.remove(hG);return}requestAnimationFrame(pf2)};requestAnimationFrame(pf2)}}
+
+  // 💀 盗贼 —— 剔骨：连击点终结技
+  if(hasSkill('eviscerate')){const k='eviscerate';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);if(!S.passiveStacks.comboPoints)S.passiveStacks.comboPoints=0;
+    const cp=S.passiveStacks.comboPoints;if(cp>=1){resetCd(k,sk,l);let dmg=calcSkillDmg(sk,l,effectiveAtk);dmg*=(1+cp*(sk.comboPointMult||0.6));S.passiveStacks.comboPoints=0;
+    const tg=nearest(hp,5);if(tg&&tg.hp>0){
+    const eG=new THREE.Group();const s1=new THREE.Mesh(new THREE.PlaneGeometry(2,0.12),new THREE.MeshBasicMaterial({color:0x44ff44,transparent:true,opacity:0.9,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));s1.position.y=1;s1.rotation.z=Math.PI/4;eG.add(s1);const s2=s1.clone();s2.rotation.z=-Math.PI/4;eG.add(s2);
+    for(let i=0;i<cp;i++){const co=new THREE.Mesh(new THREE.OctahedronGeometry(0.15),new THREE.MeshBasicMaterial({color:0xff4444,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));co.position.set((Math.random()-0.5)*0.8,1+i*0.3,(Math.random()-0.5)*0.8);eG.add(co)}
+    eG.position.copy(tg.mesh.position);scene.add(eG);emitGpuBurst(tg.mesh.position,0x44ff44,8+cp*3,5,3,0.4,{gravity:5});addDynLight(tg.mesh.position,0x44ff44,1.5+cp*0.3,6,0.3);if(cp>=4)screenShake(0.08,0.12);
+    let ev=0;const ef=()=>{ev+=0.016;eG.children.forEach(c=>{if(c.material)c.material.opacity*=0.92;c.scale.setScalar(1+ev*2)});if(ev>=0.4){scene.remove(eG);return}requestAnimationFrame(ef)};requestAnimationFrame(ef);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'剔骨'})}}}}
+
+  // 🧥 盗贼 —— 暗影斗篷：免疫+加速
+  if(hasSkill('cloak_of_shadows')){const k='cloak_of_shadows';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const dur=(sk.immuneDur||2)+(l-1)*(sk.immuneDurPerLv||0.3);S.passiveStacks.invincible=dur;S.speed*=(1+(sk.spdBoost||0.50));
+    const ckG=new THREE.Group();for(let i=0;i<12;i++){const sm=new THREE.Mesh(new THREE.SphereGeometry(0.3+Math.random()*0.2,6,6),new THREE.MeshBasicMaterial({color:0x220044,transparent:true,opacity:0.4,depthWrite:false}));sm.position.set(Math.cos(i*Math.PI/6)*1.2,0.5+Math.random()*1.5,Math.sin(i*Math.PI/6)*1.2);ckG.add(sm)}
+    ckG.position.copy(hp);scene.add(ckG);addDynLight(hp,0x440088,1,5,dur);emitGpuBurst(hp,0x440088,20,3,2,0.3,{gravity:0.5});
+    let ck=0;const ca=()=>{ck+=0.016;if(heroMesh)ckG.position.copy(heroMesh.position);ckG.rotation.y+=0.04;ckG.children.forEach(c=>{c.material.opacity=0.4*(1-ck/dur)});if(ck>=dur){scene.remove(ckG);return}requestAnimationFrame(ca)};requestAnimationFrame(ca)}}
+
+  // 🌀 盗贼 —— 刃舞：旋转飞刃环
+  if(hasSkill('blade_dance')){const k='blade_dance';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const r=(sk.spinRadius||3.5)+(l-1)*(sk.spinRadPerLv||0.3);
+    const bdG=new THREE.Group();for(let i=0;i<4;i++){const a=i*Math.PI/2;const bl=new THREE.Mesh(new THREE.ConeGeometry(0.1,1.2,3),new THREE.MeshBasicMaterial({color:0xccddff,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));bl.position.set(Math.cos(a)*r*0.6,1,Math.sin(a)*r*0.6);bl.rotation.z=Math.PI/2;bdG.add(bl)}
+    const tr=new THREE.Mesh(new THREE.TorusGeometry(r*0.6,0.08,6,24),new THREE.MeshBasicMaterial({color:0xaaccff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));tr.rotation.x=Math.PI/2;tr.position.y=1;bdG.add(tr);
+    bdG.position.copy(hp);scene.add(bdG);
+    let bd=0;const bs=()=>{bd+=0.016;if(heroMesh)bdG.position.copy(heroMesh.position);bdG.rotation.y+=0.3;bdG.children.forEach(c=>{if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.03)});if(bd>=0.5){scene.remove(bdG);return}requestAnimationFrame(bs)};requestAnimationFrame(bs);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r){dmgEnemy(e,dmg,{isSkill:true,skillName:'刃舞'});if(Math.random()<(sk.comboBuildChance||0.5))S.passiveStacks.comboPoints=Math.min(5,(S.passiveStacks.comboPoints||0)+1)}})}}
+
+  // 🌋 萨满 —— 熔岩爆裂：炽热熔岩弹（使用统一投射物系统，修复无法命中bug）
+  if(hasSkill('lava_burst')){const k='lava_burst';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,14);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    // 使用统一投射物系统（2D碰撞检测+正确dt+爆炸AOE）
+    fireProjectile(hp,tg.mesh.position,0xff4400,dmg,0.35,sk.projSpeed||20,{
+      trail:'fire',trailColor:0xff2200,isFireDmg:true,isSkill:true,skillName:'熔岩爆裂',
+      bonusCrit:0.5,onHit:'explode',explodeR:2.5,explodeDmgPct:1.0
+    })}}}
+
+  // 🌧️ 萨满 —— 治疗之雨：持续雨滴区域
+  if(hasSkill('healing_rain')){const k='healing_rain';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dur=sk.duration||5;const hPct=(sk.healPct||0.03)+(l-1)*(sk.healPctPerLv||0.01);const aB=(sk.armorBonus||3)+(l-1)*(sk.armorPerLv||1);
+    const rP=hp.clone();S.armor+=aB;const rainR=3.5;
+    const rnG=new THREE.Group();
+    // 地面水圈 —— 半透明蓝色区域
+    const pl=new THREE.Mesh(new THREE.CircleGeometry(rainR,32),new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.15,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));pl.rotation.x=-Math.PI/2;pl.position.y=0.12;rnG.add(pl);
+    // 外圈发光环
+    const outerRing=new THREE.Mesh(new THREE.RingGeometry(rainR-0.1,rainR+0.05,48),new THREE.MeshBasicMaterial({color:0x66aaff,transparent:true,opacity:0.35,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));outerRing.rotation.x=-Math.PI/2;outerRing.position.y=0.13;rnG.add(outerRing);
+    // 顶部云雾层 —— 多个半透明sprite组成雨云
+    const cloudSprites=[];for(let ci=0;ci<5;ci++){
+      const cMat=new THREE.SpriteMaterial({map:glowTex,color:0x6699cc,transparent:true,opacity:0.2+Math.random()*0.1,blending:THREE.AdditiveBlending,depthWrite:false});
+      const cSpr=new THREE.Sprite(cMat);cSpr.scale.set(2+Math.random()*2,1+Math.random()*0.5,1);
+      cSpr.position.set((Math.random()-0.5)*rainR*1.2,6+Math.random()*0.8,(Math.random()-0.5)*rainR*1.2);
+      rnG.add(cSpr);cloudSprites.push(cSpr)}
+    // 预创建一批3D雨滴条（CylinderGeometry细长条）
+    const rainDrops=[];const rainMat=new THREE.MeshBasicMaterial({color:0x88bbff,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false});
+    for(let ri=0;ri<30;ri++){
+      const drop=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.5+Math.random()*0.5,3),rainMat.clone());
+      drop.position.set((Math.random()-0.5)*rainR*2,Math.random()*6,(Math.random()-0.5)*rainR*2);
+      drop.userData.speed=10+Math.random()*6;drop.userData.baseX=(Math.random()-0.5)*rainR*2;drop.userData.baseZ=(Math.random()-0.5)*rainR*2;
+      rnG.add(drop);rainDrops.push(drop)}
+    // 涟漪环数组（地面水花涟漪）
+    const ripples=[];
+    rnG.position.copy(rP);scene.add(rnG);addDynLight(rP,0x4488ff,1.5,rainR+2,dur);
+    let rn=0;const rl=()=>{rn+=0.016;const fade=rn<0.5?rn/0.5:(rn>dur-0.5?Math.max(0,(dur-rn)/0.5):1);
+    // 更新3D雨滴下落
+    rainDrops.forEach(drop=>{drop.position.y-=drop.userData.speed*0.016;
+      if(drop.position.y<0.1){
+        // 雨滴触底 —— 溅射粒子
+        const sx=rP.x+drop.userData.baseX,sz=rP.z+drop.userData.baseZ;
+        if(Math.random()<0.4)emitGpuP({x:sx,y:0.2,z:sz},0x88ccff,{vx:(Math.random()-0.5)*1,vy:1+Math.random()*1.5,vz:(Math.random()-0.5)*1},1.5,0.15,{gravity:5,shrink:true});
+        // 创建涟漪
+        if(Math.random()<0.3){const rip=new THREE.Mesh(new THREE.RingGeometry(0.05,0.1,16),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:0.5*fade,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+          rip.rotation.x=-Math.PI/2;rip.position.set(drop.userData.baseX,0.13,drop.userData.baseZ);rnG.add(rip);ripples.push({mesh:rip,age:0,maxAge:0.6})}
+        // 重置雨滴到顶部
+        drop.position.y=5.5+Math.random()*1.5;drop.userData.baseX=(Math.random()-0.5)*rainR*2;drop.userData.baseZ=(Math.random()-0.5)*rainR*2;
+        drop.position.x=drop.userData.baseX;drop.position.z=drop.userData.baseZ}
+      drop.material.opacity=0.5*fade});
+    // 更新涟漪（扩散+消失）
+    for(let ri2=ripples.length-1;ri2>=0;ri2--){const rip=ripples[ri2];rip.age+=0.016;const t=rip.age/rip.maxAge;
+      rip.mesh.scale.setScalar(1+t*3);rip.mesh.material.opacity=0.5*fade*(1-t);
+      if(rip.age>=rip.maxAge){rnG.remove(rip.mesh);rip.mesh.material.dispose();rip.mesh.geometry.dispose();ripples.splice(ri2,1)}}
+    // 云雾缓慢飘动
+    cloudSprites.forEach((cs,ci)=>{cs.position.x+=Math.sin(rn*0.5+ci)*0.005;cs.material.opacity=(0.2+Math.sin(rn*2+ci)*0.05)*fade});
+    // 额外GPU粒子——雨雾弥漫效果
+    if(Math.random()<0.5)emitGpuP({x:rP.x+(Math.random()-0.5)*rainR*2,y:0.3+Math.random()*0.5,z:rP.z+(Math.random()-0.5)*rainR*2},0x88bbff,{vx:(Math.random()-0.5)*0.5,vy:0.3+Math.random()*0.3,vz:(Math.random()-0.5)*0.5},1.5,0.2,{gravity:-0.3,shrink:true});
+    // 地面水圈脉动
+    pl.material.opacity=(0.15+Math.sin(rn*4)*0.05)*fade;outerRing.material.opacity=(0.35+Math.sin(rn*3)*0.1)*fade;
+    // 治疗tick
+    if(Math.floor(rn*2)>Math.floor((rn-0.016)*2)&&heroMesh&&heroMesh.position.distanceTo(rP)<rainR){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*hPct);
+      // 治疗反馈——绿色上升粒子
+      for(let hi=0;hi<3;hi++)emitGpuP({x:heroMesh.position.x+(Math.random()-0.5)*0.5,y:heroMesh.position.y+Math.random(),z:heroMesh.position.z+(Math.random()-0.5)*0.5},0x44ff88,{vx:(Math.random()-0.5)*0.3,vy:1.5+Math.random(),vz:(Math.random()-0.5)*0.3},2,0.25,{gravity:-0.5,shrink:true})}
+    if(rn>=dur){
+      // 清理雨滴材质
+      rainDrops.forEach(d=>{d.material.dispose();d.geometry.dispose()});
+      ripples.forEach(rip=>{rnG.remove(rip.mesh);rip.mesh.material.dispose();rip.mesh.geometry.dispose()});
+      scene.remove(rnG);S.armor=Math.max(0,S.armor-aB);return}requestAnimationFrame(rl)};requestAnimationFrame(rl)}}
+
+  // 🌍 萨满 —— 地震术：持续地面裂缝+震动+眩晕
+  if(hasSkill('earthquake')){const k='earthquake';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const r=(sk.radius||5)+(l-1)*(sk.radiusPerLv||0.4);const dur=sk.duration||3;const tR=sk.tickRate||0.5;const qP=hp.clone();
+    const qG=new THREE.Group();
+    for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2;const len=1+Math.random()*r*0.7;
+    const pts=[new THREE.Vector3(0,0.12,0)];for(let j=1;j<=4;j++){const t=j/4;pts.push(new THREE.Vector3(Math.cos(a)*len*t+(Math.random()-0.5)*0.5,0.12,Math.sin(a)*len*t+(Math.random()-0.5)*0.5))}
+    qG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),8,0.06,3,false),new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false})))}
+    const qR=new THREE.Mesh(new THREE.RingGeometry(r-0.2,r,32),new THREE.MeshBasicMaterial({color:0xaa6633,transparent:true,opacity:0.3,side:THREE.DoubleSide,depthWrite:false}));qR.rotation.x=-Math.PI/2;qR.position.y=0.1;qG.add(qR);
+    qG.position.copy(qP);scene.add(qG);addDynLight(qP,0xff6600,2,r,dur);
+    let eq=0,lTk=0;const ql=()=>{eq+=0.016;if(eq<dur)screenShake(0.02,0.04);
+    qG.children.forEach(c=>{if(c.material)c.material.opacity=0.7*Math.max(0,1-eq/dur)*(0.7+Math.sin(eq*8)*0.3)});
+    if(Math.random()<0.15&&eq<dur)emitGpuP({x:qP.x+(Math.random()-0.5)*r,y:0.2,z:qP.z+(Math.random()-0.5)*r},0x886644,{vx:(Math.random()-0.5)*2,vy:2+Math.random()*3,vz:(Math.random()-0.5)*2},2+Math.random()*2,0.4,{gravity:8,shrink:true});
+    if(eq<dur&&eq-lTk>=tR){lTk=eq;S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(qP)<r){dmgEnemy(e,dmg,{isSkill:true,skillName:'地震术'});if(Math.random()<(sk.stunChance||0.15)){e.frozen=(e.frozen||0)+0.8;emitGpuP(e.mesh.position,0xffaa00,{vx:0,vy:1.5,vz:0},2,0.3,{gravity:1})}}})}
+    if(eq>=dur+0.5){scene.remove(qG);return}requestAnimationFrame(ql)};requestAnimationFrame(ql)}}
+
+  // 💀 死骑 —— 灭杀打击：暗红重击+吸血
+  if(hasSkill('death_strike')){const k='death_strike';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,5);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const lch=(sk.leechPct||0.25)+(l-1)*(sk.leechPctPerLv||0.05);
+    const dG=new THREE.Group();const sl1=new THREE.Mesh(new THREE.PlaneGeometry(2.5,0.15),new THREE.MeshBasicMaterial({color:0xcc0000,transparent:true,opacity:0.9,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));sl1.position.y=1;sl1.rotation.z=Math.PI/4;dG.add(sl1);
+    const sl2=sl1.clone();sl2.rotation.z=-Math.PI/4;dG.add(sl2);
+    const br=new THREE.Mesh(new THREE.RingGeometry(0.5,1.2,16),new THREE.MeshBasicMaterial({color:0x880000,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));br.rotation.x=-Math.PI/2;br.position.y=0.2;dG.add(br);
+    dG.position.copy(tg.mesh.position);scene.add(dG);emitGpuBurst(tg.mesh.position,0xcc0000,12,4,3,0.4,{gravity:5});addDynLight(tg.mesh.position,0xcc0000,2,6,0.3);
+    let ds=0;const df=()=>{ds+=0.016;dG.children.forEach(c=>{if(c.material)c.material.opacity*=0.92;c.scale.setScalar(1+ds*2)});if(ds>=0.4){scene.remove(dG);return}requestAnimationFrame(df)};requestAnimationFrame(df);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'灭杀打击'});S.hp=Math.min(S.maxHp,S.hp+dmg*lch);
+    for(let i=0;i<5;i++)setTimeout(()=>{if(heroMesh)emitGpuP(tg.mesh.position,0xff0000,{vx:(hp.x-tg.mesh.position.x)*2,vy:1,vz:(hp.z-tg.mesh.position.z)*2},2,0.3,{gravity:-1,shrink:true})},i*60)}}}
+
+  // ☠️ 死骑 —— 亡者大军：食尸鬼群
+  if(hasSkill('army_of_dead')){const k='army_of_dead';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const cnt=(sk.ghoulCount||4)+Math.floor((l-1)*(sk.ghoulCountPerLv||1));const gDur=sk.ghoulDur||10;const gDmg=calcSkillDmg(sk,l,effectiveAtk);
+    const ghouls=[];for(let i=0;i<cnt;i++){
+    const gG=new THREE.Group();gG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,0.6,6),new THREE.MeshStandardMaterial({color:0x445544,roughness:0.8})));gG.children[0].position.y=0.5;
+    gG.add(new THREE.Mesh(new THREE.SphereGeometry(0.12,6,6),new THREE.MeshStandardMaterial({color:0x556655})));gG.children[1].position.y=0.9;
+    gG.add(new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:0x44ff44})));gG.children[2].position.set(0.05,0.92,0.1);
+    const ag=i*Math.PI*2/cnt;gG.position.set(hp.x+Math.cos(ag)*2,0,hp.z+Math.sin(ag)*2);scene.add(gG);ghouls.push({mesh:gG,life:gDur,at:1})}
+    emitGpuBurst(hp,0x44ff44,20,4,3,0.5,{gravity:3});addDynLight(hp,0x44ff44,2,8,0.5);
+    const gl=()=>{let all=true;ghouls.forEach(g=>{if(g.life<=0)return;all=false;g.life-=0.016;g.at-=0.016;
+    const t=nearest(g.mesh.position,8);if(t&&t.hp>0){const d=new THREE.Vector3().subVectors(t.mesh.position,g.mesh.position).normalize();g.mesh.position.x+=d.x*3*0.016;g.mesh.position.z+=d.z*3*0.016;
+    const _dx=g.mesh.position.x-t.mesh.position.x,_dz=g.mesh.position.z-t.mesh.position.z;if(g.at<=0&&Math.sqrt(_dx*_dx+_dz*_dz)<1.8){g.at=1;dmgEnemy(t,gDmg,{noCrit:false,isSkill:true,skillName:'亡者大军'});emitGpuBurst(t.mesh.position,0x44ff44,4,3,2,0.2,{gravity:4})}}
+    if(g.life<1)g.mesh.children.forEach(c=>{if(c.material){c.material.transparent=true;c.material.opacity=g.life}});if(g.life<=0)scene.remove(g.mesh)});if(all)return;requestAnimationFrame(gl)};requestAnimationFrame(gl)}}
+
+  // 🔵 死骑 —— 反魔法护罩：蓝色符文球
+  if(hasSkill('anti_magic_shell')){const k='anti_magic_shell';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const aAmt=S.maxHp*((sk.absorbPct||0.25)+(l-1)*(sk.absorbPerLv||0.05));const sDur=sk.shellDur||4;
+    S.passiveStacks.amsAbsorb=aAmt;S.passiveStacks.amsDur=sDur;S.passiveStacks.amsToAtk=sk.absorbToAtk||0.5;S.passiveStacks.amsTotalAbsorbed=0;
+    const amG=new THREE.Group();amG.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.8,1),new THREE.MeshBasicMaterial({color:0x2266ff,transparent:true,opacity:0.2,wireframe:true,blending:THREE.AdditiveBlending,depthWrite:false})));
+    const rr=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.06,6,24),new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));rr.rotation.x=Math.PI/2;amG.add(rr);
+    amG.position.copy(hp);amG.position.y=1;scene.add(amG);emitGpuBurst(hp,0x4488ff,12,3,2,0.3,{gravity:1});addDynLight(hp,0x2266ff,2,6,sDur);
+    let am=0;const aa=()=>{am+=0.016;if(heroMesh)amG.position.copy(heroMesh.position).add({x:0,y:1,z:0});amG.rotation.y+=0.03;rr.rotation.z+=0.05;
+    const f=am>sDur-0.5?Math.max(0,1-(am-(sDur-0.5))/0.5):1;amG.children.forEach(c=>{c.material.opacity=c.material.opacity>0.3?0.5*f:0.2*f});
+    if(am>=sDur){scene.remove(amG);const aG2=(S.passiveStacks.amsTotalAbsorbed||0)*(S.passiveStacks.amsToAtk||0.5);if(aG2>0){S.attack+=aG2}S.passiveStacks.amsAbsorb=0;return}requestAnimationFrame(aa)};requestAnimationFrame(aa)}}
+
+  // 🌙 德鲁伊 —— 月火术：月光柱+DOT
+  if(hasSkill('moonfire')){const k='moonfire';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,12);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const dDmg=dmg*(sk.dotDmgPct||0.30);const dDur=sk.dotDur||4;
+    const mG=new THREE.Group();mG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.6,1.2,8,8,1,true),new THREE.MeshBasicMaterial({color:0xccccff,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false})));mG.children[0].position.y=4;
+    const mp=new THREE.Mesh(new THREE.CircleGeometry(1.5,16),new THREE.MeshBasicMaterial({color:0xaaaaff,transparent:true,opacity:0.3,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));mp.rotation.x=-Math.PI/2;mp.position.y=0.12;mG.add(mp);
+    mG.position.copy(tg.mesh.position);scene.add(mG);emitGpuBurst(tg.mesh.position,0xccccff,12,3,2,0.4,{gravity:-0.5});addDynLight(tg.mesh.position,0xccccff,2,6,0.5);
+    let mf2=0;const mfa=()=>{mf2+=0.016;mG.children.forEach(c=>{if(c.material)c.material.opacity=Math.max(0,c.material.opacity-0.012)});mG.children[0].position.y=4-mf2*3;if(mf2>=0.6){scene.remove(mG);return}requestAnimationFrame(mfa)};requestAnimationFrame(mfa);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'月火术'});
+    const tks=Math.floor(dDur/(sk.dotTickRate||0.5));for(let i=0;i<tks;i++)setTimeout(()=>{if(tg.hp>0){dmgEnemy(tg,dDmg,{noCrit:true,isDot:true,isSkill:true,skillName:'月火术(灼烧)'});emitGpuP(tg.mesh.position,0xaaaaff,{vx:0,vy:1,vz:0},2,0.2,{gravity:0})}},i*(sk.dotTickRate||0.5)*1000)}}}
+
+  // 🌱 德鲁伊 —— 野性成长：绿色藤蔓HOT
+  if(hasSkill('wild_growth')){const k='wild_growth';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const hPct=(sk.hotPct||0.04)+(l-1)*(sk.hotPctPerLv||0.01);const hDur=sk.hotDur||6;const isLow=S.hp/S.maxHp<0.30;const fHP=isLow?hPct*(sk.lowHpMult||2):hPct;
+    const vG=new THREE.Group();const vPts=[];for(let i=0;i<20;i++){const t=i/20;const a=t*Math.PI*4;vPts.push(new THREE.Vector3(Math.cos(a)*0.8*(1-t*0.5),t*3,Math.sin(a)*0.8*(1-t*0.5)))}
+    vG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(vPts),20,0.06,4,false),new THREE.MeshBasicMaterial({color:0x44cc44,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false})));
+    vG.position.copy(hp);scene.add(vG);emitGpuBurst(hp,0x44cc44,10,2,2,0.3,{gravity:-0.5});
+    let wg=0;const wl=()=>{wg+=0.016;if(heroMesh)vG.position.copy(heroMesh.position);vG.rotation.y+=0.02;vG.children[0].material.opacity=0.6*Math.max(0,1-wg/hDur);
+    if(Math.floor(wg)>Math.floor(wg-0.016)){S.hp=Math.min(S.maxHp,S.hp+S.maxHp*fHP);if(heroMesh)emitGpuP(heroMesh.position,0x44ff44,{vx:0,vy:1.5,vz:0},2,0.3,{gravity:-0.5})}
+    if(wg>=hDur){scene.remove(vG);return}requestAnimationFrame(wl)};requestAnimationFrame(wl)}}
+
+  // 🐱 德鲁伊 —— 凶猛撕咬：三道爪痕
+  if(hasSkill('ferocious_bite')){const k='ferocious_bite';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,5);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);let dmg=calcSkillDmg(sk,l,effectiveAtk);dmg*=(1+(sk.catFormBonusPct||0.50));
+    const cG=new THREE.Group();for(let i=0;i<3;i++){const cs=new THREE.Mesh(new THREE.PlaneGeometry(0.1,2),new THREE.MeshBasicMaterial({color:0xff8844,transparent:true,opacity:0.9,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));cs.position.set((i-1)*0.35,1,0);cs.rotation.z=0.2-i*0.1;cG.add(cs)}
+    cG.position.copy(tg.mesh.position);cG.lookAt(hp);scene.add(cG);emitGpuBurst(tg.mesh.position,0xff6644,15,5,3,0.3,{gravity:6});addDynLight(tg.mesh.position,0xff6644,2,6,0.3);screenShake(0.08,0.12);
+    let fb=0;const ff=()=>{fb+=0.016;cG.children.forEach(c=>{if(c.material)c.material.opacity*=0.9;c.scale.y=1+fb*2});if(fb>=0.4){scene.remove(cG);return}requestAnimationFrame(ff)};requestAnimationFrame(ff);
+    dmgEnemy(tg,dmg,{isSkill:true,skillName:'凶猛撕咬'})}}}
+
+  // 🦠 术士 —— 腐蚀术：暗影DOT弹+击杀扩散（使用统一投射物系统，修复命中bug）
+  if(hasSkill('corruption')){const k='corruption';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,12);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);const dPct=sk.dotDmgPct||0.40;const dDur=sk.dotDur||6;
+    // 使用fireProjectile，命中后在主循环里检测AOE区域内的敌人施加DOT
+    const projG=new THREE.Group();
+    const core=new THREE.Mesh(new THREE.SphereGeometry(0.25,8,8),new THREE.MeshBasicMaterial({color:0x8822cc,transparent:true,opacity:.95}));projG.add(core);
+    const glowSpr=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0x6622aa,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));glowSpr.scale.setScalar(1.5);projG.add(glowSpr);
+    projG.position.set(hp.x,1,hp.z);scene.add(projG);
+    const d=new THREE.Vector3(tg.mesh.position.x-hp.x,0,tg.mesh.position.z-hp.z).normalize();
+    S.projectiles.push({mesh:projG,dir:d,speed:18,dmg,life:3,sz:0.25,color:0x8822cc,trailTimer:0,
+      trail:'fire',trailColor:0x6622aa,isSkill:true,skillName:'腐蚀术',
+      _corruptionDot:true,_dotPct:dPct,_dotDur:dDur,_dotTickRate:sk.dotTickRate||0.5
+    })}}}
+
+  // 🔥 术士 —— 火焰之雨：持续大范围火焰
+  if(hasSkill('rain_of_fire')){const k='rain_of_fire';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const r=(sk.radius||5)+(l-1)*(sk.radiusPerLv||0.4);const dur=sk.duration||3;const tR=sk.tickRate||0.3;
+    const rfP=nearest(hp,12)?nearest(hp,12).mesh.position.clone():hp.clone();
+    const rfG=new THREE.Group();const burnR=new THREE.Mesh(new THREE.RingGeometry(0.3,r,24),new THREE.MeshBasicMaterial({color:0xff2200,transparent:true,opacity:0.25,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));burnR.rotation.x=-Math.PI/2;burnR.position.y=0.12;rfG.add(burnR);
+    rfG.position.copy(rfP);scene.add(rfG);addDynLight(rfP,0xff4400,2,r,dur);
+    let rf=0,lTk2=0;const rfl=()=>{rf+=0.016;
+    if(Math.random()<0.4&&rf<dur){const fx=rfP.x+(Math.random()-0.5)*r*1.5;const fz=rfP.z+(Math.random()-0.5)*r*1.5;
+    emitGpuP({x:fx,y:6,z:fz},0xff4400+Math.floor(Math.random()*0x2200),{vx:0,vy:-10,vz:0},3+Math.random()*2,0.4,{gravity:3,shrink:true})}
+    burnR.material.opacity=0.25*Math.max(0,1-rf/dur)*(0.7+Math.sin(rf*6)*0.3);
+    if(rf<dur&&rf-lTk2>=tR){lTk2=rf;S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(rfP)<r){dmgEnemy(e,dmg,{isSkill:true,isFireDmg:true,skillName:'火焰之雨'});if(Math.random()<0.15)emitGpuBurst(e.mesh.position,0xff4400,4,3,2,0.2,{gravity:5})}})}
+    if(rf>=dur+0.5){scene.remove(rfG);return}requestAnimationFrame(rfl)};requestAnimationFrame(rfl)}}
+
+  // 🩸 术士 —— 黑暗契约：牺牲HP换攻击
+  if(hasSkill('dark_pact')){const k='dark_pact';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const hpCost=S.hp*(sk.hpCostPct||0.10);S.hp=Math.max(1,S.hp-hpCost);
+    const atkB=(sk.atkBoostPct||0.30)+(l-1)*(sk.atkBoostPerLv||0.05);const skDmgB=sk.skillDmgBoost||0.20;const bDur=sk.boostDur||20;
+    const atkGain=S.attack*atkB;S.attack+=atkGain;
+    S.passiveStacks.darkPactActive=bDur;S.passiveStacks.darkPactSkillDmg=skDmgB;
+    const dpG=new THREE.Group();dpG.add(new THREE.Mesh(new THREE.SphereGeometry(1.5,12,12),new THREE.MeshBasicMaterial({color:0x660066,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false})));
+    dpG.position.copy(hp);dpG.position.y=1;scene.add(dpG);emitGpuBurst(hp,0x880088,15,4,3,0.4,{gravity:2});addDynLight(hp,0x660066,2,6,0.5);screenFlash('#660066',0.1,80);
+    let dp=0;const dpa=()=>{dp+=0.016;if(heroMesh)dpG.position.copy(heroMesh.position).add({x:0,y:1,z:0});dpG.children[0].material.opacity=0.3*Math.max(0,1-dp/2);if(dp>=2){scene.remove(dpG);return}requestAnimationFrame(dpa)};requestAnimationFrame(dpa);
+    setTimeout(()=>{S.attack=Math.max(1,S.attack-atkGain);S.passiveStacks.darkPactActive=0},bDur*1000)}}
+
+  // ✨ 圣骑士 —— 奉献：圣光区域持续伤害+回血
+  if(hasSkill('consecration')){const k='consecration';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);const dmg=calcSkillDmg(sk,l,effectiveAtk);
+    const r=(sk.radius||4)+(l-1)*(sk.radiusPerLv||0.3);const dur=sk.duration||4;const tR=sk.tickRate||0.5;const cP=hp.clone();
+    const csG=new THREE.Group();
+    const holyGround=new THREE.Mesh(new THREE.CircleGeometry(r,24),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.2,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));holyGround.rotation.x=-Math.PI/2;holyGround.position.y=0.12;csG.add(holyGround);
+    const holyRing=new THREE.Mesh(new THREE.RingGeometry(r-0.15,r,32),new THREE.MeshBasicMaterial({color:0xffaa33,transparent:true,opacity:0.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));holyRing.rotation.x=-Math.PI/2;holyRing.position.y=0.13;csG.add(holyRing);
+    // 十字圣纹
+    const cx1=new THREE.Mesh(new THREE.PlaneGeometry(r*1.5,0.1),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.4,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));cx1.rotation.x=-Math.PI/2;cx1.position.y=0.14;csG.add(cx1);
+    const cx2=cx1.clone();cx2.rotation.z=Math.PI/2;csG.add(cx2);
+    csG.position.copy(cP);scene.add(csG);addDynLight(cP,0xffdd44,2,r*1.2,dur);
+    let cs=0,lTk3=0;const csl=()=>{cs+=0.016;
+    holyGround.material.opacity=0.2*Math.max(0,1-cs/dur)*(0.8+Math.sin(cs*3)*0.2);holyRing.material.opacity=0.5*Math.max(0,1-cs/dur);
+    cx1.material.opacity=0.4*Math.max(0,1-cs/dur);cx2.material.opacity=cx1.material.opacity;
+    if(Math.random()<0.1&&cs<dur)emitGpuP({x:cP.x+(Math.random()-0.5)*r,y:0.15,z:cP.z+(Math.random()-0.5)*r},0xffdd44,{vx:0,vy:1+Math.random(),vz:0},2,0.3,{gravity:-0.3});
+    if(cs<dur&&cs-lTk3>=tR){lTk3=cs;
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(cP)<r)dmgEnemy(e,dmg,{isSkill:true,skillName:'奉献'})});
+    if(heroMesh&&heroMesh.position.distanceTo(cP)<r)S.hp=Math.min(S.maxHp,S.hp+S.maxHp*(sk.healPct||0.005))}
+    if(cs>=dur+0.3){scene.remove(csG);return}requestAnimationFrame(csl)};requestAnimationFrame(csl)}}
+
+  // 🙌 圣骑士 —— 圣疗术：紧急全屏圣光爆发
+  if(hasSkill('lay_on_hands')){const k='lay_on_hands';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;
+  if(skillTimers[k]<=0&&S.hp/S.maxHp<0.35){
+    const l=sklLv(k);const sk=skData(k);resetCd(k,sk,l);
+    const hPct=(sk.healPct||0.50)+(l-1)*(sk.healPctPerLv||0.08);S.hp=Math.min(S.maxHp,S.hp+S.maxHp*hPct);
+    lightBeam(hp,0xffdd44,2.5,1.0);screenFlash('#ffffaa',0.2,200);emitGpuBurst(hp,0xffdd44,20,5,3,0.5,{gravity:-1});addDynLight(hp,0xffdd44,3,10,0.8);screenShake(0.05,0.1);
+    const el=document.createElement('div');el.className='kill-streak';el.textContent=`🙌 圣疗术！(+${Math.round(hPct*100)}%HP)`;document.getElementById('game-screen').appendChild(el);setTimeout(()=>el.remove(),1500)}}
+
+  // 🔨 圣骑士 —— 愤怒之锤：金色旋转锤弹+斩杀（使用统一投射物系统，修复命中bug）
+  if(hasSkill('hammer_of_wrath')){const k='hammer_of_wrath';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const l=sklLv(k);const sk=skData(k);const tg=nearest(hp,14);
+    if(tg&&tg.hp>0){resetCd(k,sk,l);let dmg=calcSkillDmg(sk,l,effectiveAtk);
+    if(tg.hp/tg.maxHp<(sk.executePct||0.35))dmg*=(sk.executeBonus||2);
+    fireProjectile(hp,tg.mesh.position,0xffdd44,dmg,0.35,sk.projSpeed||22,{
+      trail:'holy',trailColor:0xffaa33,isSkill:true,skillName:'愤怒之锤',
+      onHit:'explode',explodeR:2,explodeDmgPct:0
+    })}}}
+
   // === 合成技能 ===
   // 👊 泰坦之握 —— 火雷合体清屏
   if(S.comboSkills.includes('titangrip')){const k='titangrip';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
@@ -3903,6 +4341,136 @@ function processSkills(dt){
     screenShake(.1,.15);
     PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
     S.enemies.forEach(e=>{if(e.hp>0){dmgEnemy(e,dmg,{isSkill:true,skillName:'冰火两重天'});if(Math.random()<.5){e.frozen=2;iceShatter(e.mesh.position,1,3)}else{explosion(e.mesh.position,0xff4400,4);fireTrail(e.mesh.position,0xff2200)}}})}}
+
+  // ===========================================================================================
+  //  10个职业专属合成技能 — 终极融合技
+  // ===========================================================================================
+  // ⚔️ 战士 —— 剑刃风暴：巨型旋转刀刃清全屏
+  if(S.comboSkills.includes('bladestorm')){const k='bladestorm';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1.5);const r=combo.radius||12;const dur=combo.duration||5;
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const bsG=new THREE.Group();
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;const blade=new THREE.Mesh(new THREE.ConeGeometry(0.15,r*0.5,3),new THREE.MeshBasicMaterial({color:0xff4444,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));blade.position.set(Math.cos(a)*r*0.3,1,Math.sin(a)*r*0.3);blade.rotation.z=Math.PI/2;bsG.add(blade)}
+    const stormRing=new THREE.Mesh(new THREE.TorusGeometry(r*0.4,0.15,6,32),new THREE.MeshBasicMaterial({color:0xff6644,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));stormRing.rotation.x=Math.PI/2;stormRing.position.y=1;bsG.add(stormRing);
+    bsG.position.copy(hp);scene.add(bsG);screenFlash('#ff2200',0.2,120);screenShake(0.15,0.3);addDynLight(hp,0xff4444,3,r,dur);
+    let bs0=0,bsTk=0;const bsLoop=()=>{bs0+=0.016;if(heroMesh)bsG.position.copy(heroMesh.position);bsG.rotation.y+=0.2;
+    bsG.children.forEach(c=>{if(c.material)c.material.opacity=0.8*Math.max(0,1-bs0/dur)});
+    if(bs0<dur&&bs0-bsTk>=0.5){bsTk=bs0;S.enemies.forEach(e=>{if(e.hp>0&&heroMesh&&e.mesh.position.distanceTo(heroMesh.position)<r)dmgEnemy(e,dmg*0.15,{isSkill:true,skillName:'剑刃风暴'})});
+    if(Math.random()<0.3)emitGpuBurst(heroMesh?heroMesh.position:hp,0xff4444,8,5,3,0.3,{gravity:4})}
+    if(bs0>=dur){scene.remove(bsG);return}requestAnimationFrame(bsLoop)};requestAnimationFrame(bsLoop)}}
+
+  // 🔥 法师 —— 活体流星：超大火焰陨石
+  if(S.comboSkills.includes('living_meteor')){const k='living_meteor';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||2);const r=combo.radius||15;
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const meteorPos=hp.clone();
+    const mG=new THREE.Mesh(new THREE.DodecahedronGeometry(2,2),new THREE.MeshBasicMaterial({color:0xff4400}));
+    const mGl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff6600,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));mGl.scale.setScalar(8);mG.add(mGl);
+    mG.position.set(meteorPos.x,25,meteorPos.z);scene.add(mG);
+    let mt=0;const mFall=()=>{mt+=0.016;mG.position.y=25-mt*20;mG.rotation.x+=0.1;mG.rotation.z+=0.05;
+    if(Math.random()<0.6)emitGpuP(mG.position,0xff4400,{vx:(Math.random()-0.5)*3,vy:2,vz:(Math.random()-0.5)*3},5,0.4,{gravity:5,shrink:true});
+    if(mG.position.y<=0.5){explosion(meteorPos,0xff4400,40);emitGpuBurst(meteorPos,0xff6600,50,10,6,0.8,{gravity:8});addDynLight(meteorPos,0xff4400,4,r,0.8);screenShake(0.25,0.4);screenFlash('#ff4400',0.3,200);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(meteorPos)<r)dmgEnemy(e,dmg,{isSkill:true,isFireDmg:true,skillName:'活体流星'})});scene.remove(mG);return}
+    requestAnimationFrame(mFall)};requestAnimationFrame(mFall)}}
+
+  // 🏹 猎人 —— 荒野狂怒：召唤兽群
+  if(S.comboSkills.includes('wild_fury')){const k='wild_fury';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const bCnt=combo.beastCount||6;const bDur=combo.beastDur||10;
+    emitGpuBurst(hp,0x44cc44,25,5,4,0.5,{gravity:3});screenFlash('#44aa44',0.1,80);addDynLight(hp,0x44cc44,2,10,0.5);
+    for(let i=0;i<bCnt;i++){const bG=new THREE.Group();bG.add(new THREE.Mesh(new THREE.ConeGeometry(0.2,0.5,4),new THREE.MeshStandardMaterial({color:0x886633})));bG.children[0].rotation.x=-Math.PI/2;
+    bG.add(new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:0xff4400})));bG.children[1].position.set(0.08,0.05,0.2);
+    const ag=Math.random()*Math.PI*2;bG.position.set(hp.x+Math.cos(ag)*3,0.25,hp.z+Math.sin(ag)*3);scene.add(bG);
+    let bt=0;const bl2=()=>{bt+=0.016;const t=nearest(bG.position,10);if(t&&t.hp>0){const d=new THREE.Vector3().subVectors(t.mesh.position,bG.position).normalize();bG.position.x+=d.x*5*0.016;bG.position.z+=d.z*5*0.016;bG.lookAt(t.mesh.position);
+    const _dx=bG.position.x-t.mesh.position.x,_dz=bG.position.z-t.mesh.position.z;if(Math.sqrt(_dx*_dx+_dz*_dz)<1.2){dmgEnemy(t,dmg/bCnt,{noCrit:false,isSkill:true,skillName:'荒野狂怒'});emitGpuBurst(t.mesh.position,0x44cc44,3,2,2,0.15,{gravity:3});bt+=0.5}}
+    if(bt>=bDur){scene.remove(bG);return}requestAnimationFrame(bl2)};requestAnimationFrame(bl2)}}}
+
+  // 💜 牧师 —— 虚空爆发：引爆所有DOT
+  if(S.comboSkills.includes('void_eruption')){const k='void_eruption';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1.5);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    screenFlash('#9944ff',0.2,150);screenShake(0.15,0.25);emitGpuBurst(hp,0x9944ff,30,6,4,0.6,{gravity:3});addDynLight(hp,0x9944ff,3,12,0.6);
+    lightBeam(hp,0x9944ff,2,0.8);
+    S.enemies.forEach(e=>{if(e.hp>0){let eDmg=dmg;if(e.cursed)eDmg*=2;dmgEnemy(e,eDmg,{isSkill:true,skillName:'虚空爆发'});explosion(e.mesh.position,0x9944ff,8);emitGpuBurst(e.mesh.position,0x7722cc,8,4,3,0.3,{gravity:4})}})}}
+
+  // 🗡️ 盗贼 —— 死亡印记：标记+延迟爆炸
+  if(S.comboSkills.includes('death_mark')){const k='death_mark';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1.2);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const targets=nearestN(hp,8,5);emitGpuBurst(hp,0x44ff44,15,4,3,0.3,{gravity:3});
+    targets.forEach((t,i)=>{if(t.hp>0){
+    const markSpr=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff0000,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false}));markSpr.scale.setScalar(1.5);markSpr.position.copy(t.mesh.position);markSpr.position.y+=2;scene.add(markSpr);
+    S.particles.push({mesh:markSpr,life:combo.markDur||4,maxLife:combo.markDur||4,type:'aoe'});
+    setTimeout(()=>{if(t.hp>0){dmgEnemy(t,dmg*(combo.detonateMult||1.5),{isSkill:true,skillName:'死亡印记'});explosion(t.mesh.position,0xff2244,15);emitGpuBurst(t.mesh.position,0xff0000,12,5,3,0.4,{gravity:5})}},(combo.markDur||4)*1000)}})}}
+
+  // 🌊 萨满 —— 升腾：所有技能无CD
+  if(S.comboSkills.includes('ascendance')){const k='ascendance';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const noDur=combo.noCdDur||8;S.passiveStacks.ascendanceActive=noDur;
+    lightBeam(hp,0x44aaff,2.5,1);screenFlash('#44aaff',0.15,120);emitGpuBurst(hp,0x44ccff,25,6,4,0.5,{gravity:2});addDynLight(hp,0x44aaff,3,10,noDur);
+    // 所有技能CD归零持续noDur秒
+    const ascTimer=setInterval(()=>{Object.keys(skillTimers).forEach(sk=>{if(skillTimers[sk]>0.5)skillTimers[sk]=0.1})},200);
+    setTimeout(()=>{clearInterval(ascTimer);S.passiveStacks.ascendanceActive=0},noDur*1000)}}
+
+  // ☠️ 死骑 —— 天启：召唤天启骑士
+  if(S.comboSkills.includes('apocalypse')){const k='apocalypse';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||2);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const rCnt=combo.riderCount||4;const rDur=combo.riderDur||12;
+    screenFlash('#44ff44',0.15,100);emitGpuBurst(hp,0x44ff44,30,6,4,0.6,{gravity:3});addDynLight(hp,0x44ff44,3,12,0.5);
+    for(let i=0;i<rCnt;i++){const rG=new THREE.Group();rG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.25,1.2,6),new THREE.MeshStandardMaterial({color:0x333344})));rG.children[0].position.y=0.8;
+    rG.add(new THREE.Mesh(new THREE.SphereGeometry(0.15,6,6),new THREE.MeshStandardMaterial({color:0x444455})));rG.children[1].position.y=1.5;
+    rG.add(new THREE.Mesh(new THREE.SphereGeometry(0.05,4,4),new THREE.MeshBasicMaterial({color:0x44ff44})));rG.children[2].position.set(0.06,1.55,0.12);
+    const ag=i*Math.PI*2/rCnt;rG.position.set(hp.x+Math.cos(ag)*3,0,hp.z+Math.sin(ag)*3);scene.add(rG);
+    let rt=0,rAt=0.8;const rl2=()=>{rt+=0.016;rAt-=0.016;const t=nearest(rG.position,10);if(t&&t.hp>0){const d=new THREE.Vector3().subVectors(t.mesh.position,rG.position).normalize();rG.position.x+=d.x*4*0.016;rG.position.z+=d.z*4*0.016;
+    const _dx=rG.position.x-t.mesh.position.x,_dz=rG.position.z-t.mesh.position.z;if(rAt<=0&&Math.sqrt(_dx*_dx+_dz*_dz)<1.8){rAt=0.8;dmgEnemy(t,dmg/rCnt,{noCrit:false,isSkill:true,skillName:'天启'});emitGpuBurst(t.mesh.position,0x44ff44,5,3,2,0.2,{gravity:4})}}
+    if(rt<rDur-1){}else{rG.children.forEach(c=>{if(c.material){c.material.transparent=true;c.material.opacity=Math.max(0,(rDur-rt))}})}
+    if(rt>=rDur){scene.remove(rG);return}requestAnimationFrame(rl2)};requestAnimationFrame(rl2)}}}
+
+  // 🌿 德鲁伊 —— 化身：全形态强化
+  if(S.comboSkills.includes('incarnation')){const k='incarnation';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1.5);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const dur=combo.allFormDur||15;S.passiveStacks.incarnationActive=dur;
+    const atkBoost=S.attack*0.5;S.attack+=atkBoost;S.hp=Math.min(S.maxHp*1.3,S.hp+S.maxHp*0.3);S.maxHp*=1.3;
+    lightBeam(hp,0x44ff44,2,1);screenFlash('#44ff44',0.15,100);emitGpuBurst(hp,0x44cc44,20,5,3,0.5,{gravity:2});addDynLight(hp,0x44ff44,3,10,dur);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<10)dmgEnemy(e,dmg,{isSkill:true,skillName:'化身'})});
+    setTimeout(()=>{S.attack=Math.max(1,S.attack-atkBoost);S.maxHp/=1.3;S.hp=Math.min(S.maxHp,S.hp);S.passiveStacks.incarnationActive=0},dur*1000)}}
+
+  // 😈 术士 —— 召唤地狱火：巨型恶魔从天坠落
+  if(S.comboSkills.includes('summon_infernal')){const k='summon_infernal';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||2);
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    const iDur=combo.infernalDur||15;const iPos=hp.clone();
+    // 坠落特效
+    const infG=new THREE.Group();infG.add(new THREE.Mesh(new THREE.SphereGeometry(1.2,8,8),new THREE.MeshStandardMaterial({color:0x442200,roughness:0.6})));
+    infG.add(new THREE.Mesh(new THREE.SphereGeometry(0.08,4,4),new THREE.MeshBasicMaterial({color:0xff4400})));infG.children[1].position.set(0.3,0.8,1);
+    infG.add(new THREE.Mesh(new THREE.SphereGeometry(0.08,4,4),new THREE.MeshBasicMaterial({color:0xff4400})));infG.children[2].position.set(-0.3,0.8,1);
+    infG.position.set(iPos.x,20,iPos.z);scene.add(infG);
+    let it=0;const iFall=()=>{it+=0.016;infG.position.y=20-it*15;
+    if(Math.random()<0.5)emitGpuP(infG.position,0xff4400,{vx:(Math.random()-0.5)*3,vy:2,vz:(Math.random()-0.5)*3},4,0.3,{gravity:5,shrink:true});
+    if(infG.position.y<=1.2){infG.position.y=1.2;explosion(iPos,0xff4400,30);emitGpuBurst(iPos,0xff6600,35,8,5,0.7,{gravity:8});screenShake(0.2,0.3);addDynLight(iPos,0xff4400,3,12,0.6);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(iPos)<8)dmgEnemy(e,dmg*0.5,{isSkill:true,isFireDmg:true,skillName:'召唤地狱火'})});
+    // 地狱火战斗AI（2D碰撞+冷却计时器攻击）
+    let it2=0,iAt=0.8;const iLoop=()=>{it2+=0.016;iAt-=0.016;const t=nearest(infG.position,12);if(t&&t.hp>0){const d=new THREE.Vector3().subVectors(t.mesh.position,infG.position).normalize();infG.position.x+=d.x*3*0.016;infG.position.z+=d.z*3*0.016;
+    const _dx=infG.position.x-t.mesh.position.x,_dz=infG.position.z-t.mesh.position.z;if(iAt<=0&&Math.sqrt(_dx*_dx+_dz*_dz)<2.2){iAt=0.8;dmgEnemy(t,dmg/5,{noCrit:false,isSkill:true,isFireDmg:true,skillName:'地狱火'});emitGpuBurst(t.mesh.position,0xff4400,6,4,3,0.2,{gravity:5})}}
+    if(it2<iDur-2){}else{infG.children.forEach(c=>{if(c.material){c.material.transparent=true;c.material.opacity=Math.max(0,(iDur-it2)/2)}})}
+    if(it2>=iDur){scene.remove(infG);return}requestAnimationFrame(iLoop)};requestAnimationFrame(iLoop);return}
+    requestAnimationFrame(iFall)};requestAnimationFrame(iFall)}}
+
+  // ⚡ 圣骑士 —— 神圣风暴：圣光旋风+全体回血
+  if(S.comboSkills.includes('divine_storm')){const k='divine_storm';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
+    const combo=SKILL_COMBOS.find(c=>c.id===k);skillTimers[k]=combo.cd;const dmg=combo.baseDmg+effectiveAtk*(combo.atkRatio||1.5);const r=combo.radius||10;
+    PD.dailyProgress.comboTriggers=(PD.dailyProgress.comboTriggers||0)+1;
+    lightBeam(hp,0xffdd44,3,1.2);screenFlash('#ffdd44',0.2,150);emitGpuBurst(hp,0xffdd44,30,7,4,0.6,{gravity:3});addDynLight(hp,0xffdd44,4,r,0.8);screenShake(0.12,0.2);
+    // 旋转圣光扇
+    const dsG=new THREE.Group();for(let i=0;i<8;i++){const a=i*Math.PI/4;const fan=new THREE.Mesh(new THREE.PlaneGeometry(r*0.4,0.2),new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));fan.position.set(Math.cos(a)*r*0.3,1,Math.sin(a)*r*0.3);fan.rotation.y=a;dsG.add(fan)}
+    dsG.position.copy(hp);scene.add(dsG);
+    let ds=0;const dsAnim=()=>{ds+=0.016;dsG.rotation.y+=0.15;dsG.children.forEach(c=>{if(c.material)c.material.opacity=Math.max(0,0.7-ds)});if(ds>=0.8){scene.remove(dsG);return}requestAnimationFrame(dsAnim)};requestAnimationFrame(dsAnim);
+    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r)dmgEnemy(e,dmg,{isSkill:true,skillName:'神圣风暴'})});
+    S.hp=Math.min(S.maxHp,S.hp+S.maxHp*(combo.healPct||0.30))}}
 }
 
 // ==================== 基础攻击（10职业·数值驱动版） ====================
@@ -4138,6 +4706,39 @@ function createBuffCard(buff,panel){
   return c;
 }
 
+// ===== 技能选择即时反馈浮窗 =====
+function showSkillPickFeedback(sk,prevLv,newLv,prevDps,prevTotalDps){
+  const el=document.createElement('div');el.className='skill-pick-feedback';
+  const isNew=prevLv===0;
+  const newDmg=calcSkillDmg(sk,newLv,S.attack);
+  const newCd=calcSkillCd(sk,newLv);
+  const estDps=newCd>0?(newDmg/newCd):0;
+  // 用理论DPS对比（升级前理论 vs 升级后理论），避免历史DPS与理论DPS不可比导致"DPS下降"的错误显示
+  let dpsChange='';
+  if(!isNew){
+    const prevDmgTheory=calcSkillDmg(sk,prevLv,S.attack);
+    const prevCdTheory=calcSkillCd(sk,prevLv);
+    const prevDpsTheory=prevCdTheory>0?(prevDmgTheory/prevCdTheory):0;
+    const diff=estDps-prevDpsTheory;
+    if(diff>0)dpsChange=`<span class="spf-up">▲ +${diff>=100?(diff/1000).toFixed(1)+'k':Math.round(diff)} DPS</span>`;
+    else if(diff===0)dpsChange='';
+    // 理论DPS升级后不应该下降，但以防万一仍保留下降显示（极端情况）
+    else if(diff<0)dpsChange=`<span class="spf-down">▼ ${Math.round(diff)} DPS</span>`;
+  }
+  const estDpsStr=estDps>=1000?(estDps/1000).toFixed(1)+'k':Math.round(estDps);
+  const cdStr=newCd.toFixed(1)+'s';
+  const dmgStr=newDmg>=1000?(newDmg/1000).toFixed(1)+'k':Math.round(newDmg);
+  el.innerHTML=`<div class="spf-header">${sk.icon} <b>${sk.name}</b> ${isNew?'<span class="spf-new">新技能!</span>':`Lv.${prevLv}→${newLv}`}</div>
+    <div class="spf-stats">
+      <div class="spf-item"><span class="spf-label">单次伤害</span><span class="spf-val">${dmgStr}</span></div>
+      <div class="spf-item"><span class="spf-label">冷却</span><span class="spf-val">${cdStr}</span></div>
+      <div class="spf-item"><span class="spf-label">预估DPS</span><span class="spf-val spf-dps">${estDpsStr}</span></div>
+    </div>
+    ${dpsChange?`<div class="spf-change">${dpsChange}</div>`:''}`;
+  document.getElementById('game-screen').appendChild(el);
+  setTimeout(()=>{el.classList.add('fade-out');setTimeout(()=>el.remove(),500)},2500);
+}
+
 // ===== 创建技能选项卡DOM（抽取公共逻辑） =====
 function createSkillCard(sk,panel,tb){
   const ex=S.skills.find(s=>s.id===sk.id);const curLv=ex?ex.level:0;const newLv=curLv+1;
@@ -4148,8 +4749,14 @@ function createSkillCard(sk,panel,tb){
   const maxLvHint=newLv>=sk.maxLevel?`<div class="skill-max-hint">🌟 即将满级</div>`:'';
   c.innerHTML=`<div class="skill-choice-icon">${sk.icon}</div><div class="skill-choice-name">${sk.name} ${lvLabel}</div><div class="skill-choice-rarity">${RARITY_NAME[sk.rarity]}</div><div class="skill-choice-desc">${sk.desc}</div>${statsHtml}${maxLvHint}`;
   c.onclick=()=>{
+    // 记录选择前数据用于反馈对比
+    const prevDmg=dmgStats.skillDmg[sk.name]||0;
+    const prevDps=gameTime>0?(prevDmg/gameTime):0;
+    const prevTotalDps=gameTime>0?(dmgStats.total/gameTime):0;
     if(ex)ex.level++;else S.skills.push({...sk,level:1});
     if(SFX.skillPick)SFX.skillPick();
+    // === 技能选择即时反馈 ===
+    showSkillPickFeedback(sk,curLv,newLv,prevDps,prevTotalDps);
     if(tb.doubleSkill>0&&Math.random()<tb.doubleSkill){
       updateSkillBar();checkCombos();
       const bonusEl=document.createElement('div');bonusEl.className='kill-streak';bonusEl.textContent='🌟 欧皇触发！额外选择一个技能！';
@@ -4202,19 +4809,22 @@ function getRandSkills(n){
   const w={common:10,rare:5,epic:3,legendary:Math.max(1,1+Math.round(legendBonus*10)),signature:0};
   // 英雄偏好技能列表
   const heroCfg=ALL_HEROES[PD.selectedHero]||{};
+  const heroId=PD.selectedHero;
   const favorSet=new Set(heroCfg.favorSkills||[]);
   const pool=[];
   SKILL_DB.forEach(s=>{
     // ===== 标志技能不在随机池中出现（开局自动获得） =====
     if(s.rarity==='signature')return;
-    // ===== 其他英雄的标志技能也排除 =====
-    if(s.heroOnly)return;
+    // ===== 职业专属技能：只对对应英雄开放 =====
+    if(s.heroOnly&&s.heroOnly!==heroId)return;
     // 检查前置条件
     if(s.prereq){const pre=S.skills.find(sk=>sk.id===s.prereq.id);if(!pre||pre.level<s.prereq.lv)return}
     // 检查是否已满级
     const existing=S.skills.find(sk=>sk.id===s.id);
     if(existing&&existing.level>=s.maxLevel)return;
     let wt=w[s.rarity]||5;
+    // ===== 职业专属技能权重加倍 =====
+    if(s.heroOnly===heroId)wt*=2;
     // ===== 英雄偏好: 偏好技能权重×3 =====
     if(favorSet.has(s.id))wt*=3;
     // 已拥有的技能提升权重（鼓励升级）
@@ -4276,8 +4886,77 @@ function updateBuffBar(){
     bar.appendChild(slot);
   });
 }
-function updateSkillBar(){const bar=document.getElementById('hud-skills');bar.innerHTML='';S.skills.forEach(s=>{const sl=document.createElement('div');sl.className='skill-slot active';sl.innerHTML=`<span>${s.icon}</span><span class="skill-level">Lv${s.level}</span>`;bar.appendChild(sl)});
-  S.comboSkills.forEach(cid=>{const c=SKILL_COMBOS.find(x=>x.id===cid);if(c){const sl=document.createElement('div');sl.className='skill-slot active';sl.style.borderColor='#ff8c00';sl.innerHTML=`<span>${c.icon}</span><span class="skill-level" style="background:#ff8c00">合</span>`;bar.appendChild(sl)}})}
+function updateSkillBar(){const bar=document.getElementById('hud-skills');bar.innerHTML='';
+  // 按DPS贡献排序技能（降序）
+  const skillsWithDps=S.skills.map(s=>{
+    const dmg=dmgStats.skillDmg[s.name]||0;
+    const dps=gameTime>0?(dmg/gameTime):0;
+    return{skill:s,totalDmg:dmg,dps:dps};
+  });
+  skillsWithDps.sort((a,b)=>b.dps-a.dps);
+  const maxSkillDps=skillsWithDps.length>0?skillsWithDps[0].dps:0;
+  skillsWithDps.forEach((item,idx)=>{
+    const s=item.skill;
+    const sl=document.createElement('div');sl.className='skill-slot active';
+    // CD信息
+    const cdLeft=skillTimers[s.id]||0;
+    const skData=SKILL_DB.find(x=>x.id===s.id);
+    const totalCd=skData?calcSkillCd(skData,s.level):1;
+    const cdPct=Math.max(0,Math.min(1,cdLeft/totalCd));
+    // DPS排名标记
+    const rankColors=['#c9a44a','#c0c0c0','#cd7f32'];
+    const rankBadge=idx<3&&item.dps>0?`<span class="skill-rank" style="background:${rankColors[idx]}">${idx+1}</span>`:'';
+    // DPS贡献百分比
+    const totalAllDps=gameTime>0?(dmgStats.total/gameTime):0;
+    const dpsPct=totalAllDps>0?Math.round(item.dps/totalAllDps*100):0;
+    sl.innerHTML=`<span class="skill-icon-wrap">${s.icon}</span><span class="skill-level">Lv${s.level}</span>${rankBadge}<div class="skill-cd-overlay" style="height:${cdPct*100}%"></div>${cdPct>0?`<span class="skill-cd-text">${cdLeft.toFixed(1)}s</span>`:''}`;
+    // Tooltip详情
+    const dpsStr=item.dps>=1000?(item.dps/1000).toFixed(1)+'k':Math.round(item.dps);
+    const dmgStr=item.totalDmg>=1000?(item.totalDmg/1000).toFixed(1)+'k':Math.round(item.totalDmg);
+    const cdStr=totalCd.toFixed(1)+'s';
+    sl.title=`${s.name} Lv.${s.level}\nDPS: ${dpsStr} (${dpsPct}%)\n总伤: ${dmgStr}\nCD: ${cdStr}${cdLeft>0?' (冷却中:'+cdLeft.toFixed(1)+'s)':''}`;
+    bar.appendChild(sl);
+  });
+  S.comboSkills.forEach(cid=>{const c=SKILL_COMBOS.find(x=>x.id===cid);if(c){
+    const sl=document.createElement('div');sl.className='skill-slot active';sl.style.borderColor='#ff8c00';
+    const cdLeft=skillTimers[c.id]||0;const totalCd=c.cd||10;const cdPct=Math.max(0,Math.min(1,cdLeft/totalCd));
+    const comboDmg=dmgStats.skillDmg[c.name]||0;const comboDps=gameTime>0?(comboDmg/gameTime):0;
+    const dpsStr=comboDps>=1000?(comboDps/1000).toFixed(1)+'k':Math.round(comboDps);
+    sl.innerHTML=`<span class="skill-icon-wrap">${c.icon}</span><span class="skill-level" style="background:#ff8c00">合</span><div class="skill-cd-overlay combo-cd" style="height:${cdPct*100}%"></div>${cdPct>0?`<span class="skill-cd-text">${cdLeft.toFixed(1)}s</span>`:''}`;
+    sl.title=`${c.name} [合成]\nDPS: ${dpsStr}\nCD: ${totalCd}s${cdLeft>0?' (冷却中:'+cdLeft.toFixed(1)+'s)':''}`;
+    bar.appendChild(sl)}})}
+// 实时技能栏刷新（每帧更新CD遮罩，不重建DOM）
+function updateSkillBarCD(){
+  const bar=document.getElementById('hud-skills');if(!bar)return;
+  const slots=bar.querySelectorAll('.skill-slot');
+  let idx=0;
+  const skillsWithDps=S.skills.map(s=>{const dmg=dmgStats.skillDmg[s.name]||0;return{skill:s,dps:gameTime>0?(dmg/gameTime):0};});
+  skillsWithDps.sort((a,b)=>b.dps-a.dps);
+  skillsWithDps.forEach(item=>{
+    const s=item.skill;
+    if(idx>=slots.length)return;
+    const sl=slots[idx];idx++;
+    const cdLeft=skillTimers[s.id]||0;
+    const skd=SKILL_DB.find(x=>x.id===s.id);
+    const totalCd=skd?calcSkillCd(skd,s.level):1;
+    const cdPct=Math.max(0,Math.min(1,cdLeft/totalCd));
+    const overlay=sl.querySelector('.skill-cd-overlay');if(overlay)overlay.style.height=cdPct*100+'%';
+    const cdTxt=sl.querySelector('.skill-cd-text');
+    if(cdPct>0){if(cdTxt)cdTxt.textContent=cdLeft.toFixed(1)+'s';else{const sp=document.createElement('span');sp.className='skill-cd-text';sp.textContent=cdLeft.toFixed(1)+'s';sl.appendChild(sp)}}
+    else{if(cdTxt)cdTxt.remove()}
+  });
+  // 合成技CD
+  S.comboSkills.forEach(cid=>{
+    if(idx>=slots.length)return;
+    const sl=slots[idx];idx++;
+    const c=SKILL_COMBOS.find(x=>x.id===cid);if(!c)return;
+    const cdLeft=skillTimers[c.id]||0;const totalCd=c.cd||10;const cdPct=Math.max(0,Math.min(1,cdLeft/totalCd));
+    const overlay=sl.querySelector('.skill-cd-overlay');if(overlay)overlay.style.height=cdPct*100+'%';
+    const cdTxt=sl.querySelector('.skill-cd-text');
+    if(cdPct>0){if(cdTxt)cdTxt.textContent=cdLeft.toFixed(1)+'s';else{const sp=document.createElement('span');sp.className='skill-cd-text';sp.textContent=cdLeft.toFixed(1)+'s';sl.appendChild(sp)}}
+    else{if(cdTxt)cdTxt.remove()}
+  });
+}
 
 // ==================== BOSS阶段系统 ====================
 function checkBossPhase(boss){
@@ -4527,6 +5206,45 @@ function updateHUD(){
     const ard=document.getElementById('hcs-armor-d');if(ard){const d=Math.round(S.armor-S.initialArmor);ard.textContent=d>0?'+'+d:'';ard.className='hcs-delta'+(d<0?' negative':'')}
     const sd=document.getElementById('hcs-spd-d');if(sd){const d=S.speed-S.initialSpd;sd.textContent=d>0.01?'+'+d.toFixed(1):'';sd.className='hcs-delta'+(d<0?' negative':'')}
   }
+  // === 实时DPS迷你面板 ===
+  updateMiniDps();
+  // === 技能栏CD刷新 + 每3秒全量重建(更新DPS排序) ===
+  if(!window._lastSkillBarRebuild)window._lastSkillBarRebuild=0;
+  if(gameTime-window._lastSkillBarRebuild>=3){window._lastSkillBarRebuild=gameTime;updateSkillBar()}
+  else{updateSkillBarCD()}
+}
+// ==================== 实时DPS迷你面板 ====================
+let _dpsPanel=null,_dpsPanelOpen=true;
+function updateMiniDps(){
+  if(!_dpsPanel){
+    _dpsPanel=document.createElement('div');_dpsPanel.id='hud-mini-dps';_dpsPanel.className='hud-mini-dps';
+    _dpsPanel.innerHTML=`<div class="mdps-header" id="mdps-toggle"><span class="mdps-title">📊 DPS</span><span class="mdps-total" id="mdps-total">0</span><span class="mdps-arrow" id="mdps-arrow">▼</span></div><div class="mdps-body" id="mdps-body"></div>`;
+    const hudEl=document.getElementById('game-hud');if(hudEl)hudEl.appendChild(_dpsPanel);
+    document.getElementById('mdps-toggle').onclick=function(){_dpsPanelOpen=!_dpsPanelOpen;
+      document.getElementById('mdps-body').style.display=_dpsPanelOpen?'block':'none';
+      document.getElementById('mdps-arrow').textContent=_dpsPanelOpen?'▼':'▶';
+    };
+  }
+  const totalDps=gameTime>0?(dmgStats.total/gameTime):0;
+  const el=document.getElementById('mdps-total');
+  if(el)el.textContent=totalDps>=1000?(totalDps/1000).toFixed(1)+'k':Math.round(totalDps);
+  const body=document.getElementById('mdps-body');if(!body||!_dpsPanelOpen)return;
+  // 构建排序的技能DPS列表
+  const entries=[];
+  if(dmgStats.basicAtkDmg>0){entries.push({name:'普攻',icon:'⚔️',dps:gameTime>0?dmgStats.basicAtkDmg/gameTime:0})}
+  S.skills.forEach(s=>{const d=dmgStats.skillDmg[s.name]||0;if(d>0)entries.push({name:s.name,icon:s.icon,dps:gameTime>0?d/gameTime:0})});
+  S.comboSkills.forEach(cid=>{const c=SKILL_COMBOS.find(x=>x.id===cid);if(c){const d=dmgStats.skillDmg[c.name]||0;if(d>0)entries.push({name:c.name,icon:c.icon,dps:gameTime>0?d/gameTime:0})}});
+  entries.sort((a,b)=>b.dps-a.dps);
+  const maxDps=entries.length>0?entries[0].dps:1;
+  let html='';
+  entries.slice(0,5).forEach((e,i)=>{
+    const pct=Math.max(3,e.dps/maxDps*100);
+    const colors=['#ff8c00','#c9a44a','#44ddff','#44ff88','#a335ee'];
+    const dpsTxt=e.dps>=1000?(e.dps/1000).toFixed(1)+'k':Math.round(e.dps);
+    const contribution=totalDps>0?Math.round(e.dps/totalDps*100):0;
+    html+=`<div class="mdps-row"><span class="mdps-icon">${e.icon}</span><div class="mdps-bar-wrap"><div class="mdps-bar" style="width:${pct}%;background:${colors[i%5]}"></div></div><span class="mdps-val">${dpsTxt}<small class="mdps-pct">${contribution}%</small></span></div>`;
+  });
+  body.innerHTML=html;
 }
 
 // ==================== 结算 ====================
@@ -4708,18 +5426,41 @@ window.togglePause=function(){if(!gameActive)return;gamePaused=!gamePaused;
       if(S.growthLog){
         const g=S.growthLog;const hasGrowth=(g.levelAtk+g.eventAtk+g.lootAtk+g.levelHp+g.eventHp+g.lootHp)>0;
         if(hasGrowth){
-          html+=`<div class="pause-section"><div class="pause-section-title">📈 本局成长来源</div><div style="font-size:11px;color:#aaa;line-height:1.6">`;
+          html+=`<div class="pause-section"><div class="pause-section-title">📈 本局成长来源</div><div style="font-size:11px;color:#b8a88c;line-height:1.6">`;
           if(g.levelAtk>0||g.levelHp>0)html+=`<div>📊 升级(Lv.${S.level})：${g.levelAtk>0?'⚔+'+g.levelAtk.toFixed(1)+' ':''}${g.levelHp>0?'❤+'+g.levelHp+' ':''}${g.levelCrit>0?'💥+'+(g.levelCrit*100).toFixed(0)+'%':''}</div>`;
           if(g.eventAtk>0||g.eventHp>0||g.eventSpd>0||g.eventCrit>0||g.eventArmor>0)html+=`<div>🏛️ 事件/神龛：${g.eventAtk>0?'⚔+'+g.eventAtk+' ':''}${g.eventHp>0?'❤+'+g.eventHp+' ':''}${g.eventSpd>0?'👟+'+g.eventSpd.toFixed(1)+' ':''}${g.eventCrit>0?'💥+'+(g.eventCrit*100).toFixed(0)+'% ':''}${g.eventArmor>0?'🛡+'+g.eventArmor:''}</div>`;
           if(g.lootAtk>0||g.lootHp>0||g.lootSpd>0||g.lootCrit>0||g.lootArmor>0)html+=`<div>📦 战利品：${g.lootAtk>0?'⚔+'+g.lootAtk+' ':''}${g.lootHp>0?'❤+'+g.lootHp+' ':''}${g.lootSpd>0?'👟+'+g.lootSpd.toFixed(1)+' ':''}${g.lootCrit>0?'💥+'+(g.lootCrit*100).toFixed(0)+'% ':''}${g.lootArmor>0?'🛡+'+g.lootArmor:''}</div>`;
           html+=`</div></div>`;
         }
       }
-      // --- 技能列表 ---
+      // --- 技能列表(按DPS排序) ---
       if(S.skills&&S.skills.length>0){
-        html+=`<div class="pause-section"><div class="pause-section-title">🔮 当前技能 (${S.skills.length})</div><div class="pause-skill-list">`;
-        S.skills.forEach(sk=>{
-          html+=`<div class="pause-skill-item"><span class="psi-icon">${sk.icon}</span><span class="psi-name">${sk.name}</span><span class="psi-lv">Lv.${sk.level||1}</span></div>`;
+        const totalDps=gameTime>0?(dmgStats.total/gameTime):0;
+        // 按DPS降序排序
+        const sorted=S.skills.map(sk=>{
+          const d=dmgStats.skillDmg[sk.name]||0;const dps=gameTime>0?d/gameTime:0;
+          const skd=SKILL_DB.find(x=>x.id===sk.id);
+          const cd=skd?calcSkillCd(skd,sk.level):0;
+          const dmgPer=skd?calcSkillDmg(skd,sk.level,S.attack):0;
+          return{sk,dps,totalDmg:d,cd,dmgPer};
+        }).sort((a,b)=>b.dps-a.dps);
+        html+=`<div class="pause-section"><div class="pause-section-title">🔮 当前技能 (${S.skills.length}) — 按DPS排序</div><div class="pause-skill-list-enhanced">`;
+        sorted.forEach((item,idx)=>{
+          const sk=item.sk;const dps=item.dps;const pct=totalDps>0?Math.round(dps/totalDps*100):0;
+          const dpsStr=dps>=1000?(dps/1000).toFixed(1)+'k':Math.round(dps);
+          const dmgStr=item.totalDmg>=1000?(item.totalDmg/1000).toFixed(1)+'k':Math.round(item.totalDmg);
+          const cdLeft=skillTimers[sk.id]||0;
+          const rankIcon=idx===0&&dps>0?'🥇':idx===1&&dps>0?'🥈':idx===2&&dps>0?'🥉':'';
+          const cdStatus=cdLeft>0?`<span class="psi-cd-active">⏱${cdLeft.toFixed(1)}s</span>`:`<span class="psi-cd-ready">✓ 就绪</span>`;
+          html+=`<div class="pause-skill-item-enhanced">
+            <span class="psi-rank">${rankIcon}</span>
+            <span class="psi-icon">${sk.icon}</span>
+            <div class="psi-info">
+              <div class="psi-top"><span class="psi-name">${sk.name}</span><span class="psi-lv">Lv.${sk.level||1}</span>${cdStatus}</div>
+              <div class="psi-bottom"><span class="psi-dps">DPS:${dpsStr}</span><span class="psi-pct">${pct}%</span><span class="psi-total">总伤:${dmgStr}</span><span class="psi-cdval">CD:${item.cd.toFixed(1)}s</span></div>
+              ${dps>0?`<div class="psi-bar-wrap"><div class="psi-bar" style="width:${Math.max(3,pct)}%"></div></div>`:''}
+            </div>
+          </div>`;
         });
         html+=`</div></div>`;
       }
@@ -4759,6 +5500,8 @@ window.backToMenu=function(){
   // 清理场景
   cleanupBattle();
   SYS.refreshMainMenu(PD);
+  // 刷新心流引导系统（解锁新按钮、更新任务、更新下一步提示）
+  refreshFlowSystems();
 };
 
 function cleanupBattle(){
@@ -4807,12 +5550,27 @@ window.startChapterBattle=function(){
   const starMult=HERO_STAR.STAT_MULT[hd.star||0];
   // 3. 天赋加成
   const talentBonus=SYS.calcTalentBonus(PD);
-  // 4. 装备基础属性
+  // 4. 装备基础属性（支持6槽位 + 职业限定 + 套装效果）
   let eqAtk=0,eqHp=0,eqSpd=0,eqCrit=0,eqArmor=0;
   const eqEffects={};
+  const eqSetPieces={};// 统计套装件数
   if(PD.equipment){Object.values(PD.equipment).forEach(eq=>{if(eq){const e=EQUIPMENT_DB.find(x=>x.id===eq);if(e){
     eqAtk+=e.atk;eqHp+=e.hp;eqSpd+=e.spd;eqCrit+=(e.critRate||0);eqArmor+=(e.armor||0);
-    if(e.effect)eqEffects[e.effect]=true}}})}
+    if(e.effect)eqEffects[e.effect]=true;
+    if(e.setId){eqSetPieces[e.setId]=(eqSetPieces[e.setId]||0)+1}
+  }}})}
+  // 套装效果
+  const activeSetBonuses={};
+  if(typeof SET_BONUSES!=='undefined'){Object.entries(eqSetPieces).forEach(([setId,count])=>{
+    const sb=SET_BONUSES[setId];
+    if(sb&&sb.bonus2&&count>=2){activeSetBonuses[setId]=sb.bonus2;
+      // 套装属性加成
+      if(sb.bonus2.atkPct)eqAtk+=Math.round(cfg.atk*sb.bonus2.atkPct);
+      if(sb.bonus2.skillDmgPct)eqEffects['set_skillDmg_'+setId]=sb.bonus2.skillDmgPct;
+      if(sb.bonus2.dotDmgPct)eqEffects['set_dotDmg_'+setId]=sb.bonus2.dotDmgPct;
+      if(sb.bonus2.critDmgBonus)eqCrit+=0; // 暴击伤害在战斗中读取
+    }
+  })}
   // 5. 装备强化加成
   const enhBonus=SYS.calcEquipEnhanceBonus(PD);
   // 6. 公会BUFF加成
@@ -4862,6 +5620,7 @@ window.startChapterBattle=function(){
     },
     // 装备特效
     equipEffects:eqEffects,
+    activeSetBonuses:activeSetBonuses, // 套装效果
     atkHitCount:0,
     // DOT列表
     dots:[],
@@ -4966,6 +5725,7 @@ window.openPanel=function(id){
     else if(id==='achievements')SYS.renderAchievements(PD);else if(id==='daily-quest')SYS.renderDailyQuests(PD);
     else if(id==='lucky-draw')SYS.renderLuckyDraw(PD);else if(id==='chest-open')SYS.renderChests(PD);
     else if(id==='talent')SYS.renderTalent(PD);else if(id==='enhance')SYS.renderEnhance(PD);
+    else if(id==='codex'){SYS.renderEquipCodex(PD);SYS.renderBuildRecommends(PD)}
   }catch(e){console.error('Panel render error:',id,e)}
 };
 window.closePanel=function(id){const el=document.getElementById(id);if(el)el.classList.remove('active')};
@@ -4990,8 +5750,32 @@ window._claimAchieve=function(id){SYS.claimAchievement(PD,id)};
 window._claimQuest=function(idx){SYS.claimQuest(PD,idx)};
 // 新增养成系统事件
 window._heroUpStar=function(){SYS.heroUpStar(PD)};
-window._chooseTalent=function(tree,tier,id,cost){SYS.chooseTalent(PD,tree,tier,id,cost)};
+window._chooseTalent=function(heroId,tree,tier,id,cost){SYS.chooseTalent(PD,heroId,tree,tier,id,cost)};
 window._enhanceEquip=function(eqId){SYS.enhanceEquip(PD,eqId)};
+// 装备图鉴+Build推荐 事件绑定
+window._codexSwitchTab=function(el,tab){
+  document.querySelectorAll('.codex-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const equipContent=document.getElementById('codex-equip-content');
+  const buildContent=document.getElementById('codex-build-content');
+  if(equipContent)equipContent.style.display=tab==='equip'?'':'none';
+  if(buildContent){buildContent.style.display=tab==='build'?'':'none';if(tab==='build')SYS.renderBuildRecommends(PD)}
+};
+window._codexSetFilter=function(key,val){
+  if(key==='ownedOnly')window._codexFilter_ownedOnly=!!val;
+  if(!window._codexFilterState)window._codexFilterState={slot:'all',rarity:'all',ownedOnly:false};
+  window._codexFilterState[key]=val;
+  // 更新 systems.js 中的内部过滤器状态
+  if(typeof SYS._setCodexFilter==='function')SYS._setCodexFilter(key,val);
+  SYS.renderEquipCodex(PD);
+};
+window._codexShowDetail=function(eqId){SYS.codexShowDetail(PD,eqId)};
+window._buildSelectHero=function(heroId){
+  SYS.renderBuildRecommends(PD,heroId);
+  document.querySelectorAll('.build-hero-btn').forEach(b=>b.classList.remove('active'));
+  const activeBtn=document.querySelector(`.build-hero-btn[onclick*="'${heroId}'"]`);
+  if(activeBtn)activeBtn.classList.add('active');
+};
 
 // ==================== 主循环 ====================
 setLoadProgress(80,'初始化游戏系统...');
@@ -5033,6 +5817,8 @@ function loop(){
   processPassives(dt);
   // 敌人
   for(let i=S.enemies.length-1;i>=0;i--){const e=S.enemies[i];
+    // NaN防护：修复hp变成NaN的怪物
+    if(e.hp!==e.hp){e.hp=0;killEnemy(e);continue}
     if(e.hp<=0)continue;
     // --- 燃烧DOT处理 ---
     if(e.burning>0){
@@ -5067,6 +5853,20 @@ function loop(){
       if(S.passiveStacks.divineShield>0){
         if(S.passiveStacks.divineShield>=dmgTaken){S.passiveStacks.divineShield-=dmgTaken;dmgTaken=0}
         else{dmgTaken-=S.passiveStacks.divineShield;S.passiveStacks.divineShield=0}
+      }
+      // ===== 盾墙减伤 =====
+      if(S.passiveStacks.shieldWallActive>0){dmgTaken*=(1-(S.passiveStacks.shieldWallReduction||0.50));S.passiveStacks.shieldWallActive-=dt}
+      // ===== 寒冰屏障吸收 =====
+      if(S.passiveStacks.iceBarrier>0){
+        if(S.passiveStacks.iceBarrier>=dmgTaken){S.passiveStacks.iceBarrier-=dmgTaken;dmgTaken=0}
+        else{dmgTaken-=S.passiveStacks.iceBarrier;S.passiveStacks.iceBarrier=0}
+      }
+      // ===== 暗影形态减伤 =====
+      if(S.passiveStacks.shadowFormActive&&S.passiveStacks.shadowFormDmgRed>0){dmgTaken*=(1-S.passiveStacks.shadowFormDmgRed)}
+      // ===== 反魔法护罩吸收 =====
+      if(S.passiveStacks.amsAbsorb>0){
+        const absAmt=Math.min(S.passiveStacks.amsAbsorb,dmgTaken);
+        S.passiveStacks.amsAbsorb-=absAmt;S.passiveStacks.amsTotalAbsorbed=(S.passiveStacks.amsTotalAbsorbed||0)+absAmt;dmgTaken-=absAmt;
       }
       // ===== 天赋触发护盾（受伤>10%HP时触发, CD30s） =====
       if(tb.shield>0&&dmgTaken>S.maxHp*0.10&&!S.passiveStacks._shieldCD){
@@ -5193,6 +5993,10 @@ function loop(){
     let hit=false;for(const e of S.enemies){if(e.hp<=0)continue;const dx=e.mesh.position.x-p.mesh.position.x,dz=e.mesh.position.z-p.mesh.position.z;if(Math.sqrt(dx*dx+dz*dz)<(e.isBoss?2.5:1.2)){
       const projOpts={};if(p.isSkill)projOpts.isSkill=true;if(p.skillName)projOpts.skillName=p.skillName;if(p.isFireDmg)projOpts.isFireDmg=true;if(p.isDot)projOpts.isDot=true;if(p.bonusCrit)projOpts.bonusCrit=p.bonusCrit;if(p.bonusCritDmg)projOpts.bonusCritDmg=p.bonusCritDmg;
       if(p.dmg>0)dmgEnemy(e,p.dmg,projOpts);
+      // 腐蚀术DOT：命中后给范围内敌人施加持续伤害
+      if(p._corruptionDot){const ep2=p.mesh.position.clone();const dotDmg=p.dmg*p._dotPct;const tks=Math.floor(p._dotDur/p._dotTickRate);
+        S.enemies.forEach(e3=>{if(e3.hp>0){const dx3=e3.mesh.position.x-ep2.x,dz3=e3.mesh.position.z-ep2.z;if(Math.sqrt(dx3*dx3+dz3*dz3)<2){
+          e3.cursed=true;for(let ti=0;ti<tks;ti++)setTimeout(()=>{if(e3.hp>0){dmgEnemy(e3,dotDmg/tks,{noCrit:true,isDot:true,isSkill:true,skillName:'腐蚀术(DOT)'});emitGpuP(e3.mesh.position,0x8822cc,{vx:0,vy:1,vz:0},2,0.2,{gravity:0})}},ti*p._dotTickRate*1000)}}})}
       const expN=Math.max(3,Math.round((p.sz||.15)*30));
       explosion(p.mesh.position,p.color||0xff8800,expN);
       if(p.onHit==='explode'&&p.explodeR){const ep=p.mesh.position.clone();aoeEffect(ep,p.explodeR,0xff4400,.4);screenShake(.1,.12);S.enemies.forEach(e2=>{if(e2!==e&&e2.hp>0&&e2.mesh.position.distanceTo(ep)<p.explodeR)dmgEnemy(e2,p.dmg*.4,projOpts)})}
@@ -5477,35 +6281,48 @@ try{
   if(_pCon){for(let i=0;i<15;i++){const p=document.createElement('div');p.className='mm-particle';
     p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=(-Math.random()*15)+'s';
     p.style.width=p.style.height=(2+Math.random()*3)+'px';p.style.opacity=.1+Math.random()*.3;_pCon.appendChild(p)}}
+  // === 心流引导系统初始化 ===
+  SYS.applyProgressiveUnlock(PD);
+  SYS.refreshQuestBar(PD);
+  SYS.refreshNextStep(PD);
 }catch(e){
   console.error('Main menu init error:',e);
 }
 
-// ==================== 新手引导系统 ====================
+// ==================== 心流系统事件绑定 ====================
+// 主线任务条点击
+window._doQuestAction=function(){
+  const bar=document.getElementById('mm-quest-bar');
+  if(bar&&bar.dataset.action)openPanel(bar.dataset.action);
+};
+// 智能下一步浮标点击
+window._doNextStep=function(){
+  const el=document.getElementById('mm-nextstep');
+  if(el&&el.dataset.action)openPanel(el.dataset.action);
+};
+// 标记英雄面板已访问（用于任务检测）
+const _origOpenPanel=window.openPanel;
+window.openPanel=function(id){
+  if(id==='heroes')PD._visitedHeroes=true;
+  _origOpenPanel(id);
+};
+
+// ==================== 新手引导系统（增强版V2） ====================
 (function initGuide(){
-  if(PD.totalGames>0||PD.guideCompleted)return; // 非新玩家跳过
-  const guides=[
-    {target:'nav-btn-main-anchor',text:'<b>欢迎来到艾泽拉斯！</b><br>点击「出战」开始你的第一场冒险吧！',pos:'top'},
-    {target:'heroes-nav',text:'在<b>英雄殿堂</b>切换不同英雄，每个英雄都有独特的标志技能和偏好',pos:'top'},
-  ];
-  let step=0;
-  function showGuide(){
-    if(step>=guides.length){PD.guideCompleted=true;save();return}
-    // 简单延迟显示
-    setTimeout(()=>{
-      const existing=document.querySelector('.guide-tooltip');if(existing)existing.remove();
-      const g=guides[step];
-      const tip=document.createElement('div');tip.className='guide-tooltip'+(g.pos==='top'?' guide-top':'');
-      tip.innerHTML=`<div class="guide-text">${g.text}</div><div class="guide-btn"><button class="guide-skip" onclick="this.closest('.guide-tooltip').remove()">跳过</button><button class="guide-ok" onclick="this.closest('.guide-tooltip').remove()">知道了</button></div>`;
-      tip.style.left='50%';tip.style.transform='translateX(-50%)';tip.style.bottom='120px';
-      document.getElementById('main-menu').appendChild(tip);
-      // 3秒后点击任意位置关闭
-      const handler=()=>{if(tip.parentNode){tip.remove();step++;showGuide()}document.removeEventListener('click',handler)};
-      setTimeout(()=>document.addEventListener('click',handler),500);
-    },1500);
+  // 使用增强版引导（带遮罩聚光灯）
+  if(PD.totalGames===0&&!PD._guideV2Done&&!PD.guideCompleted){
+    SYS.startEnhancedGuide(PD);
   }
-  showGuide();
 })();
+
+// ==================== 心流刷新——每次回到主城时自动刷新 ====================
+function refreshFlowSystems(){
+  try{
+    SYS.applyProgressiveUnlock(PD);
+    SYS.refreshQuestBar(PD);
+    SYS.refreshNextStep(PD);
+  }catch(e){console.error('Flow refresh error:',e)}
+}
 
 // 体力恢复定时器
 setInterval(()=>{if(PD.stamina<PD.maxStamina){PD.stamina++;save();const el=document.getElementById('cur-stamina');if(el)el.textContent=PD.stamina}},300000);

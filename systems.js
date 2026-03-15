@@ -54,7 +54,9 @@ function refreshMainMenu(PD){
   const hero=ALL_HEROES[PD.selectedHero];
   $('mm-avatar').textContent=hero.icon;
   $('mm-name').textContent=PD.name;
-  $('mm-level').textContent=PD.level;
+  // 显示当前选中英雄的等级（而非无效的账号等级PD.level）
+  const _selHd=PD.heroes[PD.selectedHero];
+  $('mm-level').textContent=(_selHd&&_selHd.level)||1;
   $('cur-diamond').textContent=PD.diamond;
   $('cur-gold').textContent=PD.gold;
   $('cur-stamina').textContent=PD.stamina;
@@ -171,7 +173,7 @@ function renderHeroes(PD){
   const canUpStar=selPd.star<HERO_STAR.MAX_STAR;
   const nextStarCost=canUpStar?HERO_STAR.FRAG_COST[selPd.star+1]:0;
   const hasFrags=(selPd.frags||0)>=nextStarCost;
-  detail.innerHTML=`<div class="hd-top"><div class="hd-icon"><img src="${selImgPath}" onerror="this.style.display='none';this.parentElement.textContent='${sel.icon}'" style="width:64px;height:64px;object-fit:contain"></div><div class="hd-info"><h3>${sel.name} <span style="font-size:13px;color:#ffd700">Lv.${selPd.level||1}</span></h3><p>${sel.origin} · ${sel.role}</p>
+  detail.innerHTML=`<div class="hd-top"><div class="hd-icon"><img src="${selImgPath}" onerror="this.style.display='none';this.parentElement.textContent='${sel.icon}'" style="width:64px;height:64px;object-fit:contain"></div><div class="hd-info"><h3>${sel.name} <span style="font-size:13px;color:#c9a44a">Lv.${selPd.level||1}</span></h3><p>${sel.origin} · ${sel.role}</p>
     <div class="hd-xp-bar"><div class="hd-xp-fill" style="width:${xpPct}%"></div><span class="hd-xp-text">${selPd.xp||0}/${xpNeed}</span></div></div></div>
     <div class="hd-stats">
       <div class="hd-stat"><div class="hd-stat-val">${finalAtk}</div><div class="hd-stat-label">攻击<span class="hd-bonus">(+${lvBonus.atk})</span></div></div>
@@ -181,11 +183,11 @@ function renderHeroes(PD){
     </div>
     <div class="hd-skill">标志技能：<span>${sel.skill}</span></div>
     <div class="hd-sig-detail" style="background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);border-radius:8px;padding:8px 10px;margin:6px 0">
-      ${(()=>{const sigSk=SKILL_DB.find(s=>s.id===sel.signatureSkill);return sigSk?`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:20px">${sigSk.icon}</span><span style="color:#ff4466;font-weight:bold;font-size:13px">${sigSk.name}</span><span style="font-size:10px;color:#ff88aa;border:1px solid rgba(255,68,102,.3);padding:1px 5px;border-radius:4px">开局自动获得</span></div><div style="color:#ccc;font-size:11px;line-height:1.4">${sigSk.desc}</div><div style="color:#888;font-size:10px;margin-top:3px">CD:${sigSk.cd}s · 最高${sigSk.maxLevel}级</div>`:''})()}
+      ${(()=>{const sigSk=SKILL_DB.find(s=>s.id===sel.signatureSkill);return sigSk?`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:20px">${sigSk.icon}</span><span style="color:#ff4466;font-weight:bold;font-size:13px">${sigSk.name}</span><span style="font-size:10px;color:#ff88aa;border:1px solid rgba(255,68,102,.3);padding:1px 5px;border-radius:4px">开局自动获得</span></div><div style="color:#e8dcc8;font-size:11px;line-height:1.4">${sigSk.desc}</div><div style="color:#8b7a60;font-size:10px;margin-top:3px">CD:${sigSk.cd}s · 最高${sigSk.maxLevel}级</div>`:''})()}
     </div>
-    <div class="hd-favor" style="margin:4px 0;font-size:11px;color:#aaa">
+    <div class="hd-favor" style="margin:4px 0;font-size:11px;color:#b8a88c">
       偏好技能：${(sel.favorSkills||[]).map(fid=>{const fsk=SKILL_DB.find(s=>s.id===fid);return fsk?`<span style="color:${RARITY_COLOR[fsk.rarity]};margin:0 2px" title="${fsk.name}">${fsk.icon}${fsk.name}</span>`:''}).join(' ')}
-      <span style="color:#666;font-size:10px">（出现概率×3）</span>
+      <span style="color:#7a6e55;font-size:10px">（出现概率×3）</span>
     </div>
     <div class="hd-actions">
       ${canUpStar?`<button class="btn-sm btn-star${hasFrags?' ready':''}" onclick="window._heroUpStar()">⭐ 升星 (${selPd.frags||0}/${nextStarCost}碎片)</button>`:`<div class="hd-max-star">💫 已满星</div>`}
@@ -252,7 +254,12 @@ function checkChapterUnlock(ch,PD){
 // ==================== 锻造 ====================
 function renderForge(PD){
   const slots=$('forge-slots');slots.innerHTML='';
-  for(let i=0;i<4;i++){
+  // 确保有6个锻造槽
+  if(!PD.forgeSlots||PD.forgeSlots.length<6){
+    const old=PD.forgeSlots||[null,null,null,null];
+    PD.forgeSlots=[old[0]||null,old[1]||null,old[2]||null,old[3]||null,old[4]||null,old[5]||null];
+  }
+  for(let i=0;i<6;i++){
     const s=PD.forgeSlots[i];const slot=document.createElement('div');
     if(!s){
       slot.className='fg-slot';
@@ -283,10 +290,14 @@ function renderMyEquipment(PD){
     const forgeBody=$('forge').querySelector('.panel-body');
     if(forgeBody)forgeBody.insertBefore(container,forgeBody.firstChild);
   }
-  const slotNames={weapon:'⚔️ 武器',armor:'🛡️ 护甲',trinket:'💎 饰品',ring:'💍 戒指'};
-  const slots=['weapon','armor','trinket','ring'];
+  const slotNames={weapon:'⚔️ 武器',armor:'🛡️ 护甲',helmet:'⛑️ 头盔',boots:'👢 靴子',trinket:'💎 饰品',ring:'💍 戒指'};
+  const slots=['weapon','armor','helmet','boots','trinket','ring'];
+  // 确保PD.equipment有新槽位
+  if(!PD.equipment.helmet)PD.equipment.helmet=null;
+  if(!PD.equipment.boots)PD.equipment.boots=null;
   let html='<div class="my-equip-title">📋 当前装备</div><div class="my-equip-grid">';
   let totalAtk=0,totalHp=0,totalCrit=0,totalArmor=0;
+  const equippedSets={};// 统计套装件数
   slots.forEach(slot=>{
     const eqId=PD.equipment[slot];
     const eq=eqId?EQUIPMENT_DB.find(e=>e.id===eqId):null;
@@ -294,24 +305,32 @@ function renderMyEquipment(PD){
     const hasInv=PD.inventory.filter(id=>{const e=EQUIPMENT_DB.find(x=>x.id===id);return e&&e.slot===slot}).length>0;
     if(eq){
       totalAtk+=eq.atk;totalHp+=eq.hp;totalCrit+=(eq.critRate||0);totalArmor+=(eq.armor||0);
+      if(eq.setId)equippedSets[eq.setId]=(equippedSets[eq.setId]||0)+1;
+      const rarColor=RARITY_COLOR[eq.rarity]||'#aaa';
       html+=`<div class="my-equip-slot rarity-${eq.rarity}" onclick="window._showEquipSwap('${slot}')">
         <div class="mes-label">${slotNames[slot]}</div>
         <div class="mes-icon">${eq.icon}</div>
-        <div class="mes-name">${eq.name}${enhLv>0?' <span style="color:#ffd700">+'+enhLv+'</span>':''}</div>
-        <div class="mes-stats">${eq.atk>0?'⚔'+eq.atk+' ':''}${eq.hp>0?'❤'+eq.hp+' ':''}${eq.armor>0?'🛡'+eq.armor+' ':''}${eq.critRate>0?'💥'+(eq.critRate*100).toFixed(0)+'%':''}</div>
+        <div class="mes-name" style="color:${rarColor}">${eq.name}${enhLv>0?' <span style="color:#c9a44a">+'+enhLv+'</span>':''}${eq.classReq?' <span style="font-size:10px;color:#8b7a60">['+((ALL_HEROES[eq.classReq]||{}).name||eq.classReq)+']</span>':''}</div>
+        <div class="mes-stats">${eq.atk>0?'⚔'+eq.atk+' ':''}${eq.hp>0?'❤'+eq.hp+' ':''}${eq.armor>0?'🛡'+eq.armor+' ':''}${eq.critRate>0?'💥'+(eq.critRate*100).toFixed(0)+'%':''}${eq.spd>0?'💨'+eq.spd:''}</div>
         ${eq.effectDesc?'<div class="mes-effect">'+eq.effectDesc+'</div>':''}
+        ${eq.setId?'<div class="mes-set" style="color:#c9a44a;font-size:10px">套装: '+(SET_BONUSES[eq.setId]||{}).name+'</div>':''}
         ${hasInv?'<div class="mes-swap-hint">点击换装</div>':''}
       </div>`;
     }else{
       html+=`<div class="my-equip-slot empty" onclick="window._showEquipSwap('${slot}')">
         <div class="mes-label">${slotNames[slot]}</div>
         <div class="mes-icon" style="opacity:.3">➕</div>
-        <div class="mes-name" style="color:#666">未装备</div>
+        <div class="mes-name" style="color:#7a6e55">未装备</div>
         ${hasInv?'<div class="mes-swap-hint">点击装备</div>':'<div class="mes-stats" style="color:#444">锻造获取</div>'}
       </div>`;
     }
   });
   html+='</div>';
+  // 套装效果显示
+  const activeSetHtml=Object.entries(equippedSets).filter(([id,cnt])=>cnt>=2&&SET_BONUSES[id]).map(([id,cnt])=>{
+    const sb=SET_BONUSES[id];
+    return `<div style="padding:4px 8px;background:rgba(201,164,74,0.1);border:1px solid rgba(201,164,74,0.3);border-radius:4px;margin:2px 0"><span style="color:#c9a44a">${sb.name} (${cnt}件)</span> <span style="color:#b8a88c;font-size:11px">${sb.bonus2.desc}</span></div>`;
+  }).join('');
   // 装备总属性汇总
   html+=`<div class="my-equip-summary">
     <span>装备总属性：</span>
@@ -320,6 +339,7 @@ function renderMyEquipment(PD){
     ${totalArmor>0?`<span class="mes-sum-item">🛡${totalArmor}</span>`:''}
     ${totalCrit>0?`<span class="mes-sum-item">💥${(totalCrit*100).toFixed(0)}%</span>`:''}
   </div>`;
+  if(activeSetHtml)html+=`<div style="margin-top:6px">${activeSetHtml}</div>`;
   container.innerHTML=html;
 }
 function showEquipSwap(PD,slot){
@@ -358,8 +378,16 @@ function doEquipSwap(PD,slot,action,eqId){
 function startForge(PD,idx){
   if(PD.gold<200){showRewardPopup([{icon:'💰',text:'金币不足(需200)'}]);return}
   PD.gold-=200;
-  const pool=EQUIPMENT_DB.filter(e=>Math.random()<.6||e.rarity==='common');
-  const eq=pool[Math.floor(Math.random()*pool.length)];
+  const heroId=PD.selectedHero||'warrior';
+  // 锻造池：通用装备 + 当前英雄的职业专属装备
+  const pool=EQUIPMENT_DB.filter(e=>{
+    if(e.classReq&&e.classReq!==heroId)return false; // 排除其他职业专属
+    if(e.rarity==='mythic')return Math.random()<0.03; // 神话3%概率进池
+    if(e.rarity==='legendary')return Math.random()<0.15; // 传说15%
+    if(e.rarity==='epic')return Math.random()<0.35; // 史诗35%
+    return Math.random()<0.6||e.rarity==='common';
+  });
+  const eq=pool[Math.floor(Math.random()*pool.length)]||EQUIPMENT_DB[0];
   PD.forgeSlots[idx]={itemId:eq.id,endTime:Date.now()+eq.forgeTime};
   PD.dailyProgress.forges=(PD.dailyProgress.forges||0)+1;
   saveToDisk(PD);renderForge(PD);refreshMainMenu(PD);
@@ -415,7 +443,7 @@ function arenaFight(PD,power){
 function renderGuild(PD){
   const body=$('guild-body');
   if(!PD.guildJoined){
-    body.innerHTML=`<div class="guild-empty"><div class="guild-empty-icon">👥</div><div class="guild-empty-text">你还没有加入公会<br><span style="font-size:12px;color:#666">加入公会可以获得额外属性加成和专属副本</span></div>
+    body.innerHTML=`<div class="guild-empty"><div class="guild-empty-icon">👥</div><div class="guild-empty-text">你还没有加入公会<br><span style="font-size:12px;color:#7a6e55">加入公会可以获得额外属性加成和专属副本</span></div>
       <button class="btn-gold" onclick="window._joinGuild()">⚔️ 创建公会</button>
       <div style="margin-top:12px"><button class="btn-sub" onclick="window._joinRandomGuild()">🔍 加入推荐公会</button></div></div>`;
   }else{
@@ -425,17 +453,17 @@ function renderGuild(PD){
       <div class="gi-name">⚔️ ${PD.guildName}</div>
       <div class="gi-level">公会等级 Lv.${gLv} <span style="font-size:10px;color:#44ff44">（全员攻击+${gAtkBonus} 生命+${gHpBonus}）</span></div>
       <div class="gi-members">成员 12/30 | 贡献 ${PD.guildContrib}</div>
-      <div style="margin-top:8px;font-size:11px;color:#888">📊 公会排名: #${Math.max(1,50-PD.guildContrib)} / 服务器</div>
+      <div style="margin-top:8px;font-size:11px;color:#8b7a60">📊 公会排名: #${Math.max(1,50-PD.guildContrib)} / 服务器</div>
       </div>
       <div class="guild-actions">
         <div class="ga-btn" onclick="window._guildDonate()"><div class="ga-icon">💰</div><div class="ga-label">捐献(200💰)<br><span style="font-size:9px;color:#44ff44">+200贡献</span></div></div>
-        <div class="ga-btn" onclick="window._guildRaid()"><div class="ga-icon">⚔️</div><div class="ga-label">公会副本<br><span style="font-size:9px;color:#ffd700">${PD.guildRaidDone?'✅ 今日已挑战':'可挑战'}</span></div></div>
-        <div class="ga-btn" onclick="window._guildRank()"><div class="ga-icon">📊</div><div class="ga-label">排行榜<br><span style="font-size:9px;color:#aaa">查看排名</span></div></div>
+        <div class="ga-btn" onclick="window._guildRaid()"><div class="ga-icon">⚔️</div><div class="ga-label">公会副本<br><span style="font-size:9px;color:#c9a44a">${PD.guildRaidDone?'✅ 今日已挑战':'可挑战'}</span></div></div>
+        <div class="ga-btn" onclick="window._guildRank()"><div class="ga-icon">📊</div><div class="ga-label">排行榜<br><span style="font-size:9px;color:#b8a88c">查看排名</span></div></div>
         <div class="ga-btn" onclick="window._guildBuff()"><div class="ga-icon">🛡️</div><div class="ga-label">公会BUFF<br><span style="font-size:9px;color:#44ddff">Lv.${gLv}加成中</span></div></div>
       </div>
       <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);margin-top:8px">
-        <div style="font-size:13px;font-weight:bold;color:#ffd700;margin-bottom:8px">📢 公会公告</div>
-        <div style="font-size:11px;color:#aaa;line-height:1.6">欢迎加入${PD.guildName}！每日捐献可提升公会等级获得属性加成。<br>公会副本每日可挑战1次，全员协力击败Boss获得丰厚奖励。</div>
+        <div style="font-size:13px;font-weight:bold;color:#c9a44a;margin-bottom:8px">📢 公会公告</div>
+        <div style="font-size:11px;color:#b8a88c;line-height:1.6">欢迎加入${PD.guildName}！每日捐献可提升公会等级获得属性加成。<br>公会副本每日可挑战1次，全员协力击败Boss获得丰厚奖励。</div>
       </div>`;
   }
 }
@@ -647,13 +675,26 @@ function claimQuest(PD,idx){
 
 // ==================== 抽奖 ====================
 function renderLuckyDraw(PD){
-  const wheel=$('draw-wheel');
+  const container=$('draw-wheel').parentElement;
   const n=DRAW_PRIZES.length;
+  // 用wrapper包裹转盘，指针放在wrapper上（不随转盘旋转）
+  let existingWrap=container.querySelector('.draw-wheel-wrap');
+  if(!existingWrap){
+    existingWrap=document.createElement('div');
+    existingWrap.className='draw-wheel-wrap';
+    const wheel=$('draw-wheel');
+    wheel.parentElement.insertBefore(existingWrap,wheel);
+    existingWrap.appendChild(wheel);
+  }
+  const wheel=$('draw-wheel');
+  // 重置旋转
+  wheel.style.transition='none';
+  wheel.style.transform='rotate(0deg)';
   wheel.innerHTML=DRAW_PRIZES.map((p,i)=>{
     const ang=i*360/n-90;const r=90;
     const x=130+r*Math.cos(ang*Math.PI/180)-30;
     const y=130+r*Math.sin(ang*Math.PI/180)-18;
-    return `<div class="draw-prize-item" style="left:${x}px;top:${y}px"><span>${p.icon}</span><small>${p.text.replace(/[0-9]+/,'').trim()}</small></div>`;
+    return `<div class="draw-prize-item" style="left:${x}px;top:${y}px"><span>${p.icon}</span><small>${p.text}</small></div>`;
   }).join('');
   $('draw-chances').textContent=PD.drawChances;
 }
@@ -662,20 +703,43 @@ function doLuckyDraw(PD){
   if(PD.lastDrawDate!==today){PD.drawChances=3;PD.lastDrawDate=today}
   if(PD.drawChances<=0){showRewardPopup([{icon:'🎰',text:'今日次数已用完'}]);return}
   PD.drawChances--;
+  const n=DRAW_PRIZES.length;
+  // 按权重抽奖，记录中奖索引
   const totalW=DRAW_PRIZES.reduce((s,p)=>s+p.weight,0);
-  let r=Math.random()*totalW,prize=DRAW_PRIZES[0];
-  for(const p of DRAW_PRIZES){r-=p.weight;if(r<=0){prize=p;break}}
-  // 转盘动画
-  const wheel=$('draw-wheel');const deg=1440+Math.random()*360;
-  wheel.style.transform=`rotate(${deg}deg)`;
+  let r=Math.random()*totalW,prizeIdx=0;
+  for(let i=0;i<n;i++){r-=DRAW_PRIZES[i].weight;if(r<=0){prizeIdx=i;break}}
+  const prize=DRAW_PRIZES[prizeIdx];
+  // 转盘动画 — 使视觉停止位置对准中奖项
+  // 奖品布局：第i个奖品中心角度 = i*360/n - 90（renderLuckyDraw中以-90度偏移起始）
+  // CSS rotate(X deg)让转盘顺时针旋转X度，指针固定在顶部(12点方向)
+  // 旋转后item i的视觉角度 = (i*slice-90) + X，要等于270(顶部)
+  // 所以 X = 360 - prizeIdx*sliceAngle (mod 360)
+  const sliceAngle=360/n;
+  let targetDeg=((360-prizeIdx*sliceAngle)%360+360)%360;
+  // 在扇区内随机微调（不超过扇区1/3），使动画更自然
+  const jitter=(Math.random()-0.5)*sliceAngle*0.5;
+  targetDeg+=jitter;
+  // 加上多圈旋转（至少转4圈）确保视觉效果
+  const fullSpins=1440; // 4圈
+  const finalDeg=fullSpins+targetDeg;
+  const wheel=$('draw-wheel');
+  // 重置transition使连续抽奖不冲突
+  wheel.style.transition='none';
+  wheel.style.transform='rotate(0deg)';
+  // 强制reflow
+  void wheel.offsetHeight;
+  wheel.style.transition='transform 3s cubic-bezier(.17,.67,.12,.99)';
+  wheel.style.transform=`rotate(${finalDeg}deg)`;
   setTimeout(()=>{
     showRewardPopup([{icon:prize.icon,text:prize.text}]);
     if(prize.text.includes('金币'))PD.gold+=parseInt(prize.text)||500;
     if(prize.text.includes('钻石'))PD.diamond+=parseInt(prize.text.match(/\d+/))||50;
     if(prize.text.includes('体力'))PD.stamina=Math.min(PD.maxStamina,PD.stamina+30);
+    if(prize.text.includes('碎片')){const fragAmt=parseInt(prize.text.match(/\d+/))||3;PD.totalFrags=(PD.totalFrags||0)+fragAmt}
+    if(prize.text.includes('装备箱')){PD.totalFrags=(PD.totalFrags||0)+10}
     $('draw-chances').textContent=PD.drawChances;
     saveToDisk(PD);refreshMainMenu(PD);
-  },3000);
+  },3200);
 }
 
 // ==================== 宝箱 ====================
@@ -724,18 +788,29 @@ function heroUpStar(PD){
   saveToDisk(PD);renderHeroes(PD);refreshMainMenu(PD);
 }
 
-// ==================== 天赋树系统 ====================
+// ==================== 天赋树系统（职业差异化） ====================
 function renderTalent(PD){
   const body=$('talent-body');if(!body)return;
   body.innerHTML='';
-  // 确保PD.talents存在
-  if(!PD.talents)PD.talents={war:[],def:[],util:[]};
-  const heroLv=(PD.heroes[PD.selectedHero]||{}).level||1;
+  const heroId=PD.selectedHero||'warrior';
+  const heroTrees=HERO_TALENT_TREES[heroId];
+  if(!heroTrees){body.innerHTML='<div style="padding:20px;color:#b8a88c">该英雄暂无天赋树</div>';return}
+  // 确保PD.talents存在并且包含当前英雄
+  if(!PD.talents)PD.talents={};
+  if(!PD.talents[heroId])PD.talents[heroId]={};
+  const heroLv=(PD.heroes[heroId]||{}).level||1;
+  const heroName=(ALL_HEROES[heroId]||{}).name||heroId;
   
-  Object.entries(TALENT_TREES).forEach(([treeKey,tree])=>{
+  // 标题
+  const header=document.createElement('div');
+  header.style.cssText='text-align:center;margin-bottom:12px;padding:8px';
+  header.innerHTML=`<div style="font-size:16px;font-weight:bold;color:#c9a44a">${(ALL_HEROES[heroId]||{}).icon||''} ${heroName} 天赋树</div><div style="font-size:12px;color:#b8a88c;margin-top:4px">三条专精路线，打造独一无二的Build</div>`;
+  body.appendChild(header);
+  
+  Object.entries(heroTrees).forEach(([treeKey,tree])=>{
     const section=document.createElement('div');section.className='talent-tree';
-    const selected=PD.talents[treeKey]||[];
-    let html=`<div class="tt-header" style="border-left:3px solid ${tree.color}"><div class="tt-name">${tree.name}</div><div class="tt-desc">${tree.desc}</div><div class="tt-progress">${selected.length}/${tree.tiers.length}</div></div>`;
+    const selected=PD.talents[heroId][treeKey]||[];
+    let html=`<div class="tt-header" style="border-left:3px solid ${tree.color}"><div class="tt-name">${tree.name}</div><div class="tt-desc">${tree.desc}</div><div class="tt-progress">${selected.filter(Boolean).length}/${tree.tiers.length}</div></div>`;
     html+=`<div class="tt-tiers">`;
     tree.tiers.forEach((tier,ti)=>{
       const unlocked=heroLv>=tier.lv;
@@ -746,7 +821,7 @@ function renderTalent(PD){
       tier.choices.forEach(c=>{
         const isChosen=alreadyChosen===c.id;
         const canChoose=unlocked&&!alreadyChosen&&PD.gold>=tier.cost;
-        html+=`<div class="tt-choice${isChosen?' chosen':''}${canChoose?' available':''}" ${canChoose?`onclick="window._chooseTalent('${treeKey}',${ti},'${c.id}',${tier.cost})"`:''}>`;
+        html+=`<div class="tt-choice${isChosen?' chosen':''}${canChoose?' available':''}" ${canChoose?`onclick="window._chooseTalent('${heroId}','${treeKey}',${ti},'${c.id}',${tier.cost})"`:''}>`;
         html+=`<div class="tt-ch-name">${c.name}</div><div class="tt-ch-desc">${c.desc}</div>`;
         html+=`</div>`;
       });
@@ -756,13 +831,17 @@ function renderTalent(PD){
     section.innerHTML=html;body.appendChild(section);
   });
 }
-function chooseTalent(PD,treeKey,tierIdx,talentId,cost){
-  if(!PD.talents)PD.talents={war:[],def:[],util:[]};
-  const arr=PD.talents[treeKey];
+function chooseTalent(PD,heroId,treeKey,tierIdx,talentId,cost){
+  if(!PD.talents)PD.talents={};
+  if(!PD.talents[heroId])PD.talents[heroId]={};
+  if(!PD.talents[heroId][treeKey])PD.talents[heroId][treeKey]=[];
+  const arr=PD.talents[heroId][treeKey];
   if(arr[tierIdx]){showRewardPopup([{icon:'🌟',text:'该层已选择！'}]);return}
   if(PD.gold<cost){showRewardPopup([{icon:'💰',text:`金币不足！需要${cost}`}]);return}
-  const heroLv=(PD.heroes[PD.selectedHero]||{}).level||1;
-  const tier=TALENT_TREES[treeKey].tiers[tierIdx];
+  const heroLv=(PD.heroes[heroId]||{}).level||1;
+  const tree=HERO_TALENT_TREES[heroId][treeKey];
+  if(!tree)return;
+  const tier=tree.tiers[tierIdx];
   if(heroLv<tier.lv){showRewardPopup([{icon:'⬆️',text:`需要英雄等级${tier.lv}！当前${heroLv}`}]);return}
   PD.gold-=cost;arr[tierIdx]=talentId;
   const talent=tier.choices.find(c=>c.id===talentId);
@@ -775,8 +854,8 @@ function renderEnhance(PD){
   const body=$('enhance-body');if(!body)return;
   body.innerHTML='';
   if(!PD.equipEnhance)PD.equipEnhance={};
-  const slots=['weapon','armor','trinket','ring'];
-  const slotNames={weapon:'武器',armor:'护甲',trinket:'饰品',ring:'戒指'};
+  const slots=['weapon','armor','helmet','boots','trinket','ring'];
+  const slotNames={weapon:'武器',armor:'护甲',helmet:'头盔',boots:'靴子',trinket:'饰品',ring:'戒指'};
   slots.forEach(slot=>{
     const eqId=PD.equipment[slot];
     const el=document.createElement('div');el.className='enh-slot';
@@ -838,28 +917,39 @@ function addHeroXp(PD, heroId, xpAmount){
   return leveledUp;
 }
 
-// ==================== 计算天赋总加成 ====================
+// ==================== 计算天赋总加成（职业差异化版） ====================
 function calcTalentBonus(PD){
   const bonus={atk:0,hp:0,armor:0,spd:0,critRate:0,critDmg:0,
     regen:0,killHeal:0,berserker:0,armorPen:0,eliteHeal:0,skillDmg:0,execute:0,
     leech:0,xpBonus:0,goldBonus:0,extraSkillChoice:0,pickupRange:0,legendRate:0,
     block:null,shield:0,thorns:0,slowRes:0,dodge:0,startShield:0,revive:null,eliteLoot:0,
-    freeSkill:0,goldOnKill:0,xpMagnet:0,atkSpeed:0,critWave:0,deathSave:0,doubleSkill:0,allPct:0};
+    freeSkill:0,goldOnKill:0,xpMagnet:0,atkSpeed:0,critWave:0,deathSave:0,doubleSkill:0,allPct:0,
+    // 新增天赋属性
+    dotDmg:0,dotHealMult:0,dotSpread:0,skillCdPct:0,frozenDmgBonus:0,slowEnhance:0,
+    petAtkPct:0,petDurPct:0,petCritRate:0,petCount:0,petHaste:0,petHeal:0,petArmor:0,
+    berserkerFull:0,killFrenzy:0,critHaste:0,hpPct:0,healBoost:0,allHealBoost:0,
+    bossDmg:0,atkHeal:0,poisonOnHit:0,poisonDmg:0,bleedOnHit:0,
+    basicAtkDmg:0,basicAoeAtk:0,fireAoeOnHit:0,windFury:0};
   if(!PD.talents)return bonus;
-  Object.entries(TALENT_TREES).forEach(([treeKey,tree])=>{
-    const selected=PD.talents[treeKey]||[];
+  const heroId=PD.selectedHero||'warrior';
+  const heroTalents=PD.talents[heroId];
+  if(!heroTalents)return bonus;
+  const heroTrees=HERO_TALENT_TREES[heroId];
+  if(!heroTrees)return bonus;
+  Object.entries(heroTrees).forEach(([treeKey,tree])=>{
+    const selected=heroTalents[treeKey]||[];
     selected.forEach((talentId,ti)=>{
       if(!talentId)return;
       const tier=tree.tiers[ti];if(!tier)return;
       const talent=tier.choices.find(c=>c.id===talentId);if(!talent)return;
       const s=talent.stat,v=talent.val;
-      // 特殊处理 revive（对象直接赋值，不走通用逻辑）
+      // 特殊处理 revive（对象直接赋值）
       if(s==='revive'&&typeof v==='object'){bonus.revive=v;return}
       // 简单stat直接加
       if(typeof v==='number'){
         if(bonus[s]!==undefined)bonus[s]+=v;
       }else if(typeof v==='object'){
-        // 复合stat
+        // 复合stat — 遍历对象键值
         Object.entries(v).forEach(([k,val])=>{
           if(k==='chance'||k==='reduce'){
             if(!bonus.block)bonus.block={chance:0,reduce:0};
@@ -874,13 +964,35 @@ function calcTalentBonus(PD){
           else if(k==='magnet')bonus.xpMagnet+=val;
         });
       }
-      // 特殊：atk+crit 等组合key
+      // 特殊组合key
       if(s==='atk+crit'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.critRate+=v.critRate||0}
       if(s==='armor+hp'&&typeof v==='object'){bonus.armor+=v.armor||0;bonus.hp+=v.hp||0}
       if(s==='hp+armor'&&typeof v==='object'){bonus.hp+=v.hp||0;bonus.armor+=v.armor||0}
       if(s==='slowRes+spd'&&typeof v==='object'){bonus.slowRes+=v.slowRes||0;bonus.spd+=v.spd||0}
       if(s==='spd+dodge'&&typeof v==='object'){bonus.spd+=v.spd||0;bonus.dodge+=v.dodge||0}
       if(s==='xpMagnet+bonus'&&typeof v==='object'){bonus.xpMagnet+=v.magnet||0;bonus.xpBonus+=v.bonus||0}
+      if(s==='atk+skillDmg'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.skillDmg+=v.skillDmg||0}
+      if(s==='skillDmg+cd'&&typeof v==='object'){bonus.skillDmg+=v.skillDmg||0;bonus.skillCdPct+=v.skillCd||0}
+      if(s==='hp+regen'&&typeof v==='object'){bonus.hp+=v.hp||0;bonus.regen+=v.regen||0}
+      if(s==='atk+atkSpeed'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.atkSpeed+=v.atkSpeed||0}
+      if(s==='critRate+dodge'&&typeof v==='object'){bonus.critRate+=v.critRate||0;bonus.dodge+=v.dodge||0}
+      if(s==='gold+xp'&&typeof v==='object'){bonus.goldBonus+=v.goldBonus||0;bonus.xpBonus+=v.xpBonus||0}
+      if(s==='atkSpeed+crit'&&typeof v==='object'){bonus.atkSpeed+=v.atkSpeed||0;bonus.critRate+=v.critRate||0}
+      if(s==='critDmg+crit'&&typeof v==='object'){bonus.critDmg+=v.critDmg||0;bonus.critRate+=v.critRate||0}
+      if(s==='atk+hp'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.hp+=v.hp||0}
+      if(s==='allPct+hp'&&typeof v==='object'){bonus.allPct+=v.allPct||0;bonus.hp+=v.hp||0}
+      if(s==='atk+dotDmg'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.dotDmg+=v.dotDmg||0}
+      if(s==='atk+aura'&&typeof v==='object'){bonus.atk+=v.atk||0}
+      if(s==='atk+leech'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.leech+=v.leech||0}
+      if(s==='atk+armor'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.armor+=v.armor||0}
+      if(s==='critRate+skillDmg'&&typeof v==='object'){bonus.critRate+=v.critRate||0;bonus.skillDmg+=v.skillDmg||0}
+      if(s==='critRate+freeze'&&typeof v==='object'){bonus.critRate+=v.critRate||0}
+      if(s==='atk+shadowDmg'&&typeof v==='object'){bonus.atk+=v.atk||0}
+      if(s==='dodge+atkSpeed'&&typeof v==='object'){bonus.dodge+=v.dodge||0;bonus.atkSpeed+=v.atkSpeed||0}
+      if(s==='dodge+healOnDodge'&&typeof v==='object'){bonus.dodge+=v.dodge||0}
+      if(s==='dotDmg+skillDmg'&&typeof v==='object'){bonus.dotDmg+=v.dotDmg||0;bonus.skillDmg+=v.skillDmg||0}
+      if(s==='skillDmg+crit'&&typeof v==='object'){bonus.skillDmg+=v.skillDmg||0;bonus.critRate+=v.critRate||0}
+      if(s==='atk+atkHeal'&&typeof v==='object'){bonus.atk+=v.atk||0;bonus.atkHeal+=v.atkHeal||0}
     });
   });
   return bonus;
@@ -966,9 +1078,12 @@ function renderStuckGuide(PD,chapterId){
   // 检查英雄等级
   const lvBonus=calcHeroLevelBonus(hd.level||1);
   if(lvBonus.atk<hero.atk*0.5)checks.push(STUCK_GUIDE.checks[0]); // 等级加成<基础50%
-  // 检查天赋
-  if(!PD.talents)PD.talents={war:[],def:[],util:[]};
-  const totalTalents=(PD.talents.war||[]).filter(Boolean).length+(PD.talents.def||[]).filter(Boolean).length+(PD.talents.util||[]).filter(Boolean).length;
+  // 检查天赋（新的每英雄独立天赋系统）
+  if(!PD.talents)PD.talents={};
+  const heroId=PD.selectedHero||'warrior';
+  const heroTalents=PD.talents[heroId]||{};
+  let totalTalents=0;
+  Object.values(heroTalents).forEach(arr=>{if(Array.isArray(arr))totalTalents+=arr.filter(Boolean).length});
   const maxTalents=15;if(totalTalents<maxTalents*0.3)checks.push(STUCK_GUIDE.checks[1]);
   // 检查装备强化
   if(!PD.equipEnhance)PD.equipEnhance={};
@@ -993,6 +1108,480 @@ function renderForgeWithEnhance(PD){
   }
 }
 
+// ==================== 装备图鉴系统 ====================
+let _codexFilter={slot:'all',rarity:'all',search:'',ownedOnly:false};
+function _setCodexFilter(key,val){_codexFilter[key]=val}
+function renderEquipCodex(PD){
+  const body=$('codex-body');if(!body)return;
+  const F=_codexFilter;
+  // Tab栏 — 装备图鉴 / Build推荐
+  let html=`<div class="codex-tabs">
+    <div class="codex-tab active" data-tab="equip" onclick="window._codexSwitchTab(this,'equip')">📖 装备图鉴</div>
+    <div class="codex-tab" data-tab="build" onclick="window._codexSwitchTab(this,'build')">⚔️ Build推荐</div>
+  </div>`;
+  // 筛选栏
+  html+=`<div class="codex-filters">
+    <select class="codex-select" onchange="window._codexSetFilter('slot',this.value)">
+      <option value="all"${F.slot==='all'?' selected':''}>全部槽位</option>
+      ${EQUIP_SLOT_ORDER.map(s=>`<option value="${s}"${F.slot===s?' selected':''}>${EQUIP_SLOT_NAMES[s]}</option>`).join('')}
+    </select>
+    <select class="codex-select" onchange="window._codexSetFilter('rarity',this.value)">
+      <option value="all"${F.rarity==='all'?' selected':''}>全部品质</option>
+      ${RARITY_ORDER.map(r=>`<option value="${r}"${F.rarity===r?' selected':''}>${RARITY_NAME[r]}</option>`).join('')}
+    </select>
+    <label class="codex-check"><input type="checkbox" ${F.ownedOnly?'checked':''} onchange="window._codexSetFilter('ownedOnly',this.checked)">仅已拥有</label>
+  </div>`;
+  // 收集进度
+  const owned=new Set(PD.inventory||[]);
+  Object.values(PD.equipment||{}).forEach(id=>{if(id)owned.add(id)});
+  const total=EQUIPMENT_DB.length;
+  const ownedCount=owned.size;
+  const pct=Math.round(ownedCount/total*100);
+  html+=`<div class="codex-progress">
+    <div class="codex-prog-text">收集进度 <b>${ownedCount}</b>/<b>${total}</b> (${pct}%)</div>
+    <div class="codex-prog-bar"><div class="codex-prog-fill" style="width:${pct}%"></div></div>
+  </div>`;
+  // 装备列表（按槽位分组）
+  html+=`<div class="codex-content" id="codex-equip-content">`;
+  const grouped={};
+  EQUIPMENT_DB.forEach(eq=>{
+    if(F.slot!=='all'&&eq.slot!==F.slot)return;
+    if(F.rarity!=='all'&&eq.rarity!==F.rarity)return;
+    if(F.ownedOnly&&!owned.has(eq.id))return;
+    if(!grouped[eq.slot])grouped[eq.slot]=[];
+    grouped[eq.slot].push(eq);
+  });
+  const slotOrder=F.slot!=='all'?[F.slot]:EQUIP_SLOT_ORDER;
+  slotOrder.forEach(slot=>{
+    const items=grouped[slot];
+    if(!items||items.length===0)return;
+    // 按品质排序
+    items.sort((a,b)=>RARITY_ORDER.indexOf(a.rarity)-RARITY_ORDER.indexOf(b.rarity));
+    html+=`<div class="codex-group">
+      <div class="codex-group-title">${EQUIP_SLOT_NAMES[slot]} <span class="codex-group-count">${items.length}件</span></div>
+      <div class="codex-cards">`;
+    items.forEach(eq=>{
+      const isOwned=owned.has(eq.id);
+      const enhLv=PD.equipEnhance?PD.equipEnhance[eq.id]||0:0;
+      const isEquipped=Object.values(PD.equipment||{}).includes(eq.id);
+      const rarCol=RARITY_COLOR[eq.rarity]||'#aaa';
+      const heroReq=eq.classReq?ALL_HEROES[eq.classReq]:null;
+      const setInfo=eq.setId?SET_BONUSES[eq.setId]:null;
+      html+=`<div class="codex-card rarity-${eq.rarity}${isOwned?' owned':''}${isEquipped?' equipped':''}" onclick="window._codexShowDetail('${eq.id}')">
+        <div class="cc-owned-badge">${isEquipped?'装备中':isOwned?'已拥有':''}</div>
+        <div class="cc-icon">${eq.icon}</div>
+        <div class="cc-name" style="color:${rarCol}">${eq.name}${enhLv>0?'<span class="cc-enh">+'+enhLv+'</span>':''}</div>
+        <div class="cc-rarity" style="color:${rarCol}">${RARITY_NAME[eq.rarity]}</div>
+        ${heroReq?`<div class="cc-class">${heroReq.icon} ${heroReq.name}专属</div>`:''}
+        <div class="cc-stats">${eq.atk>0?'⚔'+eq.atk+' ':''}${eq.hp>0?'❤'+eq.hp+' ':''}${eq.armor>0?'🛡'+eq.armor+' ':''}${eq.critRate>0?'💥'+(eq.critRate*100).toFixed(0)+'%':''}${eq.spd>0?' 💨'+eq.spd:''}</div>
+        ${eq.effectDesc?`<div class="cc-effect">${eq.effectDesc}</div>`:''}
+        ${setInfo?`<div class="cc-set">${setInfo.name}</div>`:''}
+      </div>`;
+    });
+    html+=`</div></div>`;
+  });
+  if(Object.keys(grouped).length===0){
+    html+=`<div class="codex-empty">没有找到匹配的装备</div>`;
+  }
+  html+=`</div>`;
+  // Build推荐区（默认隐藏）
+  html+=`<div class="codex-content" id="codex-build-content" style="display:none"></div>`;
+  body.innerHTML=html;
+}
+
+function renderBuildRecommends(PD,overrideHero){
+  const container=$('codex-build-content');if(!container)return;
+  const heroId=overrideHero||PD.selectedHero||'warrior';
+  const hero=ALL_HEROES[heroId];
+  // 筛选当前英雄+通用的Build
+  let builds=BUILD_RECOMMENDS.filter(b=>b.heroId===heroId);
+  // 如果当前英雄没有build，显示所有
+  const showAll=builds.length===0;
+  if(showAll)builds=BUILD_RECOMMENDS;
+  let html=`<div class="build-hero-select">
+    <div class="build-hero-label">选择英雄查看推荐Build：</div>
+    <div class="build-hero-grid">`;
+  Object.values(ALL_HEROES).forEach(h=>{
+    const cnt=BUILD_RECOMMENDS.filter(b=>b.heroId===h.id).length;
+    html+=`<div class="build-hero-btn${h.id===heroId?' active':''}" onclick="window._buildSelectHero('${h.id}')">
+      <span class="bhb-icon">${h.icon}</span><span class="bhb-name">${h.name}</span><span class="bhb-cnt">${cnt}套</span>
+    </div>`;
+  });
+  html+=`</div></div>`;
+
+  // Build卡片列表
+  builds.forEach(build=>{
+    const bHero=ALL_HEROES[build.heroId];
+    html+=`<div class="build-card tier-${build.tier.toLowerCase()}">
+      <div class="bc-header">
+        <div class="bc-tier">${build.tier}</div>
+        <div class="bc-title">${build.name}</div>
+        <div class="bc-hero">${bHero.icon} ${bHero.name}</div>
+      </div>
+      <div class="bc-desc">${build.desc}</div>
+      
+      <div class="bc-section">
+        <div class="bc-section-title">🎯 推荐技能</div>
+        <div class="bc-skills">`;
+    build.skills.forEach(sid=>{
+      const sk=SKILL_DB.find(s=>s.id===sid)||SKILL_COMBOS.find(s=>s.id===sid);
+      if(!sk)return;
+      const rarCol=RARITY_COLOR[sk.rarity]||'#aaa';
+      html+=`<div class="bc-skill-tag" style="border-color:${rarCol}"><span class="bst-icon">${sk.icon}</span><span class="bst-name">${sk.name}</span></div>`;
+    });
+    html+=`</div></div>
+      
+      <div class="bc-section">
+        <div class="bc-section-title">🌟 关键天赋</div>
+        <div class="bc-talents">`;
+    if(build.talents){
+      const trees=HERO_TALENT_TREES[build.heroId];
+      Object.entries(build.talents).forEach(([treeKey,ids])=>{
+        const tree=trees?trees[treeKey]:null;
+        if(!tree)return;
+        ids.forEach(tid=>{
+          let talentName=tid;
+          for(const tier of tree.tiers){
+            const found=tier.choices.find(c=>c.id===tid);
+            if(found){talentName=found.name;break}
+          }
+          html+=`<span class="bc-talent-tag" style="border-color:${tree.color}">${talentName}</span>`;
+        });
+      });
+    }
+    html+=`</div></div>
+
+      <div class="bc-section">
+        <div class="bc-section-title">🛡️ 推荐装备</div>
+        <div class="bc-equips">`;
+    build.equips.forEach(eid=>{
+      const eq=EQUIPMENT_DB.find(e=>e.id===eid);
+      if(!eq)return;
+      const rarCol=RARITY_COLOR[eq.rarity]||'#aaa';
+      const isOwned=(PD.inventory||[]).includes(eid)||Object.values(PD.equipment||{}).includes(eid);
+      html+=`<div class="bc-equip-tag${isOwned?' owned':''}" style="border-color:${rarCol}">
+        <span>${eq.icon}</span><span style="color:${rarCol}">${eq.name}</span>${isOwned?'<span class="bc-eq-owned">✓</span>':''}
+      </div>`;
+    });
+    // 套装效果检测
+    const setIds=build.equips.map(eid=>EQUIPMENT_DB.find(e=>e.id===eid)).filter(Boolean).map(e=>e.setId).filter(Boolean);
+    const setCounts={};setIds.forEach(s=>setCounts[s]=(setCounts[s]||0)+1);
+    Object.entries(setCounts).filter(([,c])=>c>=2).forEach(([sid])=>{
+      const sb=SET_BONUSES[sid];
+      if(sb)html+=`<div class="bc-set-bonus">${sb.name}: ${sb.bonus2.desc}</div>`;
+    });
+    html+=`</div></div>
+
+      <div class="bc-section">
+        <div class="bc-section-title">🔗 乘数效应分析</div>
+        <div class="bc-synergies">`;
+    build.synergy.forEach(syn=>{
+      html+=`<div class="bc-synergy">
+        <div class="bc-syn-header"><span class="bc-syn-icon">${syn.icon}</span><span class="bc-syn-title">${syn.title}</span><span class="bc-syn-mult">${syn.mult}</span></div>
+        <div class="bc-syn-detail">${syn.detail}</div>
+      </div>`;
+    });
+    html+=`</div>
+        <div class="bc-total-mult">
+          <span class="bc-tm-label">总乘数效应</span>
+          <span class="bc-tm-val">${build.totalMult}</span>
+        </div>
+      </div>
+
+      <div class="bc-ratings">
+        <div class="bc-rating"><div class="bc-r-label">攻击</div><div class="bc-r-bar"><div class="bc-r-fill bc-r-atk" style="width:${build.ratingAtk*10}%"></div></div><div class="bc-r-val">${build.ratingAtk}</div></div>
+        <div class="bc-rating"><div class="bc-r-label">防御</div><div class="bc-r-bar"><div class="bc-r-fill bc-r-def" style="width:${build.ratingDef*10}%"></div></div><div class="bc-r-val">${build.ratingDef}</div></div>
+        <div class="bc-rating"><div class="bc-r-label">续航</div><div class="bc-r-bar"><div class="bc-r-fill bc-r-surv" style="width:${build.ratingSurvival*10}%"></div></div><div class="bc-r-val">${build.ratingSurvival}</div></div>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML=html;
+}
+
+function codexShowDetail(PD,eqId){
+  const eq=EQUIPMENT_DB.find(e=>e.id===eqId);if(!eq)return;
+  const isOwned=(PD.inventory||[]).includes(eqId)||Object.values(PD.equipment||{}).includes(eqId);
+  const isEquipped=Object.values(PD.equipment||{}).includes(eqId);
+  const enhLv=PD.equipEnhance?PD.equipEnhance[eqId]||0:0;
+  const rarCol=RARITY_COLOR[eq.rarity]||'#aaa';
+  const heroReq=eq.classReq?ALL_HEROES[eq.classReq]:null;
+  const setInfo=eq.setId?SET_BONUSES[eq.setId]:null;
+  // 计算强化后属性
+  const mult=enhLv>0?1+enhLv*ENHANCE_DATA.STAT_PER_LEVEL:1;
+  const rarMult=ENHANCE_DATA.RARITY_MULT[eq.rarity]||1;
+  // 查找使用此装备的推荐Build
+  const relatedBuilds=BUILD_RECOMMENDS.filter(b=>b.equips.includes(eqId));
+  
+  let html=`<div class="codex-detail-overlay" onclick="this.remove()">
+    <div class="codex-detail" onclick="event.stopPropagation()">
+      <div class="cdet-close" onclick="this.closest('.codex-detail-overlay').remove()">✕</div>
+      <div class="cdet-header rarity-${eq.rarity}">
+        <div class="cdet-icon">${eq.icon}</div>
+        <div class="cdet-info">
+          <div class="cdet-name" style="color:${rarCol}">${eq.name}${enhLv>0?' <span class="cdet-enh">+'+enhLv+'</span>':''}</div>
+          <div class="cdet-rarity" style="color:${rarCol}">${RARITY_NAME[eq.rarity]}${heroReq?' · '+heroReq.icon+heroReq.name+'专属':' · 通用'}</div>
+          <div class="cdet-slot">${EQUIP_SLOT_NAMES[eq.slot]}</div>
+        </div>
+        <div class="cdet-status">${isEquipped?'<span class="cdet-equipped">装备中</span>':isOwned?'<span class="cdet-owned">已拥有</span>':'<span class="cdet-notowned">未拥有</span>'}</div>
+      </div>
+      
+      <div class="cdet-section">
+        <div class="cdet-section-title">基础属性</div>
+        <div class="cdet-attrs">
+          ${eq.atk>0?`<div class="cdet-attr"><span class="cda-icon">⚔️</span><span class="cda-label">攻击力</span><span class="cda-val">+${eq.atk}</span>${enhLv>0?`<span class="cda-enh">→+${Math.round(eq.atk*mult*rarMult)}</span>`:''}</div>`:''}
+          ${eq.hp>0?`<div class="cdet-attr"><span class="cda-icon">❤️</span><span class="cda-label">生命值</span><span class="cda-val">+${eq.hp}</span>${enhLv>0?`<span class="cda-enh">→+${Math.round(eq.hp*mult*rarMult)}</span>`:''}</div>`:''}
+          ${eq.hp<0?`<div class="cdet-attr"><span class="cda-icon">💔</span><span class="cda-label">生命值</span><span class="cda-val cda-neg">${eq.hp}</span></div>`:''}
+          ${eq.armor>0?`<div class="cdet-attr"><span class="cda-icon">🛡️</span><span class="cda-label">护甲</span><span class="cda-val">+${eq.armor}</span></div>`:''}
+          ${eq.armor<0?`<div class="cdet-attr"><span class="cda-icon">🛡️</span><span class="cda-label">护甲</span><span class="cda-val cda-neg">${eq.armor}</span></div>`:''}
+          ${eq.critRate>0?`<div class="cdet-attr"><span class="cda-icon">💥</span><span class="cda-label">暴击率</span><span class="cda-val">+${(eq.critRate*100).toFixed(0)}%</span></div>`:''}
+          ${eq.spd>0?`<div class="cdet-attr"><span class="cda-icon">💨</span><span class="cda-label">移速</span><span class="cda-val">+${eq.spd}</span></div>`:''}
+        </div>
+      </div>
+      
+      ${eq.effectDesc?`<div class="cdet-section">
+        <div class="cdet-section-title">✨ 特殊效果</div>
+        <div class="cdet-effect-box">${eq.effectDesc}</div>
+      </div>`:''}
+      
+      ${setInfo?`<div class="cdet-section">
+        <div class="cdet-section-title">🔗 套装效果</div>
+        <div class="cdet-set">
+          <div class="cdet-set-name">${setInfo.name}</div>
+          <div class="cdet-set-pieces">所需装备: ${setInfo.pieces.map(pid=>{const pe=EQUIPMENT_DB.find(e=>e.id===pid);return pe?pe.icon+pe.name:pid}).join(' + ')}</div>
+          <div class="cdet-set-bonus">2件套: ${setInfo.bonus2.desc}</div>
+        </div>
+      </div>`:''}
+      
+      <div class="cdet-section">
+        <div class="cdet-section-title">📋 获取方式</div>
+        <div class="cdet-acquire">🔨 锻造 (${Math.round(eq.forgeTime/3600)}小时)</div>
+      </div>
+      
+      ${relatedBuilds.length>0?`<div class="cdet-section">
+        <div class="cdet-section-title">⚔️ 推荐搭配</div>
+        <div class="cdet-builds">${relatedBuilds.map(b=>{
+          const bh=ALL_HEROES[b.heroId];
+          return `<div class="cdet-build-tag" onclick="window._buildSelectHero('${b.heroId}');window._codexSwitchTab(document.querySelector('.codex-tab[data-tab=build]'),'build');this.closest('.codex-detail-overlay').remove()">
+            <span class="cdb-tier">${b.tier}</span><span>${bh.icon}</span><span>${b.name}</span>
+          </div>`;
+        }).join('')}</div>
+      </div>`:''}
+    </div>
+  </div>`;
+  const overlay=document.createElement('div');
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay.firstElementChild);
+}
+
+// ==================== 心流引导系统 ====================
+// === 渐进解锁规则：系统 → 解锁条件 ===
+const UNLOCK_RULES={
+  // 底部导航（核心系统）
+  fight:    ()=>true,                          // 出战——始终可用
+  signin:   ()=>true,                          // 签到——始终可用
+  heroes:   (PD)=>PD.totalGames>=1,            // 英雄——打完第1局
+  forge:    (PD)=>PD.totalGames>=2||getChaptersCleared(PD)>=1, // 锻造——通关第1章或打完2局
+  talent:   (PD)=>{const hd=PD.heroes[PD.selectedHero];return hd&&(hd.level||1)>=3}, // 天赋——英雄等级3
+  arena:    (PD)=>getChaptersCleared(PD)>=1,   // 竞技场——通关第1章
+  shop:     (PD)=>PD.totalGames>=3,            // 商城——打完3局
+  // 右侧快捷入口（辅助系统）
+  'daily-quest': (PD)=>PD.totalGames>=1,       // 每日任务——打完1局
+  'lucky-draw':  (PD)=>PD.totalGames>=2,       // 抽奖——打完2局
+  enhance:      (PD)=>PD.inventory&&PD.inventory.length>=1, // 强化——拥有1件装备
+  battlepass:   (PD)=>PD.totalGames>=3||PD.daysSinceInstall>=1, // 通行证——3局或次日
+  achievements: (PD)=>PD.totalGames>=2,        // 成就——打完2局
+  codex:        (PD)=>PD.inventory&&PD.inventory.length>=2,  // 图鉴——拥有2件装备
+  guild:        (PD)=>PD.daysSinceInstall>=2||getChaptersCleared(PD)>=3 // 公会——3天或通3章
+};
+
+// 应用渐进解锁——隐藏未解锁的按钮，新解锁的显示NEW动画
+function applyProgressiveUnlock(PD){
+  if(!PD._unlocked)PD._unlocked=[];
+  const allBtns=document.querySelectorAll('[data-unlock]');
+  allBtns.forEach(btn=>{
+    const key=btn.dataset.unlock;
+    const rule=UNLOCK_RULES[key];
+    if(!rule)return;
+    const unlocked=rule(PD);
+    if(unlocked){
+      btn.classList.remove('sys-locked');
+      // 检测是否为新解锁
+      if(!PD._unlocked.includes(key)){
+        PD._unlocked.push(key);
+        btn.classList.add('sys-new');
+        setTimeout(()=>btn.classList.remove('sys-new'),5000);
+      }
+    }else{
+      btn.classList.add('sys-locked');
+    }
+  });
+}
+
+// === 主线任务链——线性引导玩家核心路径 ===
+const QUEST_CHAIN=[
+  {id:'q_first_battle', icon:'⚔️', title:'初入战场',  desc:'完成第一场战斗',
+    check:(PD)=>PD.totalGames>=1,        action:'chapter-select'},
+  {id:'q_signin',       icon:'📅', title:'领取签到',  desc:'去签到页领取今日奖励',
+    check:(PD)=>PD.signInDay>=1,         action:'sign-in'},
+  {id:'q_second_battle',icon:'⚔️', title:'再战一局',  desc:'完成第二场战斗，适应战场节奏',
+    check:(PD)=>PD.totalGames>=2,        action:'chapter-select'},
+  {id:'q_check_heroes', icon:'🦸', title:'英雄殿堂',  desc:'查看你的英雄，了解技能和属性',
+    check:(PD)=>PD._visitedHeroes,       action:'heroes'},
+  {id:'q_forge_equip',  icon:'🔨', title:'锻造装备',  desc:'在锻造炉打造你的第一件装备',
+    check:(PD)=>PD.inventory&&PD.inventory.length>=1, action:'forge'},
+  {id:'q_clear_ch1',    icon:'💀', title:'击败霍格',  desc:'通关第1章·艾尔文森林',
+    check:(PD)=>PD.chapters.ch1&&PD.chapters.ch1.cleared, action:'chapter-select'},
+  {id:'q_arena_try',    icon:'🏟️', title:'竞技场初试',desc:'在竞技场挑战一次对手',
+    check:(PD)=>(PD.dailyProgress.arenaFights||0)>=1||PD.arenaWins>=1, action:'arena'},
+  {id:'q_talent',       icon:'🌟', title:'天赋觉醒',  desc:'为英雄点亮第一个天赋',
+    check:(PD)=>{
+      if(!PD.talents)return false;
+      const ht=PD.talents[PD.selectedHero];
+      if(!ht)return false;
+      return Object.values(ht).some(arr=>Array.isArray(arr)&&arr.some(Boolean));
+    }, action:'talent'},
+  {id:'q_clear_ch2',    icon:'💀', title:'击败范克里夫',desc:'通关第2章·西部荒野',
+    check:(PD)=>PD.chapters.ch2&&PD.chapters.ch2.cleared, action:'chapter-select'},
+  {id:'q_enhance',      icon:'🔨', title:'装备强化',  desc:'强化一件装备提升战力',
+    check:(PD)=>{if(!PD.equipEnhance)return false;return Object.values(PD.equipEnhance).some(v=>v>=1)},
+    action:'enhance'},
+  {id:'q_clear_ch3',    icon:'💀', title:'荆棘谷之王',desc:'通关第3章·荆棘谷',
+    check:(PD)=>PD.chapters.ch3&&PD.chapters.ch3.cleared, action:'chapter-select'},
+  {id:'q_guild',        icon:'👥', title:'加入公会',  desc:'创建或加入一个公会',
+    check:(PD)=>PD.guildJoined,          action:'guild'},
+];
+
+// 获取当前主线任务
+function getCurrentQuest(PD){
+  for(let i=0;i<QUEST_CHAIN.length;i++){
+    if(!QUEST_CHAIN[i].check(PD))return QUEST_CHAIN[i];
+  }
+  return null; // 全部完成
+}
+
+// 刷新主线任务条UI
+function refreshQuestBar(PD){
+  const bar=$('mm-quest-bar');if(!bar)return;
+  const quest=getCurrentQuest(PD);
+  if(!quest){bar.style.display='none';return}
+  bar.style.display='flex';
+  $('mqb-icon').textContent=quest.icon;
+  $('mqb-title').textContent='主线·'+quest.title;
+  $('mqb-desc').textContent=quest.desc;
+  // 保存当前任务action供点击使用
+  bar.dataset.action=quest.action;
+}
+
+// === 智能"下一步"提示——根据玩家状态推荐最重要的行动 ===
+function refreshNextStep(PD){
+  const el=$('mm-nextstep');if(!el)return;
+  const hint=calcNextStep(PD);
+  if(!hint){el.style.display='none';return}
+  el.style.display='block';
+  $('mns-icon').textContent=hint.icon;
+  $('mns-text').textContent=hint.text;
+  $('mns-hint').textContent=hint.hint;
+  el.dataset.action=hint.action;
+}
+
+function calcNextStep(PD){
+  const today=new Date().toDateString();
+  // 1. 未签到——优先签到
+  if(PD.lastSignDate!==today&&PD.signInDay<7)
+    return {icon:'📅',text:'签到领奖',hint:'今日签到奖励已就绪',action:'sign-in'};
+  // 2. 从未打过——直接引导出战
+  if(PD.totalGames===0)
+    return {icon:'⚔️',text:'开始冒险！',hint:'点击进入第1章·艾尔文森林',action:'chapter-select'};
+  // 3. 有锻造完成——领取
+  if(PD.forgeSlots&&PD.forgeSlots.some(s=>s&&Date.now()>=s.endTime))
+    return {icon:'📦',text:'装备就绪',hint:'锻造完成，点击领取装备',action:'forge'};
+  // 4. 每日任务有可领取
+  if(PD.dailyQuests&&PD.dailyQuests.some(q=>{const prog=PD.dailyProgress[q.type]||0;return prog>=q.req&&!q.claimed}))
+    return {icon:'📋',text:'领取任务奖励',hint:'有已完成的每日任务',action:'daily-quest'};
+  // 5. 今日首胜未拿
+  if(!PD.firstWinToday)
+    return {icon:'⚔️',text:'今日首胜×3',hint:'首胜三倍奖励还没拿',action:'chapter-select'};
+  // 6. 有未装备的更好装备
+  if(PD.inventory&&PD.inventory.length>0){
+    const emptySlots=['weapon','armor','helmet','boots','trinket','ring'].filter(s=>!PD.equipment[s]);
+    if(emptySlots.length>0)
+      return {icon:'🔨',text:'装备空位',hint:emptySlots.length+'个装备槽未装备',action:'forge'};
+  }
+  // 7. 有碎片可升星
+  const hd=PD.heroes[PD.selectedHero];
+  if(hd&&(hd.star||0)<5){
+    const nextCost=window.DATA&&window.DATA.HERO_STAR?window.DATA.HERO_STAR.FRAG_COST[(hd.star||0)+1]:999;
+    if((hd.frags||0)>=nextCost)
+      return {icon:'⭐',text:'可以升星！',hint:'碎片足够为英雄升星',action:'heroes'};
+  }
+  // 8. 竞技场次数满
+  if(PD.arenaCharges>=5&&UNLOCK_RULES.arena(PD))
+    return {icon:'🏟️',text:'竞技场',hint:'5次挑战次数可用',action:'arena'};
+  // 9. 抽奖次数
+  if(PD.drawChances>0&&UNLOCK_RULES['lucky-draw'](PD))
+    return {icon:'🎰',text:'幸运转盘',hint:'今日还有'+PD.drawChances+'次免费抽奖',action:'lucky-draw'};
+  // 10. 默认——继续推图
+  return {icon:'⚔️',text:'继续冒险',hint:'挑战下一章节',action:'chapter-select'};
+}
+
+// === 新手引导（增强版：带遮罩聚光灯） ===
+function startEnhancedGuide(PD){
+  if(PD.totalGames>0||PD._guideV2Done)return;
+  const steps=[
+    {target:'.mm-hero-preview',text:'<b>欢迎来到艾泽拉斯！</b><br>这是你的英雄，每个职业都有独特的标志技能。',pos:'bottom'},
+    {target:'.mm-quest-bar',text:'<b>主线任务</b>会告诉你接下来该做什么。<br>跟着它走就不会迷路！',pos:'bottom'},
+    {target:'.nav-btn-main',text:'准备好了吗？点击<b>「出战」</b>开始你的第一场割草冒险！',pos:'top'},
+  ];
+  let step=0;
+  let overlayEl=null,spotEl=null,popEl=null;
+
+  function showStep(){
+    clearGuideEls();
+    if(step>=steps.length){PD._guideV2Done=true;return}
+    const s=steps[step];
+    const targetEl=document.querySelector(s.target);
+    if(!targetEl){step++;showStep();return}
+
+    const rect=targetEl.getBoundingClientRect();
+    const pad=8;
+
+    // 聚光灯遮罩
+    overlayEl=document.createElement('div');overlayEl.className='guide-overlay';
+    spotEl=document.createElement('div');spotEl.className='guide-spotlight';
+    spotEl.style.left=(rect.left-pad)+'px';spotEl.style.top=(rect.top-pad)+'px';
+    spotEl.style.width=(rect.width+pad*2)+'px';spotEl.style.height=(rect.height+pad*2)+'px';
+    overlayEl.appendChild(spotEl);
+
+    // 弹窗
+    popEl=document.createElement('div');popEl.className='guide-popup';
+    popEl.innerHTML=`<div class="guide-popup-step">${step+1} / ${steps.length}</div>
+      <div class="guide-popup-text">${s.text}</div>
+      <div class="guide-popup-btns">
+        <button class="guide-btn-skip" onclick="window._guideSkip()">跳过</button>
+        <button class="guide-btn-next" onclick="window._guideNext()">${step===steps.length-1?'开始冒险！':'下一步'}</button>
+      </div>`;
+
+    // 定位弹窗
+    if(s.pos==='bottom'){
+      popEl.style.top=(rect.bottom+12)+'px';popEl.style.left=Math.max(10,rect.left+rect.width/2-140)+'px';
+    }else{
+      popEl.style.bottom=(window.innerHeight-rect.top+12)+'px';popEl.style.left=Math.max(10,rect.left+rect.width/2-140)+'px';
+    }
+    overlayEl.appendChild(popEl);
+    document.body.appendChild(overlayEl);
+  }
+  function clearGuideEls(){
+    if(overlayEl&&overlayEl.parentNode)overlayEl.remove();
+    overlayEl=null;spotEl=null;popEl=null;
+  }
+  window._guideNext=function(){step++;showStep()};
+  window._guideSkip=function(){clearGuideEls();PD._guideV2Done=true};
+
+  // 延迟启动，等主城UI渲染完成
+  setTimeout(showStep,2000);
+}
+
 // ==================== 暴露到全局 ====================
 window.SYS={
   loadSave,saveToDisk,createDefaultPD,showRewardPopup,refreshMainMenu,
@@ -1003,6 +1592,10 @@ window.SYS={
   doFirstCharge,buyBattlePass,claimBpReward,
   // 新增养成系统
   heroUpStar,renderTalent,chooseTalent,renderEnhance,enhanceEquip,
-  addHeroXp,calcTalentBonus,calcEquipEnhanceBonus,calcTotalPower,renderStuckGuide
+  addHeroXp,calcTalentBonus,calcEquipEnhanceBonus,calcTotalPower,renderStuckGuide,
+  // 装备图鉴+Build推荐
+  renderEquipCodex,renderBuildRecommends,codexShowDetail,_setCodexFilter,
+  // 心流引导系统
+  applyProgressiveUnlock,refreshQuestBar,refreshNextStep,startEnhancedGuide,getCurrentQuest
 };
 })();
