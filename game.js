@@ -3332,7 +3332,7 @@ function processSkills(dt){
         scene.remove(bladeGroup);return}
       requestAnimationFrame(spinFn)};
     requestAnimationFrame(spinFn);}}
-  // 🔥 法师·烈焰风暴 — 火焰柱阵列喷射
+  // 🔥 法师·烈焰风暴 — 多条火蛇蜿蜒游动
   if(hasSkill('sig_firestorm')){const k='sig_firestorm';if(!skillTimers[k])skillTimers[k]=0;skillTimers[k]-=dt;if(skillTimers[k]<=0){
     const l=sklLv('sig_firestorm');const sk=skData('sig_firestorm');
     resetCd(k,sk,l);
@@ -3341,47 +3341,122 @@ function processSkills(dt){
     const dur=sk.duration+(l-1)*sk.durationPerLv;
     const ticks=Math.floor(dur/sk.tickRate);
     const t=nearest(hp,15);const center=t?t.mesh.position.clone():hp.clone();
-    // --- 火焰柱阵列视觉 ---
-    const pillarCount=4+l;const pillars=[];
-    for(let pi=0;pi<pillarCount;pi++){
-      const ang=(pi/pillarCount)*Math.PI*2+Math.random()*0.5;
-      const dist=Math.random()*r*0.7;
-      const px=center.x+Math.cos(ang)*dist,pz=center.z+Math.sin(ang)*dist;
-      // 火焰柱：着色器发光圆柱
-      const pillarH=1.5+Math.random()*2;
-      const pillarGeo=new THREE.CylinderGeometry(0.15+Math.random()*0.1,0.3+Math.random()*0.1,pillarH,6);
-      const pillarMat=new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending});
-      const pillar=new THREE.Mesh(pillarGeo,pillarMat);pillar.position.set(px,pillarH/2,pz);
-      // 内核亮芯
-      const coreMat=new THREE.MeshBasicMaterial({color:0xffdd44,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending});
-      const core=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.15,pillarH*0.8,4),coreMat);
-      pillar.add(core);
-      // 顶部火焰Sprite
-      const topSpr=new THREE.Sprite(new THREE.SpriteMaterial({color:0xff4400,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending}));
-      topSpr.position.y=pillarH/2;topSpr.scale.set(0.8,0.8,1);pillar.add(topSpr);
-      scene.add(pillar);pillars.push({mesh:pillar,baseH:pillarH,born:pi*0.08});
+    // --- 🐍 火蛇群 视觉效果 ---
+    const snakeCount=3+Math.floor(l/2); // 3~5条火蛇
+    const snakes=[];
+    const SEG=12; // 蛇身段数
+    const allMeshes=[];
+    for(let si=0;si<snakeCount;si++){
+      // 初始蛇形路径：从中心螺旋向外
+      const baseAng=(si/snakeCount)*Math.PI*2;
+      const speed=1.8+Math.random()*1.2; // 蛇的游动速度
+      const wFreq=2.5+Math.random()*1.5; // 蛇形摆动频率
+      const wAmp=0.6+Math.random()*0.4; // 蛇形摆动幅度
+      const orbitR=r*0.3+Math.random()*r*0.5; // 蛇游动的轨道半径
+      const headY=0.4+Math.random()*0.6; // 蛇头高度
+      // 蛇身：用多个球体串联，从头到尾渐变
+      const segments=[];
+      for(let j=0;j<SEG;j++){
+        const ratio=j/SEG;
+        const segSize=Math.max(0.06,(1-ratio)*0.22+0.06); // 头大尾小
+        const geo=new THREE.SphereGeometry(segSize,5,4);
+        // 颜色从头部白黄->身体橙红->尾部暗红
+        const hue=ratio<0.3?0xffffaa:ratio<0.6?0xff8800:0xff3300;
+        const mat=new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:Math.max(0.15,0.85-ratio*0.7),blending:THREE.AdditiveBlending,depthWrite:false});
+        const seg=new THREE.Mesh(geo,mat);
+        seg.position.set(center.x,headY*(1-ratio*0.5),center.z);
+        scene.add(seg);segments.push(seg);allMeshes.push(seg);
+      }
+      // 蛇头火焰光晕Sprite
+      const headGlow=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffdd44,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending}));
+      headGlow.scale.set(0.6,0.6,1);segments[0].add(headGlow);
+      // 蛇眼（两个小亮点）
+      const eyeMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending});
+      const eyeL=new THREE.Mesh(new THREE.SphereGeometry(0.04,3,3),eyeMat);
+      eyeL.position.set(-0.08,0.06,0.12);segments[0].add(eyeL);
+      const eyeR=new THREE.Mesh(new THREE.SphereGeometry(0.04,3,3),eyeMat);
+      eyeR.position.set(0.08,0.06,0.12);segments[0].add(eyeR);
+      snakes.push({segments,baseAng,speed,wFreq,wAmp,orbitR,headY,
+        trail:[], // 头部历史位置用于身体跟随
+        phase:Math.random()*Math.PI*2});
     }
-    // 地面灼烧圈
-    const burnRing=new THREE.Mesh(new THREE.RingGeometry(0.3,r,20),
-      new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
-    burnRing.rotation.x=-Math.PI/2;burnRing.position.set(center.x,0.3,center.z);scene.add(burnRing);
+    // 地面灼烧光圈（多层）
+    const burnInner=new THREE.Mesh(new THREE.RingGeometry(0.2,r*0.5,24),
+      new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.15,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+    burnInner.rotation.x=-Math.PI/2;burnInner.position.set(center.x,0.3,center.z);scene.add(burnInner);allMeshes.push(burnInner);
+    const burnOuter=new THREE.Mesh(new THREE.RingGeometry(r*0.5,r,24),
+      new THREE.MeshBasicMaterial({color:0xff3300,transparent:true,opacity:0.1,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+    burnOuter.rotation.x=-Math.PI/2;burnOuter.position.set(center.x,0.3,center.z);scene.add(burnOuter);allMeshes.push(burnOuter);
     addDynLight(center,0xff4400,3,8,dur);
     screenFlash('#ff440022',.08,100);
-    // 持续tick伤害 + 火焰柱动画
-    let fireT=0;
-    const fireFn=()=>{if(!gameActive){pillars.forEach(p=>scene.remove(p.mesh));scene.remove(burnRing);return}
+    // 初始爆发：中心火焰喷射
+    emitGpuBurst({x:center.x,y:0.5,z:center.z},0xff6600,10,3,2.5,0.5,{gravity:3});
+    emitGpuBurst({x:center.x,y:0.5,z:center.z},0xffaa00,6,2,2,0.4,{gravity:2});
+    // --- 动画循环：火蛇游动 ---
+    let fireT=0;const fadeStart=dur-0.4;
+    const fireFn=()=>{if(!gameActive){allMeshes.forEach(m=>scene.remove(m));return}
       fireT+=0.016;
-      // 火焰柱脉动动画
-      pillars.forEach(p=>{
-        const age=fireT-p.born;if(age<0)return;
-        const pulse=1+Math.sin(age*8)*0.15;
-        p.mesh.scale.set(pulse,1+Math.sin(age*5)*0.1,pulse);
-        p.mesh.material.opacity=Math.max(0,0.7*(1-fireT/(dur+0.3)));
-        // 上升火星粒子
-        if(Math.random()<0.15)emitGpuP(p.mesh.position,Math.random()<0.5?0xff6600:0xffaa00,{vy:3+Math.random()*2,vx:(Math.random()-0.5)*1.5,vz:(Math.random()-0.5)*1.5,life:0.4,size:1.5,gravity:-2,shrink:true});
+      const globalFade=fireT>fadeStart?Math.max(0,1-(fireT-fadeStart)/0.4):1;
+      snakes.forEach(sn=>{
+        // 计算蛇头位置：在中心周围做蛇形运动
+        const angNow=sn.baseAng+fireT*sn.speed;
+        const wobble=Math.sin(fireT*sn.wFreq+sn.phase)*sn.wAmp;
+        const curR=sn.orbitR+wobble*0.5;
+        const hx=center.x+Math.cos(angNow)*curR;
+        const hz=center.z+Math.sin(angNow)*curR;
+        const hy=sn.headY+Math.sin(fireT*3+sn.phase)*0.15; // 轻微上下起伏
+        // 记录头部轨迹
+        sn.trail.unshift({x:hx,y:hy,z:hz});
+        if(sn.trail.length>SEG*3)sn.trail.length=SEG*3; // 保留足够的历史
+        // 更新蛇身每一段：跟随头部轨迹
+        for(let j=0;j<SEG;j++){
+          const trailIdx=j*2; // 每段间隔2帧的轨迹
+          if(trailIdx<sn.trail.length){
+            const tp=sn.trail[trailIdx];
+            sn.segments[j].position.set(tp.x,tp.y*(1-j/(SEG*2)),tp.z);
+          }
+          // 蛇身脉动
+          const pulse=1+Math.sin(fireT*10-j*0.8)*0.12;
+          sn.segments[j].scale.setScalar(pulse);
+          // 透明度衰减
+          const baseOp=Math.max(0.15,0.85-(j/SEG)*0.7);
+          sn.segments[j].material.opacity=baseOp*globalFade;
+        }
+        // 让蛇头朝向运动方向
+        if(sn.trail.length>2){
+          const dx=sn.trail[0].x-sn.trail[2].x;
+          const dz=sn.trail[0].z-sn.trail[2].z;
+          sn.segments[0].rotation.y=Math.atan2(dx,dz);
+        }
+        // 火蛇尾迹粒子
+        if(Math.random()<0.3){
+          const tp=sn.trail[Math.min(3,sn.trail.length-1)]||sn.trail[0];
+          if(tp)emitGpuP({x:tp.x,y:tp.y,z:tp.z},Math.random()<0.5?0xff6600:0xffaa00,
+            {vy:1.5+Math.random()*2,vx:(Math.random()-0.5)*1,vz:(Math.random()-0.5)*1},
+            1.5,0.35,{gravity:-1,shrink:true});
+        }
+        // 蛇头火焰粒子
+        if(Math.random()<0.4){
+          emitGpuP({x:hx,y:hy,z:hz},0xffdd44,
+            {vy:2+Math.random()*1.5,vx:(Math.random()-0.5)*0.8,vz:(Math.random()-0.5)*0.8},
+            2,0.3,{gravity:-1.5,shrink:true});
+        }
+        // 蛇身随机火星
+        if(Math.random()<0.15){
+          const midIdx=Math.floor(Math.random()*SEG);
+          const sp=sn.segments[midIdx].position;
+          emitGpuP({x:sp.x,y:sp.y+0.1,z:sp.z},0xff4400,
+            {vy:1+Math.random(),vx:(Math.random()-0.5)*0.6,vz:(Math.random()-0.5)*0.6},
+            1,0.25,{gravity:2,shrink:true});
+        }
       });
-      burnRing.material.opacity=Math.max(0,0.2*(1-fireT/dur));
-      if(fireT>=dur+0.3){pillars.forEach(p=>scene.remove(p.mesh));scene.remove(burnRing);return}
+      // 地面光圈脉动
+      const burnPulse=0.15+Math.sin(fireT*6)*0.05;
+      burnInner.material.opacity=burnPulse*globalFade;
+      burnOuter.material.opacity=(burnPulse*0.6)*globalFade;
+      burnInner.rotation.z=fireT*0.3; // 缓慢旋转
+      burnOuter.rotation.z=-fireT*0.2;
+      if(fireT>=dur+0.3){allMeshes.forEach(m=>scene.remove(m));return}
       requestAnimationFrame(fireFn)};
     requestAnimationFrame(fireFn);
     // 伤害tick
@@ -4510,13 +4585,104 @@ function baseAttack(dt){
     a.attackTimer=0.4;
   }
   S.atkHitCount++;
-  // ⚔️ 战士 — 近战AOE旋风
+  // ⚔️ 战士 — 前方扇形挥砍
   if(hero==='warrior'){
     const r=cfg.atkRange;const dmg=baseDmg*berserkerAtkMult;
-    aoeEffect(hp,r,0xcc3333,.3);screenShake(.03,.08);
+    // 获取英雄朝向（优先用移动方向，静止时用rotation.y）
+    const facingAng=heroMesh.rotation.y; // atan2(moveDir.x, moveDir.y)
+    // 扇形半角（60度 = 总120度扇形）
+    const halfArc=Math.PI/3;
+    // --- 扇形挥砍视觉特效 ---
+    const slashGroup=new THREE.Group();
+    slashGroup.position.set(hp.x,0.35,hp.z);
+    // 扇形面片（用ShapeGeometry绘制扇形）
+    const arcSegs=16;const shape=new THREE.Shape();
+    shape.moveTo(0,0);
+    for(let i=0;i<=arcSegs;i++){
+      const a=-halfArc+i*(2*halfArc)/arcSegs;
+      shape.lineTo(Math.sin(a)*r,Math.cos(a)*r);
+    }
+    shape.lineTo(0,0);
+    const slashGeo=new THREE.ShapeGeometry(shape);
+    // 外层扇形：红色半透明
+    const slashMat=new THREE.MeshBasicMaterial({color:berserkerActive?0xff2200:0xcc3333,transparent:true,opacity:0.45,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4});
+    const slashMesh=new THREE.Mesh(slashGeo,slashMat);
+    slashMesh.rotation.x=-Math.PI/2;
+    slashMesh.rotation.z=-facingAng; // 对齐英雄朝向
+    slashGroup.add(slashMesh);
+    // 内层扇形（亮芯，更小范围）
+    const innerShape=new THREE.Shape();
+    innerShape.moveTo(0,0);
+    const innerR=r*0.6;
+    for(let i=0;i<=arcSegs;i++){
+      const a=-halfArc*0.7+i*(2*halfArc*0.7)/arcSegs;
+      innerShape.lineTo(Math.sin(a)*innerR,Math.cos(a)*innerR);
+    }
+    innerShape.lineTo(0,0);
+    const innerMat=new THREE.MeshBasicMaterial({color:berserkerActive?0xff6644:0xff8866,transparent:true,opacity:0.35,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false});
+    const innerMesh=new THREE.Mesh(new THREE.ShapeGeometry(innerShape),innerMat);
+    innerMesh.rotation.x=-Math.PI/2;
+    innerMesh.rotation.z=-facingAng;
+    slashGroup.add(innerMesh);
+    // 弧形刀光轨迹（沿弧线的亮边）
+    const trailPts=[];
+    for(let i=0;i<=20;i++){
+      const a=-halfArc+i*(2*halfArc)/20;
+      const tr=r*(0.85+Math.sin(i/20*Math.PI)*0.15); // 弧线微微外凸
+      const wx=Math.sin(facingAng+a)*tr;
+      const wz=Math.cos(facingAng+a)*tr;
+      trailPts.push(new THREE.Vector3(wx,0.05,wz));
+    }
+    const trailCurve=new THREE.CatmullRomCurve3(trailPts);
+    const trailGeo=new THREE.TubeGeometry(trailCurve,20,0.06,4,false);
+    const trailMat=new THREE.MeshBasicMaterial({color:0xffaa66,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false});
+    const trailMesh=new THREE.Mesh(trailGeo,trailMat);
+    slashGroup.add(trailMesh);
+    scene.add(slashGroup);
+    // 弧线端点火花粒子
+    const sparkAng1=facingAng-halfArc,sparkAng2=facingAng+halfArc;
+    for(let i=0;i<3;i++){
+      const sa=sparkAng1+Math.random()*(sparkAng2-sparkAng1);
+      const sx=hp.x+Math.sin(sa)*r,sz=hp.z+Math.cos(sa)*r;
+      emitGpuP({x:sx,y:0.5,z:sz},berserkerActive?0xff4400:0xff8844,
+        {vy:2+Math.random()*2,vx:(Math.random()-0.5)*2,vz:(Math.random()-0.5)*2},
+        2,0.3,{gravity:5,shrink:true});
+    }
+    addDynLight(hp,berserkerActive?0xff2200:0xcc3333,1.5,r*1.5,0.18);
+    // 扇形特效动画（快速扩张+消散）
+    let slashT=0;const slashDur=0.25;
+    const slashFn=()=>{if(!gameActive){scene.remove(slashGroup);return}
+      slashT+=0.016;
+      const p=slashT/slashDur;
+      // 扇形从内向外扩张
+      const sc=0.5+p*0.5;
+      slashMesh.scale.setScalar(sc);
+      innerMesh.scale.setScalar(sc*1.1);
+      // 透明度衰减
+      slashMat.opacity=0.45*(1-p);
+      innerMat.opacity=0.35*(1-p*0.8);
+      trailMat.opacity=0.7*(1-p);
+      if(slashT>=slashDur){scene.remove(slashGroup);return}
+      requestAnimationFrame(slashFn)};
+    requestAnimationFrame(slashFn);
+    screenShake(.04,.1);
     if(SFX.heroAtk)SFX.heroAtk('warrior');
     if(berserkerActive){screenFlash('#ff2200',.05,60)} // 狂暴视觉反馈
-    S.enemies.forEach(e=>{if(e.hp>0&&e.mesh.position.distanceTo(hp)<r)dmgEnemy(e,dmg,{isFireDmg:false,...extraCritOpts})})}
+    // --- 扇形伤害判定 ---
+    S.enemies.forEach(e=>{
+      if(e.hp<=0)return;
+      const ex=e.mesh.position.x-hp.x,ez=e.mesh.position.z-hp.z;
+      const dist=Math.sqrt(ex*ex+ez*ez);
+      if(dist>r)return; // 超出范围
+      // 计算敌人相对英雄的角度，判断是否在扇形内
+      const enemyAng=Math.atan2(ex,ez);
+      let angDiff=enemyAng-facingAng;
+      while(angDiff>Math.PI)angDiff-=Math.PI*2;
+      while(angDiff<-Math.PI)angDiff+=Math.PI*2;
+      if(Math.abs(angDiff)<=halfArc){
+        dmgEnemy(e,dmg,{isFireDmg:false,...extraCritOpts});
+      }
+    })}
   // 🔥 法师 — 远程多目标火球(点燃DOT由dmgEnemy中被动触发)
   else if(hero==='mage'){
     const dmg=baseDmg;if(SFX.heroAtk)SFX.heroAtk('mage');
@@ -6286,6 +6452,38 @@ try{
   if(_pCon){for(let i=0;i<15;i++){const p=document.createElement('div');p.className='mm-particle';
     p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=(-Math.random()*15)+'s';
     p.style.width=p.style.height=(2+Math.random()*3)+'px';p.style.opacity=.1+Math.random()*.3;_pCon.appendChild(p)}}
+  // === 魔兽格言轮播系统 ===
+  const _wowQuotes=[
+    {q:'为了艾泽拉斯！',s:'黑暗之门开启，战争一触即发'},
+    {q:'血与荣耀！',s:'部落的勇士，永不屈服于命运'},
+    {q:'为了联盟！',s:'暴风城的旗帜在风中猎猎作响'},
+    {q:'光明与你同在',s:'圣光照耀之处，黑暗无所遁形'},
+    {q:'我的怒火还没燃尽！',s:'拉格纳罗斯在熔火之心咆哮'},
+    {q:'巫妖王的意志',s:'寒冰王座上方，冰霜吞噬一切'},
+    {q:'你面对的是萨尔！',s:'大地的力量在萨满的手中涌动'},
+    {q:'没有人能活着离开！',s:'黑翼之巢的暗影中回荡着龙啸'},
+    {q:'阿尔萨斯……还记得吗？',s:'洛丹伦的王子踏上了不归路'},
+    {q:'灰烬使者，苏醒吧！',s:'圣剑的光芒划破黑暗长空'},
+    {q:'时光之穴在召唤',s:'时间线的裂隙中潜伏着未知威胁'},
+    {q:'真正的狩猎现在开始',s:'丛林深处猛兽的目光在追踪猎物'},
+    {q:'暗影笼罩大地',s:'术士的恶魔在虚空中蠢蠢欲动'},
+    {q:'愿月神庇护你',s:'精灵的箭矢在月光下无声飞行'},
+    {q:'工程学万岁！',s:'侏儒和地精的发明改变了战场格局'},
+  ];
+  let _quoteIdx=Math.floor(Math.random()*_wowQuotes.length);
+  const _quoteEl=document.getElementById('mm-lore-quote');
+  const _subEl=document.getElementById('mm-lore-subtitle');
+  function _cycleQuote(){
+    _quoteIdx=(_quoteIdx+1)%_wowQuotes.length;
+    const nq=_wowQuotes[_quoteIdx];
+    if(_quoteEl){_quoteEl.style.opacity='0';setTimeout(()=>{_quoteEl.textContent=nq.q;_quoteEl.style.opacity='1'},500)}
+    if(_subEl){_subEl.style.opacity='0';setTimeout(()=>{_subEl.textContent=nq.s;_subEl.style.opacity='1'},600)}
+  }
+  if(_quoteEl&&_subEl){
+    const iq=_wowQuotes[_quoteIdx];_quoteEl.textContent=iq.q;_subEl.textContent=iq.s;
+    _quoteEl.style.transition='opacity .5s';_subEl.style.transition='opacity .5s';
+    setInterval(_cycleQuote,6000);
+  }
   // === 心流引导系统初始化 ===
   SYS.applyProgressiveUnlock(PD);
   SYS.refreshQuestBar(PD);

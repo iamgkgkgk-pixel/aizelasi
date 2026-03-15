@@ -517,13 +517,26 @@ function sfxWhirlwind(){
   osc('square',100,t+0.05,0.1,0.08);
 }
 
-// 法师·烈焰风暴
+// 法师·烈焰风暴（火蛇嘶嘶+灼烧）
 function sfxFlameStorm(){
   ensureCtx();if(!ctx||_muted)return;const t=now();
-  noiseBurst(t,0.3,0.15,3000,'bandpass');
-  sweep('sawtooth',200,800,t,0.15,0.1);
-  osc('sawtooth',100,t+0.1,0.2,0.08);
-  for(let i=0;i<3;i++) noiseBurst(t+0.1+i*0.08,0.06,0.06,4000+i*1000,'highpass');
+  // 起始：火焰喷发轰鸣
+  noiseBurst(t,0.18,0.15,800,'lowpass');
+  sweep('sawtooth',120,400,t,0.12,0.1);
+  // 火蛇嘶嘶声：多段高频白噪音模拟蛇形灼烧
+  for(let i=0;i<4;i++){
+    const st=t+0.05+i*0.12;
+    noiseBurst(st,0.1,0.07,5000+i*800,'highpass');
+    noiseBurst(st+0.03,0.06,0.05,3000+i*500,'bandpass');
+  }
+  // 蛇形游动的频率扫动（模拟蛇的蜿蜒感）
+  sweep('sine',600,200,t+0.08,0.25,0.06);
+  sweep('sine',200,700,t+0.2,0.2,0.05);
+  // 持续灼烧底噪
+  osc('sawtooth',80,t+0.1,0.4,0.05);
+  noiseBurst(t+0.15,0.35,0.06,2000,'bandpass');
+  // 尾声：火焰减弱的嘶声
+  noiseBurst(t+0.45,0.15,0.04,6000,'highpass');
 }
 
 // 猎人·多重射击

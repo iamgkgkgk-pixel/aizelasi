@@ -53,12 +53,28 @@ canvas{display:block;touch-action:none}
 .currency-item{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:3px;background:linear-gradient(145deg,rgba(25,35,55,.85),rgba(15,22,38,.9));border:1px solid rgba(140,120,60,.25);font-size:13px;font-weight:700;color:var(--gold);transition:all .25s ease}
 .currency-item:hover{border-color:rgba(201,164,74,.45);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .ci-icon{font-size:15px}.stamina-max{color:var(--text-muted);font-size:11px}
-.mm-title{position:absolute;top:13%;left:50%;transform:translateX(-50%);text-align:center;z-index:5}
-.mm-title-main{font-size:38px;font-weight:900;color:transparent;background:linear-gradient(175deg,#e8c96a 0%,#c9a44a 30%,#8b6914 70%,#6a4e0f 100%);-webkit-background-clip:text;background-clip:text;text-shadow:none;letter-spacing:5px;animation:tp 5s ease-in-out infinite;filter:drop-shadow(0 2px 8px rgba(139,105,20,.5)) drop-shadow(0 0 30px rgba(201,164,74,.12))}
-.mm-title-sub{font-size:11px;color:rgba(180,160,120,.5);letter-spacing:12px;text-transform:uppercase;margin-top:6px;font-weight:300}
+.mm-title{position:absolute;top:11%;left:50%;transform:translateX(-50%);text-align:center;z-index:5;width:90%;max-width:420px}
+/* 阵营徽章行 */
+.mm-emblem-row{display:flex;align-items:center;justify-content:center;gap:10px}
+.mm-faction{display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .3s}
+.faction-shield{font-size:32px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));animation:factionPulse 4s ease-in-out infinite}
+.mm-faction-alliance .faction-shield{filter:drop-shadow(0 2px 8px rgba(60,120,200,.4)) drop-shadow(0 0 14px rgba(60,120,200,.15))}
+.mm-faction-horde .faction-shield{filter:drop-shadow(0 2px 8px rgba(200,60,40,.4)) drop-shadow(0 0 14px rgba(200,60,40,.15))}
+.faction-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;font-weight:600}
+.mm-faction-alliance .faction-label{color:rgba(100,160,220,.7)}
+.mm-faction-horde .faction-label{color:rgba(220,100,80,.7)}
+@keyframes factionPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.06) translateY(-2px)}}
+/* 中间格言区 */
+.mm-emblem-center{flex:1;min-width:0;padding:0 6px}
+.mm-lore-quote{font-size:17px;font-weight:800;color:transparent;background:linear-gradient(175deg,#e8c96a 0%,#c9a44a 35%,#b08830 70%,#8b6914 100%);-webkit-background-clip:text;background-clip:text;letter-spacing:3px;filter:drop-shadow(0 1px 6px rgba(139,105,20,.5));animation:quoteFade 12s ease-in-out infinite;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+@keyframes quoteFade{0%,100%{opacity:1;transform:scale(1)}48%{opacity:1;transform:scale(1)}50%{opacity:0;transform:scale(.97)}52%{opacity:0;transform:scale(.97)}54%{opacity:1;transform:scale(1)}}
+.mm-lore-divider{display:flex;align-items:center;justify-content:center;gap:6px;margin:5px 0 4px;opacity:.45}
+.ld-wing{font-size:10px;color:#c9a44a}
+.ld-gem{font-size:8px;filter:drop-shadow(0 0 4px rgba(201,164,74,.4))}
+.mm-lore-subtitle{font-size:10px;color:rgba(180,160,120,.5);letter-spacing:1px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .5s}
 .mm-season-tag{margin-top:14px;font-size:11px;color:var(--accent-orange);background:linear-gradient(145deg,rgba(180,80,20,.12),rgba(180,80,20,.04));padding:5px 16px;border-radius:3px;border:1px solid rgba(180,80,20,.25);display:inline-block;letter-spacing:.5px}
 .season-timer{color:var(--gold);font-weight:bold}
-@keyframes tp{0%,100%{transform:scale(1);filter:drop-shadow(0 2px 8px rgba(139,105,20,.5)) drop-shadow(0 0 30px rgba(201,164,74,.12))}50%{transform:scale(1.01);filter:drop-shadow(0 4px 14px rgba(139,105,20,.6)) drop-shadow(0 0 40px rgba(201,164,74,.2))}}
+
 .mm-center-area{position:absolute;top:33%;left:50%;transform:translate(-50%,-10%);z-index:3}
 .mm-hero-preview{text-align:center;position:relative}
 .mm-hero-preview::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;background:radial-gradient(circle,rgba(201,164,74,.05) 0%,transparent 65%);border-radius:50%;filter:blur(25px);pointer-events:none}
